@@ -76,6 +76,7 @@ export interface Movil {
   id_movil: number;
   socio: number;
   socio_nombre: string;
+  socio_telefono: string | null;
   patente: string;
   marca: string | null;
   modelo: string | null;
