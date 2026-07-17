@@ -14,6 +14,7 @@ import ReportesCentral from './pages/ReportesCentral';
 import ReportesTesorero from './pages/ReportesTesorero';
 import MovilesCentral from './pages/MovilesCentral';
 import Tesoreria from './pages/Tesoreria';
+import TesoreriaAdmin from './pages/TesoreriaAdmin';
 import Conductor from './pages/Conductor';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -55,26 +56,32 @@ function App() {
               {usuario?.rol === 'Tesorero' ? <SociosTesorero /> : <Socios />}
             </RoleRoute>
           } />
-          <Route path="/moviles"     element={
+          <Route path="/moviles" element={
             <RoleRoute ruta="/moviles">
               {usuario?.rol === 'Central' ? <MovilesCentral /> : <Moviles />}
             </RoleRoute>
           } />
           <Route path="/solicitudes" element={
             <RoleRoute ruta="/solicitudes">
-              {usuario?.rol === 'Central' ? <SolicitudesCentral /> : <Solicitudes />}
+              {usuario?.rol === 'Central' || usuario?.rol === 'Administrador'
+                ? <SolicitudesCentral />
+                : <Solicitudes />}
             </RoleRoute>
           } />
           <Route path="/reportes" element={
             <RoleRoute ruta="/reportes">
               {usuario?.rol === 'Central'
                 ? <ReportesCentral />
-                : usuario?.rol === 'Tesorero'
+                : usuario?.rol === 'Tesorero' || usuario?.rol === 'Administrador'
                   ? <ReportesTesorero />
                   : <Reportes />}
             </RoleRoute>
           } />
-          <Route path="/tesoreria"   element={<RoleRoute ruta="/tesoreria">  <Tesoreria />   </RoleRoute>} />
+          <Route path="/tesoreria" element={
+            <RoleRoute ruta="/tesoreria">
+              {usuario?.rol === 'Administrador' ? <TesoreriaAdmin /> : <Tesoreria />}
+            </RoleRoute>
+          } />
           <Route path="/conductor"   element={<RoleRoute ruta="/conductor">  <Conductor />   </RoleRoute>} />
         </Route>
 

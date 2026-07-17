@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Plus, Search, RefreshCw, AlertCircle, X } from 'lucide-react';
+import { Users, Plus, Search, RefreshCw, AlertCircle, X, AlertTriangle } from 'lucide-react';
 import { getSocios, createSocio } from '../api/socios';
 import type { Socio } from '../types';
 
@@ -126,7 +126,7 @@ export default function SociosPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {['RUT', 'Nombre', 'Teléfono', 'Dirección', 'Estado', 'Ingreso'].map(h => (
+                {['RUT', 'Nombre', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas vencidas'].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     {h}
                   </th>
@@ -136,7 +136,7 @@ export default function SociosPage() {
             <tbody className="divide-y divide-gray-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-400">
+                  <td colSpan={7} className="text-center py-12 text-gray-400">
                     No hay socios registrados.
                   </td>
                 </tr>
@@ -153,6 +153,16 @@ export default function SociosPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-400">
                     {new Date(s.fecha_ingreso).toLocaleDateString('es-CL')}
+                  </td>
+                  <td className="px-4 py-3">
+                    {(s.cuotas_vencidas ?? 0) > 0 ? (
+                      <span className="flex items-center gap-1 text-orange-600 font-semibold text-xs">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        {s.cuotas_vencidas}
+                      </span>
+                    ) : (
+                      <span className="text-green-600 text-xs font-medium">Al día</span>
+                    )}
                   </td>
                 </tr>
               ))}
