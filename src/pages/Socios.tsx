@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
-<<<<<<< Updated upstream
-import { Users, Plus, Search, RefreshCw, AlertCircle, X, AlertTriangle } from 'lucide-react';
-=======
-import { Users, Plus } from 'lucide-react';
->>>>>>> Stashed changes
+import { Users, Plus, AlertTriangle } from 'lucide-react';
 import { getSocios, createSocio } from '../api/socios';
 import type { Socio } from '../types';
 import {
@@ -118,57 +114,8 @@ export default function SociosPage() {
       {loading ? (
         <LoadingState />
       ) : (
-<<<<<<< Updated upstream
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['RUT', 'Nombre', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas vencidas'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">
-                    No hay socios registrados.
-                  </td>
-                </tr>
-              ) : filtered.map(s => (
-                <tr key={s.id_socio} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-mono text-gray-700">{s.rut}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800">{s.nombre_completo}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.telefono ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{s.direccion ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${ESTADO_COLOR[s.estado_socio]}`}>
-                      {s.estado_socio}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-400">
-                    {new Date(s.fecha_ingreso).toLocaleDateString('es-CL')}
-                  </td>
-                  <td className="px-4 py-3">
-                    {(s.cuotas_vencidas ?? 0) > 0 ? (
-                      <span className="flex items-center gap-1 text-orange-600 font-semibold text-xs">
-                        <AlertTriangle className="w-3.5 h-3.5" />
-                        {s.cuotas_vencidas}
-                      </span>
-                    ) : (
-                      <span className="text-green-600 text-xs font-medium">Al día</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-=======
         <DataTable
-          headers={['RUT', 'Nombre', 'Teléfono', 'Dirección', 'Estado', 'Ingreso']}
+          headers={['RUT', 'Nombre', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas vencidas']}
           isEmpty={filtered.length === 0}
           emptyMessage="No hay socios registrados."
         >
@@ -186,10 +133,19 @@ export default function SociosPage() {
               <TableCell className="text-slate-400">
                 {new Date(s.fecha_ingreso).toLocaleDateString('es-CL')}
               </TableCell>
+              <TableCell>
+                {(s.cuotas_vencidas ?? 0) > 0 ? (
+                  <span className="flex items-center gap-1 text-orange-600 font-semibold text-xs">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {s.cuotas_vencidas}
+                  </span>
+                ) : (
+                  <span className="text-emerald-600 text-xs font-medium">Al día</span>
+                )}
+              </TableCell>
             </TableRow>
           ))}
         </DataTable>
->>>>>>> Stashed changes
       )}
 
       {showModal && (
