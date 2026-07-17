@@ -9,6 +9,7 @@ import Moviles from './pages/Moviles';
 import Solicitudes from './pages/Solicitudes';
 import Reportes from './pages/Reportes';
 import Tesoreria from './pages/Tesoreria';
+import Conductor from './pages/Conductor';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -48,6 +49,7 @@ function App() {
           <Route path="/solicitudes" element={<RoleRoute ruta="/solicitudes"><Solicitudes /> </RoleRoute>} />
           <Route path="/reportes"    element={<RoleRoute ruta="/reportes">   <Reportes />    </RoleRoute>} />
           <Route path="/tesoreria"   element={<RoleRoute ruta="/tesoreria">  <Tesoreria />   </RoleRoute>} />
+          <Route path="/conductor"   element={<RoleRoute ruta="/conductor">  <Conductor />   </RoleRoute>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

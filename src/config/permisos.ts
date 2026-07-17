@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, Car, PhoneCall, BarChart2, DollarSign,
+  LayoutDashboard, Users, Car, PhoneCall, BarChart2, DollarSign, Truck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -49,6 +49,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: DollarSign,
     roles: ['Administrador', 'Tesorero'],
   },
+  {
+    to: '/conductor',
+    label: 'Mi Panel',
+    icon: Truck,
+    roles: ['Conductor'],
+  },
 ];
 
 // Primera ruta disponible según el rol (página de inicio tras login)
@@ -56,7 +62,7 @@ export const HOME_POR_ROL: Record<Rol, string> = {
   Administrador: '/dashboard',
   Central:       '/solicitudes',
   Tesorero:      '/socios',
-  Conductor:     '/solicitudes',
+  Conductor:     '/conductor',
 };
 
 export function tieneAcceso(rol: Rol, ruta: string): boolean {
