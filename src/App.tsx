@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Socios from './pages/Socios';
 import Moviles from './pages/Moviles';
 import Solicitudes from './pages/Solicitudes';
+import SolicitudesCentral from './pages/SolicitudesCentral';
 import Reportes from './pages/Reportes';
 import Tesoreria from './pages/Tesoreria';
 import Conductor from './pages/Conductor';
@@ -17,7 +18,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function RoleRoute({ ruta, children }: { ruta: string; children: React.ReactNode }) {
-  const { usuario } = useAuthStore();
+  const { usuario } = useAuthStore(); // eslint-disable-line
   const rol = usuario?.rol as Rol | undefined;
 
   if (!rol) return <Navigate to="/login" replace />;
@@ -36,6 +37,7 @@ function HomeRedirect() {
 }
 
 function App() {
+  const { usuario } = useAuthStore();
   return (
     <BrowserRouter>
       <Routes>
@@ -46,7 +48,11 @@ function App() {
           <Route path="/dashboard"   element={<RoleRoute ruta="/dashboard">  <Dashboard />   </RoleRoute>} />
           <Route path="/socios"      element={<RoleRoute ruta="/socios">     <Socios />      </RoleRoute>} />
           <Route path="/moviles"     element={<RoleRoute ruta="/moviles">    <Moviles />     </RoleRoute>} />
-          <Route path="/solicitudes" element={<RoleRoute ruta="/solicitudes"><Solicitudes /> </RoleRoute>} />
+          <Route path="/solicitudes" element={
+            <RoleRoute ruta="/solicitudes">
+              {usuario?.rol === 'Central' ? <SolicitudesCentral /> : <Solicitudes />}
+            </RoleRoute>
+          } />
           <Route path="/reportes"    element={<RoleRoute ruta="/reportes">   <Reportes />    </RoleRoute>} />
           <Route path="/tesoreria"   element={<RoleRoute ruta="/tesoreria">  <Tesoreria />   </RoleRoute>} />
           <Route path="/conductor"   element={<RoleRoute ruta="/conductor">  <Conductor />   </RoleRoute>} />
