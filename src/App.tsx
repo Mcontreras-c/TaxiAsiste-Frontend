@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Socios from './pages/Socios';
 import Moviles from './pages/Moviles';
+import Solicitudes from './pages/Solicitudes';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -27,7 +28,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/socios" element={<Socios />} />
           <Route path="/moviles" element={<Moviles />} />
-          <Route path="/solicitudes" element={<div className="text-gray-500 text-lg">Solicitudes — próximamente</div>} />
+          <Route path="/solicitudes" element={<Solicitudes />} />
           <Route path="/reportes" element={<div className="text-gray-500 text-lg">Reportes — próximamente</div>} />
         </Route>
 
