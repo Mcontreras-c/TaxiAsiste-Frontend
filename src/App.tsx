@@ -5,11 +5,13 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Socios from './pages/Socios';
+import SociosTesorero from './pages/SociosTesorero';
 import Moviles from './pages/Moviles';
 import Solicitudes from './pages/Solicitudes';
 import SolicitudesCentral from './pages/SolicitudesCentral';
 import Reportes from './pages/Reportes';
 import ReportesCentral from './pages/ReportesCentral';
+import ReportesTesorero from './pages/ReportesTesorero';
 import MovilesCentral from './pages/MovilesCentral';
 import Tesoreria from './pages/Tesoreria';
 import Conductor from './pages/Conductor';
@@ -48,7 +50,11 @@ function App() {
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/dashboard"   element={<RoleRoute ruta="/dashboard">  <Dashboard />   </RoleRoute>} />
-          <Route path="/socios"      element={<RoleRoute ruta="/socios">     <Socios />      </RoleRoute>} />
+          <Route path="/socios" element={
+            <RoleRoute ruta="/socios">
+              {usuario?.rol === 'Tesorero' ? <SociosTesorero /> : <Socios />}
+            </RoleRoute>
+          } />
           <Route path="/moviles"     element={
             <RoleRoute ruta="/moviles">
               {usuario?.rol === 'Central' ? <MovilesCentral /> : <Moviles />}
@@ -59,9 +65,13 @@ function App() {
               {usuario?.rol === 'Central' ? <SolicitudesCentral /> : <Solicitudes />}
             </RoleRoute>
           } />
-          <Route path="/reportes"    element={
+          <Route path="/reportes" element={
             <RoleRoute ruta="/reportes">
-              {usuario?.rol === 'Central' ? <ReportesCentral /> : <Reportes />}
+              {usuario?.rol === 'Central'
+                ? <ReportesCentral />
+                : usuario?.rol === 'Tesorero'
+                  ? <ReportesTesorero />
+                  : <Reportes />}
             </RoleRoute>
           } />
           <Route path="/tesoreria"   element={<RoleRoute ruta="/tesoreria">  <Tesoreria />   </RoleRoute>} />

@@ -45,6 +45,7 @@ export interface Socio {
   estado_socio: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   fecha_ingreso: string;
   fecha_egreso: string | null;
+  cuotas_vencidas: number;
 }
 
 // ── Cuotas ────────────────────────────────────────────────────────────────────
@@ -131,6 +132,41 @@ export interface Solicitud {
   fecha_asignacion: string | null;
   fecha_inicio: string | null;
   fecha_termino: string | null;
+}
+
+// ── Tesorería ─────────────────────────────────────────────────────────────────
+export interface TesoreriaMovimiento {
+  id_movimiento: number;
+  usuario_registra: number | null;
+  usuario_nombre: string | null;
+  cuota: number | null;
+  tipo: 'INGRESO' | 'EGRESO';
+  categoria: 'CUOTA' | 'MULTA' | 'GASTO_OPERACIONAL' | 'OTRO';
+  descripcion: string;
+  monto: number;
+  fecha: string;
+}
+
+// ── Resumen Tesorero ──────────────────────────────────────────────────────────
+export interface DetalleCuota {
+  id_cuota: number;
+  id_socio: number;
+  rut: string;
+  socio: string;
+  monto: number;
+  estado_pago: 'PENDIENTE' | 'PAGADO' | 'VENCIDO' | 'EXENTO';
+  fecha_vencimiento: string;
+  fecha_pago: string | null;
+}
+
+export interface ResumenTesorero {
+  periodo: string;
+  moviles_activos: number;
+  esperado: number;
+  cobrado: number;
+  pendiente: number;
+  porcentaje: number;
+  detalle: DetalleCuota[];
 }
 
 // ── Reportes ──────────────────────────────────────────────────────────────────
