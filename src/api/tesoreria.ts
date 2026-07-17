@@ -35,5 +35,10 @@ export const registrarPagoCuota = (id_cuota: number, observacion?: string) =>
 export const pagarMovil = (id_socio: number, monto: number, periodo: string) =>
   apiClient.post('/tesoreria/pagar_movil/', { id_socio, monto, periodo }).then(r => r.data);
 
+export const pagarAtrasos = (id_socio: number) =>
+  apiClient.post<{ message: string; cuotas_pagadas: number; total_pagado: number; estado_socio: string }>(
+    '/tesoreria/pagar_atrasos/', { id_socio }
+  ).then(r => r.data);
+
 export const getCuotas = () =>
   apiClient.get<Cuota[]>('/cuotas/').then(r => r.data);

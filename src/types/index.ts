@@ -151,18 +151,21 @@ export interface TesoreriaMovimiento {
 export interface DetalleMovilCuota {
   id_movil: number;
   patente: string;
+  estado_movil: string;
   id_socio: number;
   rut: string;
   socio: string;
+  estado_socio: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   id_cuota: number | null;
   monto: number;
   estado_pago: 'PENDIENTE' | 'PAGADO' | 'VENCIDO' | 'EXENTO' | 'SIN_CUOTA';
   fecha_pago: string | null;
+  cuotas_vencidas: number;
 }
 
 export interface ResumenTesorero {
   periodo: string;
-  moviles_activos: number;
+  total_moviles: number;
   pagados: number;
   pendientes: number;
   cobrado: number;
