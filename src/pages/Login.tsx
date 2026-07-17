@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { HOME_POR_ROL, type Rol } from '../config/permisos';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,8 +24,10 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard');
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated && usuario) {
+      navigate(HOME_POR_ROL[usuario.rol as Rol] ?? '/solicitudes');
+    }
+  }, [isAuthenticated, usuario, navigate]);
 
   const onSubmit = async (data: FormData) => {
     await login(data.username, data.password);
