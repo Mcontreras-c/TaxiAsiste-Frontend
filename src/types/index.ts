@@ -148,25 +148,26 @@ export interface TesoreriaMovimiento {
 }
 
 // ── Resumen Tesorero ──────────────────────────────────────────────────────────
-export interface DetalleCuota {
-  id_cuota: number;
+export interface DetalleMovilCuota {
+  id_movil: number;
+  patente: string;
   id_socio: number;
   rut: string;
   socio: string;
+  id_cuota: number | null;
   monto: number;
-  estado_pago: 'PENDIENTE' | 'PAGADO' | 'VENCIDO' | 'EXENTO';
-  fecha_vencimiento: string;
+  estado_pago: 'PENDIENTE' | 'PAGADO' | 'VENCIDO' | 'EXENTO' | 'SIN_CUOTA';
   fecha_pago: string | null;
 }
 
 export interface ResumenTesorero {
   periodo: string;
   moviles_activos: number;
-  esperado: number;
+  pagados: number;
+  pendientes: number;
   cobrado: number;
-  pendiente: number;
   porcentaje: number;
-  detalle: DetalleCuota[];
+  detalle: DetalleMovilCuota[];
 }
 
 // ── Reportes ──────────────────────────────────────────────────────────────────

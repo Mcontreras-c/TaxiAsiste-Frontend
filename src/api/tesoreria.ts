@@ -32,5 +32,8 @@ export const createMovimiento = (data: Partial<TesoreriaMovimiento>) =>
 export const registrarPagoCuota = (id_cuota: number, observacion?: string) =>
   apiClient.post('/tesoreria/registrar_pago_cuota/', { id_cuota, observacion }).then(r => r.data);
 
+export const pagarMovil = (id_socio: number, monto: number, periodo: string) =>
+  apiClient.post('/tesoreria/pagar_movil/', { id_socio, monto, periodo }).then(r => r.data);
+
 export const getCuotas = () =>
   apiClient.get<Cuota[]>('/cuotas/').then(r => r.data);

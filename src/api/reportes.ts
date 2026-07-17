@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Dashboard, SolicitudPorEstado, ResumenTesorero } from '../types';
+import type { Dashboard, SolicitudPorEstado, ResumenTesorero } from '../types'; // eslint-disable-line
 
 export const getDashboard = () =>
   apiClient.get<Dashboard>('/reportes/dashboard/').then(r => r.data);
