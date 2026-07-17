@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, Plus, RefreshCw, AlertCircle, X, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import {
   getMovimientos, getBalance, createMovimiento, registrarPagoCuota, getCuotas,
   type TesoreriaMovimiento, type Balance,
 } from '../api/tesoreria';
 import type { Cuota } from '../types';
+import {
+  Alert, Badge, Button, DataTable, LoadingState,
+  Modal, PageHeader, StatCard, TableCell, TableRow,
+} from '../components/ui';
 
-const TIPO_COLOR = {
-  INGRESO: 'bg-green-100 text-green-700',
-  EGRESO:  'bg-red-100 text-red-600',
+const TIPO_COLOR: Record<string, string> = {
+  INGRESO: 'bg-emerald-50 text-emerald-700',
+  EGRESO:  'bg-red-50 text-red-600',
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -102,213 +106,182 @@ export default function TesoreriaPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <DollarSign className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-800">Tesorería</h1>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => openModal('pago_cuota')}
-            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold text-sm px-4 py-2 rounded-lg transition">
-            <Plus className="w-4 h-4" /> Registrar pago cuota
-          </button>
-          <button onClick={() => openModal('movimiento')}
-            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
-            <Plus className="w-4 h-4" /> Otro movimiento
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        icon={DollarSign}
+        title="Tesorería"
+        actions={
+          <>
+            <Button onClick={() => openModal('pago_cuota')}>
+              <Plus className="w-4 h-4" /> Registrar pago cuota
+            </Button>
+            <Button variant="dark" onClick={() => openModal('movimiento')}>
+              <Plus className="w-4 h-4" /> Otro movimiento
+            </Button>
+          </>
+        }
+      />
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5" /> {error}
-          <button onClick={load} className="ml-auto underline flex items-center gap-1">
-            <RefreshCw className="w-3 h-3" /> Reintentar
-          </button>
-        </div>
-      )}
+      {error && <Alert message={error} onRetry={load} />}
 
-      {/* Balance */}
       {balance && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Ingresos</p>
-              <p className="text-xl font-bold text-green-600">${balance.ingresos.toLocaleString('es-CL')}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
-            <div className="p-3 bg-red-100 rounded-lg">
-              <TrendingDown className="w-5 h-5 text-red-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Egresos</p>
-              <p className="text-xl font-bold text-red-500">${balance.egresos.toLocaleString('es-CL')}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
-            <div className={`p-3 rounded-lg ${balance.balance >= 0 ? 'bg-blue-100' : 'bg-orange-100'}`}>
-              <Wallet className={`w-5 h-5 ${balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}`} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Balance</p>
-              <p className={`text-xl font-bold ${balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}`}>
-                ${balance.balance.toLocaleString('es-CL')}
-              </p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            title="Ingresos"
+            value={`$${balance.ingresos.toLocaleString('es-CL')}`}
+            icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
+            accent="text-emerald-600"
+            iconBg="bg-emerald-50"
+          />
+          <StatCard
+            title="Egresos"
+            value={`$${balance.egresos.toLocaleString('es-CL')}`}
+            icon={<TrendingDown className="w-5 h-5 text-red-500" />}
+            accent="text-red-500"
+            iconBg="bg-red-50"
+          />
+          <StatCard
+            title="Balance"
+            value={`$${balance.balance.toLocaleString('es-CL')}`}
+            icon={<Wallet className={`w-5 h-5 ${balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}`} />}
+            accent={balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}
+            iconBg={balance.balance >= 0 ? 'bg-blue-50' : 'bg-orange-50'}
+          />
         </div>
       )}
 
-      {/* Tabla movimientos */}
       {loading ? (
-        <div className="flex justify-center py-16 text-gray-400">
-          <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando...
-        </div>
+        <LoadingState />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-600">Historial de movimientos</h2>
-          </div>
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Registrado por', 'Monto'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {movimientos.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-400">No hay movimientos registrados.</td>
-                </tr>
-              ) : movimientos.map(m => (
-                <tr key={m.id_movimiento} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {new Date(m.fecha).toLocaleDateString('es-CL')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${TIPO_COLOR[m.tipo]}`}>
-                      {m.tipo}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{CATEGORIA_LABEL[m.categoria]}</td>
-                  <td className="px-4 py-3 text-gray-700">{m.descripcion}</td>
-                  <td className="px-4 py-3 text-gray-500">{m.usuario_nombre ?? '—'}</td>
-                  <td className={`px-4 py-3 font-semibold ${m.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-500'}`}>
-                    {m.tipo === 'EGRESO' ? '-' : '+'}${Number(m.monto).toLocaleString('es-CL')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Historial de movimientos</h2>
+          <DataTable
+            headers={['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Registrado por', 'Monto']}
+            isEmpty={movimientos.length === 0}
+            emptyMessage="No hay movimientos registrados."
+          >
+            {movimientos.map(m => (
+              <TableRow key={m.id_movimiento}>
+                <TableCell className="text-slate-500 text-xs">
+                  {new Date(m.fecha).toLocaleDateString('es-CL')}
+                </TableCell>
+                <TableCell>
+                  <Badge className={TIPO_COLOR[m.tipo]}>{m.tipo}</Badge>
+                </TableCell>
+                <TableCell className="text-slate-500">{CATEGORIA_LABEL[m.categoria]}</TableCell>
+                <TableCell className="text-slate-700">{m.descripcion}</TableCell>
+                <TableCell className="text-slate-500">{m.usuario_nombre ?? '—'}</TableCell>
+                <TableCell className={`font-semibold ${m.tipo === 'INGRESO' ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {m.tipo === 'EGRESO' ? '-' : '+'}${Number(m.monto).toLocaleString('es-CL')}
+                </TableCell>
+              </TableRow>
+            ))}
+          </DataTable>
         </div>
       )}
 
-      {/* Modal pago cuota */}
       {modal === 'pago_cuota' && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-800">Registrar pago de cuota</h2>
-              <button onClick={() => setModal(null)} className="p-1 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+        <Modal title="Registrar pago de cuota" onClose={() => setModal(null)}>
+          <form onSubmit={handlePagoCuota} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Cuota pendiente *</label>
+              <select
+                value={cuotaSeleccionada}
+                onChange={e => setCuotaSeleccionada(e.target.value)}
+                className="input-field"
+              >
+                <option value="">Seleccionar cuota...</option>
+                {cuotas.map(c => (
+                  <option key={c.id_cuota} value={c.id_cuota}>
+                    Socio #{c.socio} — {c.periodo} — ${Number(c.monto).toLocaleString('es-CL')} ({c.estado_pago})
+                  </option>
+                ))}
+              </select>
             </div>
-            <form onSubmit={handlePagoCuota} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cuota pendiente *</label>
-                <select value={cuotaSeleccionada} onChange={e => setCuotaSeleccionada(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                  <option value="">Seleccionar cuota...</option>
-                  {cuotas.map(c => (
-                    <option key={c.id_cuota} value={c.id_cuota}>
-                      Socio #{c.socio} — {c.periodo} — ${Number(c.monto).toLocaleString('es-CL')} ({c.estado_pago})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Observación</label>
-                <input type="text" placeholder="Opcional..." value={observacion}
-                  onChange={e => setObservacion(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
-              </div>
-              {formError && <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>}
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setModal(null)}
-                  className="flex-1 border border-gray-300 text-gray-600 font-medium py-2 rounded-lg text-sm hover:bg-gray-50 transition">
-                  Cancelar
-                </button>
-                <button type="submit" disabled={saving}
-                  className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold py-2 rounded-lg text-sm transition disabled:opacity-60">
-                  {saving ? 'Guardando...' : 'Registrar pago'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Observación</label>
+              <input
+                type="text"
+                placeholder="Opcional..."
+                value={observacion}
+                onChange={e => setObservacion(e.target.value)}
+                className="input-field"
+              />
+            </div>
+            {formError && (
+              <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="secondary" className="flex-1" onClick={() => setModal(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving} className="flex-1">
+                {saving ? 'Guardando...' : 'Registrar pago'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
-      {/* Modal movimiento manual */}
       {modal === 'movimiento' && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-800">Registrar movimiento</h2>
-              <button onClick={() => setModal(null)} className="p-1 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+        <Modal title="Registrar movimiento" onClose={() => setModal(null)}>
+          <form onSubmit={handleMovimiento} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Tipo *</label>
+              <select
+                value={movForm.tipo}
+                onChange={e => setMovForm(f => ({ ...f, tipo: e.target.value as any }))}
+                className="input-field"
+              >
+                <option value="INGRESO">Ingreso</option>
+                <option value="EGRESO">Egreso</option>
+              </select>
             </div>
-            <form onSubmit={handleMovimiento} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
-                <select value={movForm.tipo} onChange={e => setMovForm(f => ({ ...f, tipo: e.target.value as any }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                  <option value="INGRESO">Ingreso</option>
-                  <option value="EGRESO">Egreso</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-                <select value={movForm.categoria} onChange={e => setMovForm(f => ({ ...f, categoria: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                  <option value="MULTA">Multa</option>
-                  <option value="GASTO_OPERACIONAL">Gasto Operacional</option>
-                  <option value="OTRO">Otro</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
-                <input type="text" placeholder="Ej: Pago arriendo local" value={movForm.descripcion}
-                  onChange={e => setMovForm(f => ({ ...f, descripcion: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Monto ($) *</label>
-                <input type="number" min="1" placeholder="50000" value={movForm.monto}
-                  onChange={e => setMovForm(f => ({ ...f, monto: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
-              </div>
-              {formError && <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>}
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setModal(null)}
-                  className="flex-1 border border-gray-300 text-gray-600 font-medium py-2 rounded-lg text-sm hover:bg-gray-50 transition">
-                  Cancelar
-                </button>
-                <button type="submit" disabled={saving}
-                  className="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 rounded-lg text-sm transition disabled:opacity-60">
-                  {saving ? 'Guardando...' : 'Registrar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoría *</label>
+              <select
+                value={movForm.categoria}
+                onChange={e => setMovForm(f => ({ ...f, categoria: e.target.value }))}
+                className="input-field"
+              >
+                <option value="MULTA">Multa</option>
+                <option value="GASTO_OPERACIONAL">Gasto Operacional</option>
+                <option value="OTRO">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción *</label>
+              <input
+                type="text"
+                placeholder="Ej: Pago arriendo local"
+                value={movForm.descripcion}
+                onChange={e => setMovForm(f => ({ ...f, descripcion: e.target.value }))}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto ($) *</label>
+              <input
+                type="number"
+                min="1"
+                placeholder="50000"
+                value={movForm.monto}
+                onChange={e => setMovForm(f => ({ ...f, monto: e.target.value }))}
+                className="input-field"
+              />
+            </div>
+            {formError && (
+              <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+            )}
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="secondary" className="flex-1" onClick={() => setModal(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant="dark" disabled={saving} className="flex-1">
+                {saving ? 'Guardando...' : 'Registrar'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
