@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Car, PhoneCall, BarChart2,
-  LogOut, Menu, X, ChevronRight,
+  LogOut, Menu, X, ChevronRight, DollarSign,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import logo from '../assets/logo.jpg';
@@ -13,6 +13,7 @@ const navItems = [
   { to: '/moviles',     label: 'Móviles',       icon: Car },
   { to: '/solicitudes', label: 'Solicitudes',   icon: PhoneCall },
   { to: '/reportes',    label: 'Reportes',      icon: BarChart2 },
+  { to: '/tesoreria',   label: 'Tesorería',     icon: DollarSign },
 ];
 
 export default function Layout() {
