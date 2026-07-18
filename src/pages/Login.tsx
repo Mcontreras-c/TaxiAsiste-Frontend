@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { LogIn, Shield, Users, DollarSign } from 'lucide-react';
 import logo from '../assets/logo.jpg';
-import taxiHero from '../assets/taxi-hero.jpg';
+import taxiHero from '../assets/taxiasiste.webp';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui';
 
