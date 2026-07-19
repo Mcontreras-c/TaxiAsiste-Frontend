@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { HOME_POR_ROL, type Rol } from '../config/permisos';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,15 +17,17 @@ type FormData = z.infer<typeof schema>;
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoading, error, isAuthenticated } = useAuthStore();
+  const { login, isLoading, error, isAuthenticated, usuario } = useAuthStore();
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard');
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated && usuario) {
+      navigate(HOME_POR_ROL[usuario.rol as Rol] ?? '/solicitudes');
+    }
+  }, [isAuthenticated, usuario, navigate]);
 
   const onSubmit = async (data: FormData) => {
     await login(data.username, data.password);

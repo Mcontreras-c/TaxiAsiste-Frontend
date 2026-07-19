@@ -2,6 +2,8 @@ import apiClient from './client';
 import type { LoginResponse } from '../types';
 
 export async function login(username: string, password: string): Promise<LoginResponse> {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
   const { data } = await apiClient.post<LoginResponse>('/login/', { username, password });
   localStorage.setItem('access_token', data.access);
   localStorage.setItem('refresh_token', data.refresh);
