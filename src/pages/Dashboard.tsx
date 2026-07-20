@@ -35,6 +35,10 @@ export default function DashboardPage() {
     return <Alert message={error ?? 'Error desconocido'} onRetry={load} />;
   }
 
+  const totalSocios = data.socios.activos + data.socios.bloqueados;
+  const totalMoviles = data.moviles.disponibles + data.moviles.en_servicio;
+  const totalCuotas = data.cuotas.pendientes + data.cuotas.vencidas;
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -51,20 +55,26 @@ export default function DashboardPage() {
       {/* Socios */}
       <section>
         <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Socios</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Socios activos"
             value={data.socios.activos}
-            icon={<Users className="w-5 h-5 text-emerald-600" />}
+            icon={<Users className="w-5 h-5 text-white" />}
             accent="text-emerald-600"
-            iconBg="bg-emerald-50"
+            iconBg="bg-emerald-500"
+            percent={pct(data.socios.activos, totalSocios)}
+            barColor="bg-emerald-500"
+            sub={`${pct(data.socios.activos, totalSocios)}% del total`}
           />
           <StatCard
             title="Socios bloqueados"
             value={data.socios.bloqueados}
-            icon={<Users className="w-5 h-5 text-red-500" />}
-            accent="text-red-500"
-            iconBg="bg-red-50"
+            icon={<Users className="w-5 h-5 text-white" />}
+            accent="text-red-600"
+            iconBg="bg-red-500"
+            percent={pct(data.socios.bloqueados, totalSocios)}
+            barColor="bg-red-500"
+            sub={`${pct(data.socios.bloqueados, totalSocios)}% del total`}
           />
         </div>
       </section>
@@ -72,20 +82,26 @@ export default function DashboardPage() {
       {/* Móviles */}
       <section>
         <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Móviles</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Disponibles"
             value={data.moviles.disponibles}
-            icon={<Car className="w-5 h-5 text-blue-600" />}
+            icon={<Car className="w-5 h-5 text-white" />}
             accent="text-blue-600"
-            iconBg="bg-blue-50"
+            iconBg="bg-blue-500"
+            percent={pct(data.moviles.disponibles, totalMoviles)}
+            barColor="bg-blue-500"
+            sub={`${pct(data.moviles.disponibles, totalMoviles)}% del total`}
           />
           <StatCard
             title="En servicio"
             value={data.moviles.en_servicio}
-            icon={<Car className="w-5 h-5 text-brand-600" />}
+            icon={<Car className="w-5 h-5 text-white" />}
             accent="text-brand-600"
-            iconBg="bg-brand-50"
+            iconBg="bg-brand-500"
+            percent={pct(data.moviles.en_servicio, totalMoviles)}
+            barColor="bg-brand-500"
+            sub={`${pct(data.moviles.en_servicio, totalMoviles)}% del total`}
           />
         </div>
       </section>
@@ -97,30 +113,30 @@ export default function DashboardPage() {
           <StatCard
             title="Hoy"
             value={data.solicitudes.hoy}
-            icon={<PhoneCall className="w-5 h-5 text-violet-600" />}
+            icon={<PhoneCall className="w-5 h-5 text-white" />}
             accent="text-violet-600"
-            iconBg="bg-violet-50"
+            iconBg="bg-violet-500"
           />
           <StatCard
             title="Pendientes"
             value={data.solicitudes.pendientes}
-            icon={<PhoneCall className="w-5 h-5 text-orange-500" />}
-            accent="text-orange-500"
-            iconBg="bg-orange-50"
+            icon={<PhoneCall className="w-5 h-5 text-white" />}
+            accent="text-orange-600"
+            iconBg="bg-orange-500"
           />
           <StatCard
             title="En curso"
             value={data.solicitudes.en_curso}
-            icon={<PhoneCall className="w-5 h-5 text-blue-500" />}
-            accent="text-blue-500"
-            iconBg="bg-blue-50"
+            icon={<PhoneCall className="w-5 h-5 text-white" />}
+            accent="text-blue-600"
+            iconBg="bg-blue-500"
           />
           <StatCard
             title="Completadas hoy"
             value={data.solicitudes.completadas_hoy}
-            icon={<PhoneCall className="w-5 h-5 text-emerald-600" />}
+            icon={<PhoneCall className="w-5 h-5 text-white" />}
             accent="text-emerald-600"
-            iconBg="bg-emerald-50"
+            iconBg="bg-emerald-500"
           />
         </div>
       </section>
@@ -128,23 +144,33 @@ export default function DashboardPage() {
       {/* Cuotas */}
       <section>
         <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Cuotas</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Pendientes de pago"
             value={data.cuotas.pendientes}
-            icon={<AlertCircle className="w-5 h-5 text-brand-600" />}
+            icon={<AlertCircle className="w-5 h-5 text-white" />}
             accent="text-brand-600"
-            iconBg="bg-brand-50"
+            iconBg="bg-brand-500"
+            percent={pct(data.cuotas.pendientes, totalCuotas)}
+            barColor="bg-brand-500"
+            sub={`${pct(data.cuotas.pendientes, totalCuotas)}% del total`}
           />
           <StatCard
             title="Vencidas"
             value={data.cuotas.vencidas}
-            icon={<AlertCircle className="w-5 h-5 text-red-500" />}
-            accent="text-red-500"
-            iconBg="bg-red-50"
+            icon={<AlertCircle className="w-5 h-5 text-white" />}
+            accent="text-red-600"
+            iconBg="bg-red-500"
+            percent={pct(data.cuotas.vencidas, totalCuotas)}
+            barColor="bg-red-500"
+            sub={`${pct(data.cuotas.vencidas, totalCuotas)}% del total`}
           />
         </div>
       </section>
     </div>
   );
+}
+
+function pct(value: number, total: number): number {
+  return total > 0 ? Math.round((value / total) * 100) : 0;
 }

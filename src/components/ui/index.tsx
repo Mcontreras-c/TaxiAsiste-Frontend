@@ -161,17 +161,29 @@ interface StatCardProps {
   icon: React.ReactNode;
   accent: string;
   iconBg: string;
+  percent?: number;
+  barColor?: string;
 }
 
-export function StatCard({ title, value, sub, icon, accent, iconBg }: StatCardProps) {
+export function StatCard({ title, value, sub, icon, accent, iconBg, percent, barColor }: StatCardProps) {
   return (
-    <div className="card p-5 flex items-center gap-4 hover:shadow-md transition-shadow duration-200">
-      <div className={`p-3 rounded-xl ${iconBg}`}>{icon}</div>
-      <div className="min-w-0">
-        <p className="text-sm text-slate-500 font-medium">{title}</p>
-        <p className={`text-2xl font-bold tracking-tight ${accent}`}>{value}</p>
-        {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+    <div className="card p-4 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-center gap-3">
+        <div className={`p-2.5 rounded-xl flex-shrink-0 ${iconBg}`}>{icon}</div>
+        <div className="min-w-0">
+          <p className="text-xs text-slate-500 font-medium truncate">{title}</p>
+          <p className={`text-xl font-bold tracking-tight ${accent}`}>{value}</p>
+        </div>
       </div>
+      {percent !== undefined && (
+        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full ${barColor ?? 'bg-slate-400'}`}
+            style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+          />
+        </div>
+      )}
+      {sub && <p className="text-xs text-slate-400">{sub}</p>}
     </div>
   );
 }

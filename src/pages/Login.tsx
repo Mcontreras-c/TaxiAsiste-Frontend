@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LogIn, Shield, Users, DollarSign } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import logo from '../assets/logo.jpg';
 import taxiHero from '../assets/taxiasiste.webp';
 import { useAuthStore } from '../store/authStore';
@@ -16,12 +16,6 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-
-const FEATURES = [
-  { icon: Users,      text: 'Socios, móviles y solicitudes en un solo lugar' },
-  { icon: DollarSign, text: 'Tesorería y cuotas al día, sin planillas' },
-  { icon: Shield,     text: 'Acceso seguro, según el rol de cada usuario' },
-];
 
 export default function Login() {
   const navigate = useNavigate();
@@ -74,6 +68,7 @@ export default function Login() {
           {/* Tarjeta de login */}
           <div className="order-2 lg:order-1 flex justify-center lg:justify-start">
             <div className="card shadow-elevated w-full max-w-md p-8">
+              <img src={logo} alt="TaxiAsiste" className="h-10 object-contain mb-6" />
               <div className="mb-2">
                 <h1 className="text-2xl font-bold text-slate-800">Iniciar sesión</h1>
               </div>
@@ -138,21 +133,10 @@ export default function Login() {
               <span className="text-brand-400">conectado</span>
             </h2>
             <div className="w-16 h-1 bg-white/30 rounded-full mx-auto lg:mx-0 mb-5" />
-            <p className="text-slate-200 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 mb-10 drop-shadow">
+            <p className="text-slate-200 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 drop-shadow">
               Administra socios, móviles, solicitudes y tesorería desde un solo lugar,
               en tiempo real.
             </p>
-
-            <ul className="space-y-4 max-w-md mx-auto lg:mx-0">
-              {FEATURES.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3 justify-center lg:justify-start">
-                  <span className="flex-shrink-0 p-2 bg-white/10 border border-white/20 backdrop-blur-sm rounded-xl">
-                    <Icon className="w-4 h-4 text-brand-400" />
-                  </span>
-                  <span className="text-slate-100 text-sm drop-shadow">{text}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </main>
       </div>
