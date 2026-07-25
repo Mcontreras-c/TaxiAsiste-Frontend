@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
-import { PhoneCall, Plus, Search, RefreshCw, AlertCircle, X, ChevronRight } from 'lucide-react';
+import { PhoneCall, Plus, ChevronRight } from 'lucide-react';
 import { getSolicitudes, createSolicitud, cambiarEstado } from '../api/solicitudes';
 import { getMoviles } from '../api/moviles';
 import type { Solicitud, EstadoSolicitud, Movil } from '../types';
+import {
+  Alert, Badge, Button, DataTable, LoadingState,
+  Modal, PageHeader, SearchInput, TableCell, TableRow,
+} from '../components/ui';
 
 const ESTADO_COLOR: Record<string, string> = {
-  PENDIENTE:  'bg-orange-100 text-orange-700',
-  ASIGNADO:   'bg-blue-100 text-blue-700',
-  EN_CURSO:   'bg-purple-100 text-purple-700',
-  COMPLETADO: 'bg-green-100 text-green-700',
-  CANCELADO:  'bg-gray-100 text-gray-500',
+  PENDIENTE:  'bg-orange-50 text-orange-700',
+  ASIGNADO:   'bg-blue-50 text-blue-700',
+  EN_CURSO:   'bg-violet-50 text-violet-700',
+  COMPLETADO: 'bg-emerald-50 text-emerald-700',
+  CANCELADO:  'bg-slate-100 text-slate-500',
 };
 
 const TRANSICIONES: Record<string, EstadoSolicitud[]> = {
@@ -114,235 +118,185 @@ export default function SolicitudesPage() {
     }
   };
 
+  const openModal = () => {
+    setShowModal(true);
+    setForm(EMPTY);
+    setFormError(null);
+  };
+
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <PhoneCall className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-800">Solicitudes</h1>
-          <span className="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-            {solicitudes.length}
-          </span>
-        </div>
-        <button
-          onClick={() => { setShowModal(true); setForm(EMPTY); setFormError(null); }}
-          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold text-sm px-4 py-2 rounded-lg transition"
-        >
-          <Plus className="w-4 h-4" /> Nueva solicitud
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={PhoneCall}
+        title="Solicitudes"
+        count={solicitudes.length}
+        actions={
+          <Button onClick={openModal}>
+            <Plus className="w-4 h-4" /> Nueva solicitud
+          </Button>
+        }
+      />
 
-      {/* Buscador */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Buscar por folio, origen, destino o estado..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        />
-      </div>
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder="Buscar por folio, origen, destino o estado..."
+      />
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5" /> {error}
-          <button onClick={load} className="ml-auto underline flex items-center gap-1">
-            <RefreshCw className="w-3 h-3" /> Reintentar
-          </button>
-        </div>
-      )}
+      {error && <Alert message={error} onRetry={load} />}
 
-      {/* Tabla */}
       {loading ? (
-        <div className="flex justify-center py-16 text-gray-400">
-          <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando...
-        </div>
+        <LoadingState />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['Folio', 'Origen → Destino', 'Móvil', 'Canal', 'Estado', 'Fecha', 'Acción'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">
-                    No hay solicitudes registradas.
-                  </td>
-                </tr>
-              ) : filtered.map(s => (
-                <tr key={s.id_solicitud} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{s.folio}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 text-gray-700">
-                      <span className="truncate max-w-[120px]">{s.origen}</span>
-                      <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                      <span className="truncate max-w-[120px]">{s.destino}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{s.movil_patente ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.canal_entrada}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${ESTADO_COLOR[s.estado]}`}>
-                      {s.estado}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">
-                    {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
-                  </td>
-                  <td className="px-4 py-3">
-                    {TRANSICIONES[s.estado].length > 0 && (
-                      <button
-                        onClick={() => { setSelected(s); setNuevoEstado(''); setMovilId(''); }}
-                        className="text-xs text-blue-600 hover:underline font-medium"
-                      >
-                        Cambiar estado
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          headers={['Folio', 'Origen → Destino', 'Móvil', 'Canal', 'Estado', 'Fecha', 'Acción']}
+          isEmpty={filtered.length === 0}
+          emptyMessage="No hay solicitudes registradas."
+        >
+          {filtered.map(s => (
+            <TableRow key={s.id_solicitud}>
+              <TableCell className="font-mono text-xs text-slate-600">{s.folio}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1 text-slate-700">
+                  <span className="truncate max-w-[120px]">{s.origen}</span>
+                  <ChevronRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                  <span className="truncate max-w-[120px]">{s.destino}</span>
+                </div>
+              </TableCell>
+              <TableCell className="text-slate-500">{s.movil_patente ?? '—'}</TableCell>
+              <TableCell className="text-slate-500">{s.canal_entrada}</TableCell>
+              <TableCell>
+                <Badge className={ESTADO_COLOR[s.estado]}>{s.estado}</Badge>
+              </TableCell>
+              <TableCell className="text-slate-400 text-xs">
+                {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
+              </TableCell>
+              <TableCell>
+                {TRANSICIONES[s.estado].length > 0 && (
+                  <button
+                    onClick={() => { setSelected(s); setNuevoEstado(''); setMovilId(''); }}
+                    className="text-xs text-brand-700 hover:underline font-semibold"
+                  >
+                    Cambiar estado
+                  </button>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </DataTable>
       )}
 
-      {/* Modal nueva solicitud */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-800">Nueva solicitud</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-4">
-              {[
-                { label: 'Origen *',  key: 'origen',  placeholder: 'Calle Falsa 123' },
-                { label: 'Destino *', key: 'destino', placeholder: 'Plaza Italia' },
-              ].map(({ label, key, placeholder }) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                  <input
-                    type="text"
-                    placeholder={placeholder}
-                    value={form[key as keyof FormData]}
-                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                  />
-                </div>
-              ))}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Canal de entrada</label>
-                <select
-                  value={form.canal_entrada}
-                  onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                >
-                  {CANALES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-                <textarea
-                  placeholder="Opcional..."
-                  value={form.observaciones}
-                  onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
-                  rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none"
+        <Modal title="Nueva solicitud" onClose={() => setShowModal(false)}>
+          <form onSubmit={handleCreate} className="space-y-4">
+            {[
+              { label: 'Origen *',  key: 'origen',  placeholder: 'Calle Falsa 123' },
+              { label: 'Destino *', key: 'destino', placeholder: 'Plaza Italia' },
+            ].map(({ label, key, placeholder }) => (
+              <div key={key}>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
+                <input
+                  type="text"
+                  placeholder={placeholder}
+                  value={form[key as keyof FormData]}
+                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  className="input-field"
                 />
               </div>
+            ))}
 
-              {formError && (
-                <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 border border-gray-300 text-gray-600 font-medium py-2 rounded-lg text-sm hover:bg-gray-50 transition">
-                  Cancelar
-                </button>
-                <button type="submit" disabled={saving}
-                  className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold py-2 rounded-lg text-sm transition disabled:opacity-60">
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal cambiar estado */}
-      {selected && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Cambiar estado</h2>
-              <button onClick={() => setSelected(null)} className="p-1 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Canal de entrada</label>
+              <select
+                value={form.canal_entrada}
+                onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
+                className="input-field"
+              >
+                {CANALES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
 
-            <p className="text-sm text-gray-500 mb-1">Folio: <span className="font-mono font-semibold text-gray-700">{selected.folio}</span></p>
-            <p className="text-sm text-gray-500 mb-4">
-              Estado actual: <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ESTADO_COLOR[selected.estado]}`}>{selected.estado}</span>
-            </p>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Observaciones</label>
+              <textarea
+                placeholder="Opcional..."
+                value={form.observaciones}
+                onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
+                rows={2}
+                className="input-field resize-none"
+              />
+            </div>
 
-            <div className="space-y-3">
+            {formError && (
+              <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving} className="flex-1">
+                {saving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {selected && (
+        <Modal title="Cambiar estado" onClose={() => setSelected(null)} maxWidth="max-w-sm">
+          <p className="text-sm text-slate-500 mb-1">
+            Folio: <span className="font-mono font-semibold text-slate-700">{selected.folio}</span>
+          </p>
+          <p className="text-sm text-slate-500 mb-4 flex items-center gap-2">
+            Estado actual: <Badge className={ESTADO_COLOR[selected.estado]}>{selected.estado}</Badge>
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Nuevo estado</label>
+              <select
+                value={nuevoEstado}
+                onChange={e => setNuevoEstado(e.target.value as EstadoSolicitud)}
+                className="input-field"
+              >
+                <option value="">Seleccionar...</option>
+                {TRANSICIONES[selected.estado].map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            {nuevoEstado === 'ASIGNADO' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nuevo estado</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Móvil a asignar</label>
                 <select
-                  value={nuevoEstado}
-                  onChange={e => setNuevoEstado(e.target.value as EstadoSolicitud)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  value={movilId}
+                  onChange={e => setMovilId(e.target.value)}
+                  className="input-field"
                 >
-                  <option value="">Seleccionar...</option>
-                  {TRANSICIONES[selected.estado].map(t => (
-                    <option key={t} value={t}>{t}</option>
+                  <option value="">Seleccionar móvil...</option>
+                  {moviles.map(m => (
+                    <option key={m.id_movil} value={m.id_movil}>{m.patente} — {m.socio_nombre}</option>
                   ))}
                 </select>
               </div>
-
-              {nuevoEstado === 'ASIGNADO' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Móvil a asignar</label>
-                  <select
-                    value={movilId}
-                    onChange={e => setMovilId(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                  >
-                    <option value="">Seleccionar móvil...</option>
-                    {moviles.map(m => (
-                      <option key={m.id_movil} value={m.id_movil}>{m.patente} — {m.socio_nombre}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => setSelected(null)}
-                className="flex-1 border border-gray-300 text-gray-600 font-medium py-2 rounded-lg text-sm hover:bg-gray-50 transition">
-                Cancelar
-              </button>
-              <button onClick={handleCambiarEstado} disabled={!nuevoEstado || changingEstado}
-                className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold py-2 rounded-lg text-sm transition disabled:opacity-60">
-                {changingEstado ? 'Guardando...' : 'Confirmar'}
-              </button>
-            </div>
+            )}
           </div>
-        </div>
+
+          <div className="flex gap-3 mt-6">
+            <Button variant="secondary" className="flex-1" onClick={() => setSelected(null)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={!nuevoEstado || changingEstado}
+              onClick={handleCambiarEstado}
+            >
+              {changingEstado ? 'Guardando...' : 'Confirmar'}
+            </Button>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -1,14 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   PhoneCall, Plus, RefreshCw, AlertCircle, X, ChevronRight,
-  Clock, Car, CheckCircle, XCircle, History, PhoneMissed,
+  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
   cambiarEstado, buscarPasajeroPorRut, type ResumenCentral,
 } from '../api/solicitudes';
-import { getMoviles } from '../api/moviles';
-import type { Solicitud, EstadoSolicitud, Movil, Pasajero } from '../types';
+import { getMoviles, getFilaBase } from '../api/moviles';
+import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../types';
 
 const ESTADO_COLOR: Record<string, string> = {
   PENDIENTE:  'bg-orange-100 text-orange-700 border-orange-200',
@@ -93,6 +93,7 @@ export default function SolicitudesCentralPage() {
   const [resumen, setResumen]       = useState<ResumenCentral | null>(null);
   const [historial, setHistorial]   = useState<Solicitud[]>([]);
   const [moviles, setMoviles]       = useState<Movil[]>([]);
+  const [filaBase, setFilaBase]     = useState<FilaBase[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
   const [showHistorial, setShowHistorial] = useState(false);
@@ -108,9 +109,10 @@ export default function SolicitudesCentralPage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const [r, m] = await Promise.all([getResumenCentral(), getMoviles()]);
+      const [r, m, f] = await Promise.all([getResumenCentral(), getMoviles(), getFilaBase()]);
       setResumen(r);
       setMoviles(m.filter(m => m.estado_operativo === 'DISPONIBLE'));
+      setFilaBase(f.sort((a, b) => a.posicion - b.posicion));
     } catch {
       setError('No se pudo cargar las solicitudes.');
     } finally { setLoading(false); }
@@ -228,7 +230,39 @@ export default function SolicitudesCentralPage() {
           <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando...
         </div>
       ) : resumen && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
+          {/* Fila virtual (base) */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="w-4 h-4 text-gray-500" />
+              <h2 className="text-sm font-bold text-gray-700">Fila Virtual (Base)</h2>
+              <span className="ml-auto bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                {filaBase.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {filaBase.length === 0
+                ? <p className="text-xs text-gray-400 text-center py-6">Sin moviles en base</p>
+                : filaBase.map(f => (
+                    <div key={f.id_fila} className="bg-white rounded-lg border border-gray-200 p-3 text-sm shadow-sm flex items-center gap-2">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-700 text-white text-xs font-bold flex items-center justify-center">
+                        {f.posicion}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-700 truncate">{f.patente}</p>
+                        <p className="text-xs text-gray-400 truncate">{f.socio_nombre}</p>
+                      </div>
+                      <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full border flex-shrink-0 ${
+                        f.estado === 'LLAMADO' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+                      }`}>
+                        {f.estado}
+                      </span>
+                    </div>
+                  ))
+              }
+            </div>
+          </div>
+
           {/* Pendientes */}
           <div>
             <div className="flex items-center gap-2 mb-3">

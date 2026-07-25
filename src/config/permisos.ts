@@ -29,13 +29,13 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/moviles',
     label: 'Móviles',
     icon: Car,
-    roles: ['Administrador', 'Central', 'Conductor'],
+    roles: ['Administrador', 'Central'],
   },
   {
     to: '/solicitudes',
     label: 'Solicitudes',
     icon: PhoneCall,
-    roles: ['Administrador', 'Central', 'Conductor'],
+    roles: ['Administrador', 'Central'],
   },
   {
     to: '/reportes',

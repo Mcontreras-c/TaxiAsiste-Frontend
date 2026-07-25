@@ -91,6 +91,8 @@ export interface Movil {
 export interface FilaBase {
   id_fila: number;
   movil: number;
+  patente: string;
+  socio_nombre: string;
   posicion: number;
   fecha_ingreso: string;
   fecha_llamado: string | null;
