@@ -1,8 +1,11 @@
 import apiClient from './client';
-import type { Movil } from '../types';
+import type { FilaBase, Movil } from '../types';
 
 export const getMoviles = () =>
   apiClient.get<Movil[]>('/moviles/').then(r => r.data);
+
+export const getFilaBase = () =>
+  apiClient.get<FilaBase[]>('/fila-base/').then(r => r.data);
 
 export const getMovil = (id: number) =>
   apiClient.get<Movil>(`/moviles/${id}/`).then(r => r.data);
