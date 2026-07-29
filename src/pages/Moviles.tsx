@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Car, Plus } from 'lucide-react';
+import {
+  Box, Typography, Chip, Button, Alert, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, IconButton,
+  Table, TableHead, TableRow, TableCell, TableBody, InputAdornment,
+} from '@mui/material';
+import { Car, Plus, X, Search } from 'lucide-react';
 import { getMoviles, createMovil } from '../api/moviles';
 import { getSocios } from '../api/socios';
 import type { Movil, Socio } from '../types';
-import {
-  Alert, Badge, Button, DataTable, LoadingState,
-  Modal, PageHeader, SearchInput, TableCell, TableRow,
-} from '../components/ui';
+import { colors } from '../theme';
 
-const ESTADO_COLOR: Record<string, string> = {
-  DISPONIBLE:  'bg-emerald-50 text-emerald-700',
-  EN_SERVICIO: 'bg-blue-50 text-blue-700',
-  BLOQUEADO:   'bg-red-50 text-red-600',
-  INACTIVO:    'bg-slate-100 text-slate-500',
+const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
+  DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
+  EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
+  BLOQUEADO:   { bg: '#fbe9e9', fg: '#c0392b' },
+  INACTIVO:    { bg: '#f1efe9', fg: '#6b6152' },
 };
 
 interface FormData {
@@ -25,6 +27,14 @@ interface FormData {
 }
 
 const EMPTY: FormData = { id_socio: '', patente: '', marca: '', modelo: '', anio: '', color: '' };
+
+const CAMPOS: { label: string; key: keyof FormData; placeholder: string }[] = [
+  { label: 'Patente *', key: 'patente', placeholder: 'ABCD12' },
+  { label: 'Marca',     key: 'marca',   placeholder: 'Toyota' },
+  { label: 'Modelo',    key: 'modelo',  placeholder: 'Corolla' },
+  { label: 'Año',       key: 'anio',    placeholder: '2020' },
+  { label: 'Color',     key: 'color',   placeholder: 'Blanco' },
+];
 
 export default function MovilesPage() {
   const [moviles, setMoviles]     = useState<Movil[]>([]);
@@ -92,109 +102,119 @@ export default function MovilesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        icon={Car}
-        title="Móviles"
-        count={moviles.length}
-        actions={
-          <Button onClick={openModal}>
-            <Plus className="w-4 h-4" /> Nuevo móvil
-          </Button>
-        }
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Car size={22} color="#3a3327" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Móviles</Typography>
+          <Chip label={moviles.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+        </Box>
+        <Button
+          variant="contained" startIcon={<Plus size={16} />} onClick={openModal}
+          sx={{
+            color: colors.ink,
+            background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+            boxShadow: '0 4px 10px rgba(245,166,35,.25)',
+            '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+          }}
+        >
+          Nuevo móvil
+        </Button>
+      </Box>
+
+      <TextField
+        size="small" placeholder="Buscar por patente, socio o marca..." value={search}
+        onChange={e => setSearch(e.target.value)}
+        sx={{ maxWidth: 360, bgcolor: 'background.paper', borderRadius: 2 }}
+        slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={16} color="#a89f8f" /></InputAdornment> } }}
       />
 
-      <SearchInput
-        value={search}
-        onChange={setSearch}
-        placeholder="Buscar por patente, socio o marca..."
-      />
-
-      {error && <Alert message={error} onRetry={load} />}
+      {error && <Alert severity="error">{error}</Alert>}
 
       {loading ? (
-        <LoadingState />
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}>
+          <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
+        </Box>
       ) : (
-        <DataTable
-          headers={['Patente', 'Socio', 'Vehículo', 'Año', 'Color', 'Estado', 'Registro']}
-          isEmpty={filtered.length === 0}
-          emptyMessage="No hay móviles registrados."
-        >
-          {filtered.map(m => (
-            <TableRow key={m.id_movil}>
-              <TableCell className="font-mono font-bold text-slate-800">{m.patente}</TableCell>
-              <TableCell className="text-slate-700">{m.socio_nombre}</TableCell>
-              <TableCell className="text-slate-500">{[m.marca, m.modelo].filter(Boolean).join(' ') || '—'}</TableCell>
-              <TableCell className="text-slate-500">{m.anio ?? '—'}</TableCell>
-              <TableCell className="text-slate-500">{m.color ?? '—'}</TableCell>
-              <TableCell>
-                <Badge className={ESTADO_COLOR[m.estado_operativo]}>
-                  {m.estado_operativo.replace('_', ' ')}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-slate-400">
-                {new Date(m.fecha_registro).toLocaleDateString('es-CL')}
-              </TableCell>
-            </TableRow>
-          ))}
-        </DataTable>
-      )}
-
-      {showModal && (
-        <Modal title="Nuevo móvil" onClose={() => setShowModal(false)}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Socio *</label>
-              <select
-                value={form.id_socio}
-                onChange={e => setForm(f => ({ ...f, id_socio: e.target.value }))}
-                className="input-field"
-              >
-                <option value="">Seleccionar socio...</option>
-                {socios.map(s => (
-                  <option key={s.id_socio} value={s.id_socio}>
-                    {s.nombre_completo} — {s.rut}
-                  </option>
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  {['Patente', 'Socio', 'Vehículo', 'Año', 'Color', 'Estado', 'Registro'].map(h => (
+                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: 'text.secondary', py: 5 }}>No hay móviles registrados.</TableCell></TableRow>
+                ) : filtered.map(m => (
+                  <TableRow key={m.id_movil} hover>
+                    <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{m.patente}</TableCell>
+                    <TableCell sx={{ fontSize: 13.5 }}>{m.socio_nombre}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{[m.marca, m.modelo].filter(Boolean).join(' ') || '—'}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.anio ?? '—'}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.color ?? '—'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={m.estado_operativo.replace('_', ' ')} size="small"
+                        sx={{ bgcolor: ESTADO_STYLE[m.estado_operativo]?.bg, color: ESTADO_STYLE[m.estado_operativo]?.fg, fontWeight: 700, fontSize: 10.5 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 12, color: '#a89f8f' }}>
+                      {new Date(m.fecha_registro).toLocaleDateString('es-CL')}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </select>
-            </div>
-
-            {[
-              { label: 'Patente *', key: 'patente', placeholder: 'ABCD12' },
-              { label: 'Marca',     key: 'marca',   placeholder: 'Toyota' },
-              { label: 'Modelo',    key: 'modelo',  placeholder: 'Corolla' },
-              { label: 'Año',       key: 'anio',    placeholder: '2020' },
-              { label: 'Color',     key: 'color',   placeholder: 'Blanco' },
-            ].map(({ label, key, placeholder }) => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
-                <input
-                  type="text"
-                  placeholder={placeholder}
-                  value={form[key as keyof FormData]}
-                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                  className="input-field"
-                />
-              </div>
-            ))}
-
-            {formError && (
-              <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-                {formError}
-              </p>
-            )}
-
-            <div className="flex gap-3 pt-2">
-              <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowModal(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={saving} className="flex-1">
-                {saving ? 'Guardando...' : 'Guardar'}
-              </Button>
-            </div>
-          </form>
-        </Modal>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
       )}
-    </div>
+
+      <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
+          Nuevo móvil
+          <IconButton size="small" onClick={() => setShowModal(false)}><X size={18} /></IconButton>
+        </DialogTitle>
+        <Box component="form" onSubmit={handleSubmit}>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0 }}>
+            <TextField
+              fullWidth select size="small" label="Socio *" value={form.id_socio}
+              onChange={e => setForm(f => ({ ...f, id_socio: e.target.value }))}
+            >
+              <MenuItem value="">Seleccionar socio...</MenuItem>
+              {socios.map(s => (
+                <MenuItem key={s.id_socio} value={s.id_socio}>{s.nombre_completo} — {s.rut}</MenuItem>
+              ))}
+            </TextField>
+
+            {CAMPOS.map(({ label, key, placeholder }) => (
+              <TextField
+                key={key} fullWidth size="small" label={label} placeholder={placeholder}
+                value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+              />
+            ))}
+            {formError && <Alert severity="error">{formError}</Alert>}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 1, gap: 1 }}>
+            <Button fullWidth variant="outlined" onClick={() => setShowModal(false)} sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+              Cancelar
+            </Button>
+            <Button
+              fullWidth type="submit" variant="contained" disabled={saving}
+              sx={{
+                color: colors.ink,
+                background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+                '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+              }}
+            >
+              {saving ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+    </Box>
   );
 }

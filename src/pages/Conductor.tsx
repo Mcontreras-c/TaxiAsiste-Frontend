@@ -1,27 +1,37 @@
 import { useEffect, useState } from 'react';
-import { Car, RefreshCw, AlertCircle, CheckCircle, XCircle, Clock, PhoneCall } from 'lucide-react';
+import {
+  Box, Typography, Chip, IconButton, Alert, CircularProgress, Card, CardContent,
+  Table, TableHead, TableRow, TableCell, TableBody,
+} from '@mui/material';
+import { Car, RefreshCw, CheckCircle, XCircle, Clock, PhoneCall } from 'lucide-react';
 import { getPerfilConductor, type PerfilConductor } from '../api/conductor';
+import { colors } from '../theme';
 
-const ESTADO_COLOR: Record<string, string> = {
-  PENDIENTE:  'bg-orange-100 text-orange-700',
-  ASIGNADO:   'bg-blue-100 text-blue-700',
-  EN_CURSO:   'bg-purple-100 text-purple-700',
-  COMPLETADO: 'bg-green-100 text-green-700',
-  CANCELADO:  'bg-gray-100 text-gray-500',
+const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
+  PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
+  ASIGNADO:   { bg: '#e8ecf9', fg: '#3355a8' },
+  EN_CURSO:   { bg: '#f3e8fd', fg: '#7e22ce' },
+  COMPLETADO: { bg: '#e4f3ec', fg: '#2f7d5b' },
+  CANCELADO:  { bg: '#f1efe9', fg: '#8a8071' },
 };
 
-const CUOTA_COLOR: Record<string, string> = {
-  PAGADO:    'bg-green-100 text-green-700',
-  PENDIENTE: 'bg-yellow-100 text-yellow-700',
-  VENCIDO:   'bg-red-100 text-red-600',
-  EXENTO:    'bg-gray-100 text-gray-500',
+const CUOTA_STYLE: Record<string, { bg: string; fg: string }> = {
+  PAGADO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
+  PENDIENTE: { bg: '#fdf1dc', fg: colors.accent700 },
+  VENCIDO:   { bg: '#fbe9e9', fg: '#c0392b' },
+  EXENTO:    { bg: '#f1efe9', fg: '#6b6152' },
 };
 
 const CUOTA_ICON: Record<string, React.ReactNode> = {
-  PAGADO:    <CheckCircle className="w-4 h-4 text-green-600" />,
-  PENDIENTE: <Clock className="w-4 h-4 text-yellow-600" />,
-  VENCIDO:   <XCircle className="w-4 h-4 text-red-500" />,
-  EXENTO:    <CheckCircle className="w-4 h-4 text-gray-400" />,
+  PAGADO:    <CheckCircle size={15} color="#2f7d5b" />,
+  PENDIENTE: <Clock size={15} color={colors.accent700} />,
+  VENCIDO:   <XCircle size={15} color="#c0392b" />,
+  EXENTO:    <CheckCircle size={15} color="#a89f8f" />,
+};
+
+const MOVIL_ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
+  DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
+  EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
 };
 
 export default function ConductorPage() {
@@ -42,188 +52,168 @@ export default function ConductorPage() {
 
   useEffect(() => { load(); }, []);
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 text-gray-400">
-      <RefreshCw className="w-6 h-6 animate-spin mr-2" /> Cargando...
-    </div>
-  );
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 10, color: 'text.secondary' }}>
+        <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
+      </Box>
+    );
+  }
 
-  if (error || !perfil) return (
-    <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-600 flex items-center gap-3">
-      <AlertCircle className="w-5 h-5" /> {error}
-    </div>
-  );
+  if (error || !perfil) {
+    return <Alert severity="error">{error}</Alert>;
+  }
 
   const { socio, movil, solicitudes_hoy, cuotas, fecha } = perfil;
   const moroso = cuotas.some(c => c.estado_pago === 'VENCIDO');
   const completadas = solicitudes_hoy.filter(s => s.estado === 'COMPLETADO').length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Hola, {socio.nombre} 👋
-          </h1>
-          <p className="text-sm text-gray-400">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box>
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Hola, {socio.nombre} 👋</Typography>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', textTransform: 'capitalize' }}>
             {new Date(fecha).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
-        <button onClick={load} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
-          <RefreshCw className="w-4 h-4" /> Actualizar
-        </button>
-      </div>
+          </Typography>
+        </Box>
+        <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+      </Box>
 
-      {/* Alerta moroso */}
       {moroso && (
-        <div className="bg-red-50 border border-red-300 rounded-xl p-4 flex items-center gap-3 text-red-700">
-          <XCircle className="w-5 h-5 flex-shrink-0" />
-          <div>
-            <p className="font-semibold">Tienes cuotas vencidas</p>
-            <p className="text-sm">Contáctate con el tesorero para regularizar tu situación.</p>
-          </div>
-        </div>
+        <Alert severity="error" icon={<XCircle size={18} />}>
+          <strong>Tienes cuotas vencidas.</strong> Contáctate con el tesorero para regularizar tu situación.
+        </Alert>
       )}
 
-      {/* Tarjetas info */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Móvil */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Car className="w-5 h-5 text-yellow-600" />
-            </div>
-            <h2 className="font-semibold text-gray-700">Mi móvil</h2>
-          </div>
-          {movil ? (
-            <div className="space-y-1 text-sm">
-              <p className="text-2xl font-bold text-gray-800 font-mono">{movil.patente}</p>
-              <p className="text-gray-500">{[movil.marca, movil.modelo].filter(Boolean).join(' ')} {movil.anio ?? ''}</p>
-              <p className="text-gray-400">{movil.color ?? ''}</p>
-              <span className={`inline-block text-xs font-semibold px-2 py-1 rounded-full mt-1 ${
-                movil.estado_operativo === 'DISPONIBLE' ? 'bg-green-100 text-green-700' :
-                movil.estado_operativo === 'EN_SERVICIO' ? 'bg-blue-100 text-blue-700' :
-                'bg-red-100 text-red-600'
-              }`}>
-                {movil.estado_operativo.replace('_', ' ')}
-              </span>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">No tienes un móvil asignado.</p>
-          )}
-        </div>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 2 }}>
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{
+                p: 1.25, borderRadius: 2.5, display: 'flex',
+                background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`, color: colors.ink,
+              }}>
+                <Car size={18} />
+              </Box>
+              <Typography sx={{ fontWeight: 700 }}>Mi móvil</Typography>
+            </Box>
+            {movil ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{movil.patente}</Typography>
+                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{[movil.marca, movil.modelo].filter(Boolean).join(' ')} {movil.anio ?? ''}</Typography>
+                <Typography sx={{ fontSize: 12, color: '#a89f8f' }}>{movil.color ?? ''}</Typography>
+                <Chip
+                  label={movil.estado_operativo.replace('_', ' ')} size="small"
+                  sx={{
+                    mt: 0.5, alignSelf: 'flex-start', fontWeight: 700, fontSize: 10.5,
+                    bgcolor: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.bg ?? '#fbe9e9',
+                    color: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.fg ?? '#c0392b',
+                  }}
+                />
+              </Box>
+            ) : (
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>No tienes un móvil asignado.</Typography>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Resumen del día */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <PhoneCall className="w-5 h-5 text-purple-600" />
-            </div>
-            <h2 className="font-semibold text-gray-700">Resumen de hoy</h2>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Total carreras</span>
-              <span className="font-bold text-gray-800">{solicitudes_hoy.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Completadas</span>
-              <span className="font-bold text-green-600">{completadas}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">En curso</span>
-              <span className="font-bold text-purple-600">
-                {solicitudes_hoy.filter(s => s.estado === 'EN_CURSO').length}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Canceladas</span>
-              <span className="font-bold text-gray-400">
-                {solicitudes_hoy.filter(s => s.estado === 'CANCELADO').length}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box sx={{ p: 1.25, borderRadius: 2.5, bgcolor: '#f3e8fd', color: '#7e22ce', display: 'flex' }}>
+                <PhoneCall size={18} />
+              </Box>
+              <Typography sx={{ fontWeight: 700 }}>Resumen de hoy</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {[
+                { label: 'Total carreras', value: solicitudes_hoy.length, color: 'text.primary' },
+                { label: 'Completadas', value: completadas, color: '#2f7d5b' },
+                { label: 'En curso', value: solicitudes_hoy.filter(s => s.estado === 'EN_CURSO').length, color: '#7e22ce' },
+                { label: 'Canceladas', value: solicitudes_hoy.filter(s => s.estado === 'CANCELADO').length, color: '#a89f8f' },
+              ].map(row => (
+                <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
+                  <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>{row.label}</Typography>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: row.color, fontFamily: 'Roboto Mono, monospace' }}>{row.value}</Typography>
+                </Box>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
 
-      {/* Solicitudes del día */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-700">Mis carreras de hoy</h2>
-          <span className="text-xs text-gray-400">{solicitudes_hoy.length} carreras</span>
-        </div>
+      <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ px: 2.5, py: 1.75, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>Mis carreras de hoy</Typography>
+          <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>{solicitudes_hoy.length} carreras</Typography>
+        </Box>
         {solicitudes_hoy.length === 0 ? (
-          <div className="py-12 text-center text-gray-400 text-sm">Sin carreras asignadas hoy.</div>
+          <Typography sx={{ textAlign: 'center', color: 'text.secondary', py: 5, fontSize: 13 }}>Sin carreras asignadas hoy.</Typography>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['Folio', 'Origen → Destino', 'Estado', 'Hora'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  {['Folio', 'Origen → Destino', 'Estado', 'Hora'].map(h => (
+                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {solicitudes_hoy.map(s => (
+                  <TableRow key={s.id_solicitud} hover>
+                    <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 12, color: 'text.secondary' }}>{s.folio}</TableCell>
+                    <TableCell sx={{ fontSize: 13 }}>{s.origen} <Box component="span" sx={{ color: '#a89f8f', mx: 0.5 }}>→</Box> {s.destino}</TableCell>
+                    <TableCell>
+                      <Chip label={s.estado} size="small" sx={{ bgcolor: ESTADO_STYLE[s.estado]?.bg, color: ESTADO_STYLE[s.estado]?.fg, fontWeight: 700, fontSize: 10.5 }} />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 12, color: '#a89f8f' }}>
+                      {new Date(s.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {solicitudes_hoy.map(s => (
-                <tr key={s.id_solicitud} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{s.folio}</td>
-                  <td className="px-4 py-3 text-gray-700">
-                    <span className="truncate">{s.origen}</span>
-                    <span className="text-gray-400 mx-1">→</span>
-                    <span className="truncate">{s.destino}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${ESTADO_COLOR[s.estado]}`}>
-                      {s.estado}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">
-                    {new Date(s.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </TableBody>
+            </Table>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      {/* Cuotas */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-700">Mis cuotas</h2>
-        </div>
+      <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ px: 2.5, py: 1.75, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>Mis cuotas</Typography>
+        </Box>
         {cuotas.length === 0 ? (
-          <div className="py-12 text-center text-gray-400 text-sm">Sin cuotas registradas.</div>
+          <Typography sx={{ textAlign: 'center', color: 'text.secondary', py: 5, fontSize: 13 }}>Sin cuotas registradas.</Typography>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['Período', 'Monto', 'Vencimiento', 'Estado'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  {['Período', 'Monto', 'Vencimiento', 'Estado'].map(h => (
+                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {cuotas.map(c => (
+                  <TableRow key={c.id_cuota} hover>
+                    <TableCell sx={{ fontSize: 13 }}>{c.periodo}</TableCell>
+                    <TableCell sx={{ fontSize: 13, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>${Number(c.monto).toLocaleString('es-CL')}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{new Date(c.fecha_vencimiento).toLocaleDateString('es-CL')}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        {CUOTA_ICON[c.estado_pago]}
+                        <Chip label={c.estado_pago} size="small" sx={{ bgcolor: CUOTA_STYLE[c.estado_pago]?.bg, color: CUOTA_STYLE[c.estado_pago]?.fg, fontWeight: 700, fontSize: 10.5 }} />
+                      </Box>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {cuotas.map(c => (
-                <tr key={c.id_cuota} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-700">{c.periodo}</td>
-                  <td className="px-4 py-3 font-semibold text-gray-800">${Number(c.monto).toLocaleString('es-CL')}</td>
-                  <td className="px-4 py-3 text-gray-500">{new Date(c.fecha_vencimiento).toLocaleDateString('es-CL')}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      {CUOTA_ICON[c.estado_pago]}
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${CUOTA_COLOR[c.estado_pago]}`}>
-                        {c.estado_pago}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </TableBody>
+            </Table>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

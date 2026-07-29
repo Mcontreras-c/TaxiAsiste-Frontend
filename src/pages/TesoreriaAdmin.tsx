@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, RefreshCw, AlertCircle, TrendingUp, TrendingDown, Wallet, Info } from 'lucide-react';
+import {
+  Box, Typography, Chip, IconButton, Alert, CircularProgress, Card, CardContent,
+  Table, TableHead, TableRow, TableCell, TableBody,
+} from '@mui/material';
+import { DollarSign, RefreshCw, TrendingUp, TrendingDown, Wallet, Info } from 'lucide-react';
 import { getMovimientos, getBalance, type TesoreriaMovimiento, type Balance } from '../api/tesoreria';
 
-const TIPO_COLOR = {
-  INGRESO: 'bg-green-100 text-green-700',
-  EGRESO:  'bg-red-100 text-red-600',
+const TIPO_STYLE = {
+  INGRESO: { bg: '#e4f3ec', fg: '#2f7d5b' },
+  EGRESO:  { bg: '#fbe9e9', fg: '#c0392b' },
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -13,6 +17,22 @@ const CATEGORIA_LABEL: Record<string, string> = {
   GASTO_OPERACIONAL: 'Gasto Operacional',
   OTRO:              'Otro',
 };
+
+function ResumenCard({
+  icon, tone, label, value,
+}: { icon: React.ReactNode; tone: { bg: string; fg: string }; label: string; value: string }) {
+  return (
+    <Card sx={{ borderRadius: 4 }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ p: 1.5, borderRadius: 2.5, bgcolor: tone.bg, color: tone.fg, display: 'flex' }}>{icon}</Box>
+        <Box>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{label}</Typography>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, color: tone.fg, fontFamily: 'Roboto Mono, monospace' }}>{value}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function TesoreriaAdmin() {
   const [movimientos, setMovimientos] = useState<TesoreriaMovimiento[]>([]);
@@ -34,121 +54,75 @@ export default function TesoreriaAdmin() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <DollarSign className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-800">Tesorería</h1>
-          <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
-            Solo consulta
-          </span>
-        </div>
-        <button onClick={load} className="p-2 text-gray-500 hover:text-gray-700 transition">
-          <RefreshCw className="w-4 h-4" />
-        </button>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <DollarSign size={22} color="#3a3327" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Tesorería</Typography>
+          <Chip label="Solo consulta" size="small" sx={{ bgcolor: '#e8ecf9', color: '#3355a8', fontWeight: 700 }} />
+        </Box>
+        <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+      </Box>
 
-      {/* Aviso */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-        <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-        <p className="text-sm text-blue-700">
-          Estás viendo la tesorería en modo <strong>solo lectura</strong>.
-          Para registrar ingresos, egresos o pagos de cuotas, coordina con el <strong>Tesorero</strong>.
-        </p>
-      </div>
+      <Alert severity="info" icon={<Info size={18} />}>
+        Estás viendo la tesorería en modo <strong>solo lectura</strong>. Para registrar ingresos, egresos
+        o pagos de cuotas, coordina con el <strong>Tesorero</strong>.
+      </Alert>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5" /> {error}
-          <button onClick={load} className="ml-auto underline flex items-center gap-1">
-            <RefreshCw className="w-3 h-3" /> Reintentar
-          </button>
-        </div>
-      )}
+      {error && <Alert severity="error" onClose={load}>{error}</Alert>}
 
-      {/* Balance */}
       {balance && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Ingresos</p>
-              <p className="text-xl font-bold text-green-600">${balance.ingresos.toLocaleString('es-CL')}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
-            <div className="p-3 bg-red-100 rounded-lg">
-              <TrendingDown className="w-5 h-5 text-red-500" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Egresos</p>
-              <p className="text-xl font-bold text-red-500">${balance.egresos.toLocaleString('es-CL')}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
-            <div className={`p-3 rounded-lg ${balance.balance >= 0 ? 'bg-blue-100' : 'bg-orange-100'}`}>
-              <Wallet className={`w-5 h-5 ${balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}`} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Balance</p>
-              <p className={`text-xl font-bold ${balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}`}>
-                ${balance.balance.toLocaleString('es-CL')}
-              </p>
-            </div>
-          </div>
-        </div>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>
+          <ResumenCard icon={<TrendingUp size={19} />} tone={{ bg: '#e4f3ec', fg: '#2f7d5b' }} label="Ingresos" value={`$${balance.ingresos.toLocaleString('es-CL')}`} />
+          <ResumenCard icon={<TrendingDown size={19} />} tone={{ bg: '#fbe9e9', fg: '#c0392b' }} label="Egresos" value={`$${balance.egresos.toLocaleString('es-CL')}`} />
+          <ResumenCard
+            icon={<Wallet size={19} />}
+            tone={balance.balance >= 0 ? { bg: '#e8ecf9', fg: '#3355a8' } : { bg: '#fdece2', fg: '#c2410c' }}
+            label="Balance" value={`$${balance.balance.toLocaleString('es-CL')}`}
+          />
+        </Box>
       )}
 
-      {/* Historial */}
       {loading ? (
-        <div className="flex justify-center py-16 text-gray-400">
-          <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando...
-        </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}>
+          <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
+        </Box>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-600">Historial de movimientos</h2>
-          </div>
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Registrado por', 'Monto'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ px: 2.5, py: 1.75, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>Historial de movimientos</Typography>
+          </Box>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  {['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Registrado por', 'Monto'].map(h => (
+                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {movimientos.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} sx={{ textAlign: 'center', color: 'text.secondary', py: 5 }}>No hay movimientos registrados.</TableCell></TableRow>
+                ) : movimientos.map(m => (
+                  <TableRow key={m.id_movimiento} hover>
+                    <TableCell sx={{ fontSize: 12, color: 'text.secondary' }}>{new Date(m.fecha).toLocaleDateString('es-CL')}</TableCell>
+                    <TableCell>
+                      <Chip label={m.tipo} size="small" sx={{ bgcolor: TIPO_STYLE[m.tipo].bg, color: TIPO_STYLE[m.tipo].fg, fontWeight: 700, fontSize: 10.5 }} />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{CATEGORIA_LABEL[m.categoria]}</TableCell>
+                    <TableCell sx={{ fontSize: 13 }}>{m.descripcion}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.usuario_nombre ?? '—'}</TableCell>
+                    <TableCell sx={{ fontSize: 13, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: m.tipo === 'INGRESO' ? '#2f7d5b' : '#c0392b' }}>
+                      {m.tipo === 'EGRESO' ? '-' : '+'}${Number(m.monto).toLocaleString('es-CL')}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {movimientos.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-400">
-                    No hay movimientos registrados.
-                  </td>
-                </tr>
-              ) : movimientos.map(m => (
-                <tr key={m.id_movimiento} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {new Date(m.fecha).toLocaleDateString('es-CL')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${TIPO_COLOR[m.tipo]}`}>
-                      {m.tipo}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{CATEGORIA_LABEL[m.categoria]}</td>
-                  <td className="px-4 py-3 text-gray-700">{m.descripcion}</td>
-                  <td className="px-4 py-3 text-gray-500">{m.usuario_nombre ?? '—'}</td>
-                  <td className={`px-4 py-3 font-semibold ${m.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-500'}`}>
-                    {m.tipo === 'EGRESO' ? '-' : '+'}${Number(m.monto).toLocaleString('es-CL')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

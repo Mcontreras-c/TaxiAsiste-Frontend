@@ -1,7 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  PhoneCall, Plus, RefreshCw, AlertCircle, X, ChevronRight,
-  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin,
+  Box, Typography, Chip, IconButton, Button, Alert, CircularProgress,
+  Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, MenuItem, Table, TableHead, TableRow, TableCell, TableBody,
+  Avatar,
+} from '@mui/material';
+import {
+  PhoneCall, Plus, RefreshCw, X, ChevronRight,
+  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Maximize2, Navigation,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
@@ -9,13 +15,14 @@ import {
 } from '../api/solicitudes';
 import { getMoviles, getFilaBase } from '../api/moviles';
 import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../types';
+import { colors } from '../theme';
 
-const ESTADO_COLOR: Record<string, string> = {
-  PENDIENTE:  'bg-orange-100 text-orange-700 border-orange-200',
-  ASIGNADO:   'bg-blue-100 text-blue-700 border-blue-200',
-  EN_CURSO:   'bg-purple-100 text-purple-700 border-purple-200',
-  COMPLETADO: 'bg-green-100 text-green-700 border-green-200',
-  CANCELADO:  'bg-gray-100 text-gray-500 border-gray-200',
+const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
+  PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
+  ASIGNADO:   { bg: '#e8ecf9', fg: '#3355a8' },
+  EN_CURSO:   { bg: '#f3e8fd', fg: '#7e22ce' },
+  COMPLETADO: { bg: '#e4f3ec', fg: '#2f7d5b' },
+  CANCELADO:  { bg: '#f1efe9', fg: '#8a8071' },
 };
 
 const CANALES = ['TELEFONO', 'APP', 'PRESENCIAL'] as const;
@@ -40,52 +47,144 @@ interface AccionModal {
   tipo: 'cambiar' | 'cancelar' | 'sin_contacto';
 }
 
+function EstadoChip({ estado }: { estado: string }) {
+  const s = ESTADO_STYLE[estado] ?? ESTADO_STYLE.CANCELADO;
+  return (
+    <Chip
+      label={estado}
+      size="small"
+      sx={{ bgcolor: s.bg, color: s.fg, fontWeight: 700, fontSize: 10.5 }}
+    />
+  );
+}
+
+function ColumnHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count: React.ReactNode }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+      {icon}
+      <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>{title}</Typography>
+      <Box sx={{ ml: 'auto' }}>{count}</Box>
+    </Box>
+  );
+}
+
+function EmptyHint({ text }: { text: string }) {
+  return (
+    <Typography sx={{ fontSize: 12, color: 'text.secondary', textAlign: 'center', py: 3 }}>
+      {text}
+    </Typography>
+  );
+}
+
+const MAPA_PINES = [
+  { top: '28%', left: '22%' }, { top: '52%', left: '38%' }, { top: '20%', left: '58%' },
+  { top: '68%', left: '64%' }, { top: '40%', left: '78%' }, { top: '74%', left: '30%' },
+];
+
+function MapaPreview({ pendientes, enCurso }: { pendientes: number; enCurso: number }) {
+  const total = pendientes + enCurso;
+  return (
+    <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
+      <Box
+        sx={{
+          position: 'relative', height: 210,
+          background: `
+            radial-gradient(circle at 20% 30%, rgba(245,166,35,.10), transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(51,85,168,.10), transparent 40%),
+            linear-gradient(#faf7f0, #f3efe4)
+          `,
+          backgroundSize: '18px 18px, 18px 18px, 100% 100%',
+          backgroundImage:
+            'linear-gradient(rgba(20,17,11,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(20,17,11,.05) 1px, transparent 1px)',
+        }}
+      >
+        <Box sx={{ position: 'absolute', top: 12, left: 14, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Navigation size={13} color="#6b6152" />
+          <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary' }}>Santiago Centro</Typography>
+        </Box>
+        <IconButton size="small" disabled sx={{ position: 'absolute', top: 8, right: 8, bgcolor: '#fff', boxShadow: 1, '&.Mui-disabled': { bgcolor: '#fff' } }}>
+          <Maximize2 size={13} />
+        </IconButton>
+
+        {MAPA_PINES.slice(0, Math.max(total, 2)).map((p, i) => {
+          const esPendiente = i < pendientes;
+          return (
+            <Box
+              key={i}
+              sx={{
+                position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%,-100%)',
+                color: esPendiente ? '#c2410c' : '#3355a8', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,.18))',
+              }}
+            >
+              <MapPin size={24} fill={esPendiente ? '#fdece2' : '#e8ecf9'} strokeWidth={2} />
+            </Box>
+          );
+        })}
+
+        <Chip
+          label="Mapa en vivo — próximamente"
+          size="small"
+          sx={{
+            position: 'absolute', bottom: 12, left: 14,
+            bgcolor: 'rgba(255,255,255,.9)', fontWeight: 600, fontSize: 11, color: 'text.secondary',
+          }}
+        />
+      </Box>
+    </Card>
+  );
+}
+
 function SolicitudCard({
   sol, onAccion,
 }: { sol: Solicitud; onAccion: (a: AccionModal) => void }) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-3 text-sm shadow-sm space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-xs text-gray-400">{sol.folio}</span>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${ESTADO_COLOR[sol.estado]}`}>
-          {sol.estado}
-        </span>
-      </div>
-      <div className="flex items-center gap-1 text-gray-700 font-medium">
-        <span className="truncate">{sol.origen}</span>
-        <ChevronRight className="w-3 h-3 flex-shrink-0 text-gray-400" />
-        <span className="truncate">{sol.destino}</span>
-      </div>
-      {sol.movil_patente && (
-        <p className="text-xs text-gray-500">Móvil: <strong>{sol.movil_patente}</strong></p>
-      )}
-      {sol.pasajero_nombre && (
-        <p className="text-xs text-gray-500">Pasajero: {sol.pasajero_nombre}</p>
-      )}
-      <p className="text-xs text-gray-400">
-        {new Date(sol.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
-      </p>
-      <div className="flex gap-1 pt-1">
-        {sol.estado !== 'COMPLETADO' && sol.estado !== 'CANCELADO' && (
-          <>
-            <button onClick={() => onAccion({ solicitud: sol, tipo: 'cambiar' })}
-              className="flex-1 text-xs bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold py-1 rounded transition">
-              Avanzar
-            </button>
-            <button onClick={() => onAccion({ solicitud: sol, tipo: 'sin_contacto' })}
-              title="Sin contacto"
-              className="p-1 text-orange-500 hover:bg-orange-50 rounded transition">
-              <PhoneMissed className="w-4 h-4" />
-            </button>
-            <button onClick={() => onAccion({ solicitud: sol, tipo: 'cancelar' })}
-              title="Cancelar"
-              className="p-1 text-red-500 hover:bg-red-50 rounded transition">
-              <XCircle className="w-4 h-4" />
-            </button>
-          </>
+    <Card sx={{ borderRadius: 3 }}>
+      <CardContent sx={{ p: '12px !important', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 11, color: 'text.secondary' }}>
+            {sol.folio}
+          </Typography>
+          <EstadoChip estado={sol.estado} />
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 600, color: 'text.primary', fontSize: 13.5 }}>
+          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sol.origen}</Box>
+          <ChevronRight size={13} color="#9c9284" style={{ flexShrink: 0 }} />
+          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sol.destino}</Box>
+        </Box>
+        {sol.movil_patente && (
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+            Móvil: <strong>{sol.movil_patente}</strong>
+          </Typography>
         )}
-      </div>
-    </div>
+        {sol.pasajero_nombre && (
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Pasajero: {sol.pasajero_nombre}</Typography>
+        )}
+        <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>
+          {new Date(sol.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+        </Typography>
+        {sol.estado !== 'COMPLETADO' && sol.estado !== 'CANCELADO' && (
+          <Box sx={{ display: 'flex', gap: 0.5, pt: 0.5 }}>
+            <Button
+              size="small"
+              onClick={() => onAccion({ solicitud: sol, tipo: 'cambiar' })}
+              sx={{
+                flex: 1, fontSize: 11, py: 0.5, color: colors.ink,
+                background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+                '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+              }}
+            >
+              Avanzar
+            </Button>
+            <IconButton size="small" title="Sin contacto" onClick={() => onAccion({ solicitud: sol, tipo: 'sin_contacto' })} sx={{ color: '#c2410c' }}>
+              <PhoneMissed size={16} />
+            </IconButton>
+            <IconButton size="small" title="Cancelar" onClick={() => onAccion({ solicitud: sol, tipo: 'cancelar' })} sx={{ color: '#c0392b' }}>
+              <XCircle size={16} />
+            </IconButton>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -191,337 +290,325 @@ export default function SolicitudesCentralPage() {
     PENDIENTE: 'ASIGNADO', ASIGNADO: 'EN_CURSO', EN_CURSO: 'COMPLETADO',
   };
 
-  return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <PhoneCall className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-800">Solicitudes</h1>
-          {resumen && (
-            <span className="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-              {resumen.pendientes.length + resumen.en_curso.length} activas
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <button onClick={load} className="p-2 text-gray-500 hover:text-gray-700 transition">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <button onClick={() => loadHistorial()}
-            className="flex items-center gap-2 border border-gray-300 text-gray-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-50 transition">
-            <History className="w-4 h-4" /> Historial
-          </button>
-          <button onClick={() => { setShowForm(true); setForm(EMPTY_FORM); setPasajeroEncontrado(null); setFormError(null); }}
-            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold text-sm px-4 py-2 rounded-lg transition">
-            <Plus className="w-4 h-4" /> Nueva solicitud
-          </button>
-        </div>
-      </div>
+  const countPill = (n: number, bg: string, fg: string) => (
+    <Chip label={n} size="small" sx={{ bgcolor: bg, color: fg, fontWeight: 700, height: 20, fontSize: 11 }} />
+  );
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5" /> {error}
-        </div>
-      )}
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <PhoneCall size={22} color="#3a3327" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Solicitudes</Typography>
+          {resumen && countPill(resumen.pendientes.length + resumen.en_curso.length, '#f1efe9', '#6b6152')}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <IconButton onClick={load} sx={{ color: 'text.secondary' }}>
+            <RefreshCw size={16} />
+          </IconButton>
+          <Button
+            variant="outlined"
+            startIcon={<History size={15} />}
+            onClick={() => loadHistorial()}
+            sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}
+          >
+            Historial
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={16} />}
+            onClick={() => { setShowForm(true); setForm(EMPTY_FORM); setPasajeroEncontrado(null); setFormError(null); }}
+            sx={{
+              color: colors.ink,
+              background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+              boxShadow: '0 4px 10px rgba(245,166,35,.25)',
+              '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+            }}
+          >
+            Nueva solicitud
+          </Button>
+        </Box>
+      </Box>
+
+      {error && <Alert severity="error">{error}</Alert>}
 
       {loading ? (
-        <div className="flex justify-center py-16 text-gray-400">
-          <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando...
-        </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}>
+          <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
+        </Box>
       ) : resumen && (
-        <div className="grid grid-cols-4 gap-4">
+        <>
+        <MapaPreview pendientes={resumen.pendientes.length} enCurso={resumen.en_curso.length} />
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }, gap: 2 }}>
           {/* Fila virtual (base) */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <MapPin className="w-4 h-4 text-gray-500" />
-              <h2 className="text-sm font-bold text-gray-700">Fila Virtual (Base)</h2>
-              <span className="ml-auto bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-                {filaBase.length}
-              </span>
-            </div>
-            <div className="space-y-2">
+          <Box>
+            <ColumnHeader
+              icon={<MapPin size={15} color="#6b6152" />}
+              title="Fila Virtual (Base)"
+              count={countPill(filaBase.length, '#f1efe9', '#6b6152')}
+            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {filaBase.length === 0
-                ? <p className="text-xs text-gray-400 text-center py-6">Sin moviles en base</p>
+                ? <EmptyHint text="Sin moviles en base" />
                 : filaBase.map(f => (
-                    <div key={f.id_fila} className="bg-white rounded-lg border border-gray-200 p-3 text-sm shadow-sm flex items-center gap-2">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-700 text-white text-xs font-bold flex items-center justify-center">
-                        {f.posicion}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-700 truncate">{f.patente}</p>
-                        <p className="text-xs text-gray-400 truncate">{f.socio_nombre}</p>
-                      </div>
-                      <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full border flex-shrink-0 ${
-                        f.estado === 'LLAMADO' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'
-                      }`}>
-                        {f.estado}
-                      </span>
-                    </div>
+                    <Card key={f.id_fila} sx={{ borderRadius: 3 }}>
+                      <CardContent sx={{ p: '10px 12px !important', display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                        <Avatar sx={{
+                          width: 24, height: 24, fontSize: 11.5, fontWeight: 700, color: colors.ink,
+                          background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
+                        }}>
+                          {f.posicion}
+                        </Avatar>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: 13, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {f.patente}
+                          </Typography>
+                          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {f.socio_nombre}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={f.estado}
+                          size="small"
+                          sx={{
+                            ml: 'auto', fontSize: 10, fontWeight: 700,
+                            bgcolor: f.estado === 'LLAMADO' ? '#e8ecf9' : '#f1efe9',
+                            color: f.estado === 'LLAMADO' ? '#3355a8' : '#6b6152',
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
                   ))
               }
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Pendientes */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-4 h-4 text-orange-500" />
-              <h2 className="text-sm font-bold text-gray-700">Pendientes</h2>
-              <span className="ml-auto bg-orange-100 text-orange-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                {resumen.pendientes.length}
-              </span>
-            </div>
-            <div className="space-y-2">
+          <Box>
+            <ColumnHeader
+              icon={<Clock size={15} color="#c2410c" />}
+              title="Pendientes"
+              count={countPill(resumen.pendientes.length, '#fdece2', '#c2410c')}
+            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {resumen.pendientes.length === 0
-                ? <p className="text-xs text-gray-400 text-center py-6">Sin pendientes</p>
+                ? <EmptyHint text="Sin pendientes" />
                 : resumen.pendientes.slice(0, 4).map(s => (
                     <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
                   ))
               }
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* En curso */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Car className="w-4 h-4 text-blue-500" />
-              <h2 className="text-sm font-bold text-gray-700">En curso</h2>
-              <span className="ml-auto bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                {resumen.en_curso.length}
-              </span>
-            </div>
-            <div className="space-y-2">
+          <Box>
+            <ColumnHeader
+              icon={<Car size={15} color="#3355a8" />}
+              title="En curso"
+              count={countPill(resumen.en_curso.length, '#e8ecf9', '#3355a8')}
+            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {resumen.en_curso.length === 0
-                ? <p className="text-xs text-gray-400 text-center py-6">Sin viajes en curso</p>
+                ? <EmptyHint text="Sin viajes en curso" />
                 : resumen.en_curso.slice(0, 4).map(s => (
                     <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
                   ))
               }
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Finalizadas recientes */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <h2 className="text-sm font-bold text-gray-700">Recientes</h2>
-              <button onClick={() => loadHistorial()}
-                className="ml-auto text-xs text-blue-500 hover:underline">
-                ver todo
-              </button>
-            </div>
-            <div className="space-y-2">
+          <Box>
+            <ColumnHeader
+              icon={<CheckCircle size={15} color="#2f7d5b" />}
+              title="Recientes"
+              count={
+                <Button size="small" onClick={() => loadHistorial()} sx={{ fontSize: 11, color: '#3355a8', minWidth: 0, p: 0 }}>
+                  ver todo
+                </Button>
+              }
+            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {resumen.finalizadas.length === 0
-                ? <p className="text-xs text-gray-400 text-center py-6">Sin finalizadas</p>
+                ? <EmptyHint text="Sin finalizadas" />
                 : resumen.finalizadas.map(s => (
                     <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
                   ))
               }
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Box>
+        </Box>
+        </>
       )}
 
       {/* Modal nueva solicitud */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-800">Nueva solicitud</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-3">
-              {/* RUT con autocompletado */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">RUT pasajero</label>
-                <input type="text" placeholder="12345678-9"
-                  value={form.rut}
-                  onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
-                  onBlur={handleRutBlur}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
-                {buscandoRut && <p className="text-xs text-gray-400 mt-1">Buscando...</p>}
-                {pasajeroEncontrado && (
-                  <p className="text-xs text-green-600 mt-1 font-medium">
-                    ✓ {pasajeroEncontrado.nombre} {pasajeroEncontrado.apellido} — {pasajeroEncontrado.telefono ?? 'sin teléfono'}
-                  </p>
-                )}
-                {!buscandoRut && form.rut && !pasajeroEncontrado && (
-                  <p className="text-xs text-gray-400 mt-1">Pasajero no registrado — se creará la solicitud sin vincularlo.</p>
-                )}
-              </div>
+      <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
+          Nueva solicitud
+          <IconButton size="small" onClick={() => setShowForm(false)}><X size={18} /></IconButton>
+        </DialogTitle>
+        <Box component="form" onSubmit={handleCreate}>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0 }}>
+            <Box>
+              <TextField
+                fullWidth size="small" label="RUT pasajero" placeholder="12345678-9"
+                value={form.rut}
+                onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
+                onBlur={handleRutBlur}
+              />
+              {buscandoRut && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Buscando...</Typography>}
+              {pasajeroEncontrado && (
+                <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
+                  ✓ {pasajeroEncontrado.nombre} {pasajeroEncontrado.apellido} — {pasajeroEncontrado.telefono ?? 'sin teléfono'}
+                </Typography>
+              )}
+              {!buscandoRut && form.rut && !pasajeroEncontrado && (
+                <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>
+                  Pasajero no registrado — se creará la solicitud sin vincularlo.
+                </Typography>
+              )}
+            </Box>
 
-              {[
-                { label: 'Origen *',  key: 'origen',  placeholder: 'Calle Falsa 123' },
-                { label: 'Destino *', key: 'destino', placeholder: 'Plaza Italia' },
-              ].map(({ label, key, placeholder }) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                  <input type="text" placeholder={placeholder}
-                    value={form[key as keyof FormData] as string}
-                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
-                </div>
-              ))}
+            <TextField fullWidth size="small" label="Origen *" placeholder="Calle Falsa 123"
+              value={form.origen} onChange={e => setForm(f => ({ ...f, origen: e.target.value }))} />
+            <TextField fullWidth size="small" label="Destino *" placeholder="Plaza Italia"
+              value={form.destino} onChange={e => setForm(f => ({ ...f, destino: e.target.value }))} />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Canal</label>
-                <select value={form.canal_entrada}
-                  onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                  {CANALES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
+            <TextField fullWidth select size="small" label="Canal" value={form.canal_entrada}
+              onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}>
+              {CANALES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+            </TextField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-                <textarea placeholder="Opcional..." rows={2} value={form.observaciones}
-                  onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none" />
-              </div>
+            <TextField fullWidth multiline rows={2} size="small" label="Observaciones" placeholder="Opcional..."
+              value={form.observaciones} onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))} />
 
-              {formError && <p className="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{formError}</p>}
-
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowForm(false)}
-                  className="flex-1 border border-gray-300 text-gray-600 font-medium py-2 rounded-lg text-sm hover:bg-gray-50 transition">
-                  Cancelar
-                </button>
-                <button type="submit" disabled={saving}
-                  className="flex-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold py-2 rounded-lg text-sm transition disabled:opacity-60">
-                  {saving ? 'Guardando...' : 'Registrar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            {formError && <Alert severity="error">{formError}</Alert>}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 1, gap: 1 }}>
+            <Button fullWidth variant="outlined" onClick={() => setShowForm(false)} sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+              Cancelar
+            </Button>
+            <Button fullWidth type="submit" variant="contained" disabled={saving}
+              sx={{
+                color: colors.ink,
+                background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+                '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+              }}>
+              {saving ? 'Guardando...' : 'Registrar'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       {/* Modal acción (avanzar / cancelar / sin contacto) */}
-      {accion && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">
-                {accion.tipo === 'cancelar' ? 'Cancelar solicitud'
-                  : accion.tipo === 'sin_contacto' ? 'Sin contacto'
-                  : 'Avanzar estado'}
-              </h2>
-              <button onClick={() => setAccion(null)} className="p-1 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
+      <Dialog open={!!accion} onClose={() => setAccion(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+        {accion && (
+          <>
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
+              {accion.tipo === 'cancelar' ? 'Cancelar solicitud'
+                : accion.tipo === 'sin_contacto' ? 'Sin contacto'
+                : 'Avanzar estado'}
+              <IconButton size="small" onClick={() => setAccion(null)}><X size={18} /></IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ pt: 0 }}>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
+                Folio: <Box component="span" sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, color: 'text.primary' }}>{accion.solicitud.folio}</Box>
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2 }}>
+                {accion.solicitud.origen} → {accion.solicitud.destino}
+              </Typography>
 
-            <p className="text-sm text-gray-500 mb-1">
-              Folio: <span className="font-mono font-semibold text-gray-700">{accion.solicitud.folio}</span>
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              {accion.solicitud.origen} → {accion.solicitud.destino}
-            </p>
+              {accion.tipo === 'sin_contacto' && (
+                <Alert severity="warning" icon={<PhoneMissed size={18} />} sx={{ mb: 2 }}>
+                  Se cancelará la solicitud con motivo <strong>SIN_CONTACTO</strong>. Esto queda registrado para seguimiento.
+                </Alert>
+              )}
 
-            {accion.tipo === 'sin_contacto' && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-700 mb-4">
-                <PhoneMissed className="w-4 h-4 inline mr-1" />
-                Se cancelará la solicitud con motivo <strong>SIN_CONTACTO</strong>. Esto queda registrado para seguimiento.
-              </div>
-            )}
+              {accion.tipo === 'cancelar' && (
+                <Alert severity="error" icon={<XCircle size={18} />} sx={{ mb: 2 }}>
+                  Se cancelará la solicitud. Esta acción no se puede deshacer.
+                </Alert>
+              )}
 
-            {accion.tipo === 'cancelar' && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 mb-4">
-                <XCircle className="w-4 h-4 inline mr-1" />
-                Se cancelará la solicitud. Esta acción no se puede deshacer.
-              </div>
-            )}
-
-            {accion.tipo === 'cambiar' && accion.solicitud.estado === 'PENDIENTE' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Asignar móvil *
-                </label>
-                <select value={movilId} onChange={e => setMovilId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                  <option value="">Seleccionar móvil disponible...</option>
+              {accion.tipo === 'cambiar' && accion.solicitud.estado === 'PENDIENTE' && (
+                <TextField
+                  fullWidth select size="small" label="Asignar móvil *" value={movilId}
+                  onChange={e => setMovilId(e.target.value)} sx={{ mb: 2 }}
+                >
+                  <MenuItem value="">Seleccionar móvil disponible...</MenuItem>
                   {moviles.map(m => (
-                    <option key={m.id_movil} value={m.id_movil}>
-                      {m.patente} — {m.socio_nombre}
-                    </option>
+                    <MenuItem key={m.id_movil} value={m.id_movil}>{m.patente} — {m.socio_nombre}</MenuItem>
                   ))}
-                </select>
-              </div>
-            )}
+                </TextField>
+              )}
 
-            {accion.tipo === 'cambiar' && accion.solicitud.estado !== 'PENDIENTE' && (
-              <p className="text-sm text-gray-600 mb-4">
-                Nuevo estado: <strong>{SIG_ESTADO[accion.solicitud.estado]}</strong>
-              </p>
-            )}
-
-            <div className="flex gap-3">
-              <button onClick={() => setAccion(null)}
-                className="flex-1 border border-gray-300 text-gray-600 font-medium py-2 rounded-lg text-sm hover:bg-gray-50 transition">
+              {accion.tipo === 'cambiar' && accion.solicitud.estado !== 'PENDIENTE' && (
+                <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2 }}>
+                  Nuevo estado: <strong>{SIG_ESTADO[accion.solicitud.estado]}</strong>
+                </Typography>
+              )}
+            </DialogContent>
+            <DialogActions sx={{ p: 3, pt: 0, gap: 1 }}>
+              <Button fullWidth variant="outlined" onClick={() => setAccion(null)} sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
                 Volver
-              </button>
-              <button onClick={handleAccion} disabled={saving || (accion.tipo === 'cambiar' && accion.solicitud.estado === 'PENDIENTE' && !movilId)}
-                className={`flex-1 font-semibold py-2 rounded-lg text-sm transition disabled:opacity-60 ${
-                  accion.tipo === 'cancelar' || accion.tipo === 'sin_contacto'
-                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-yellow-400 hover:bg-yellow-500 text-gray-900'
-                }`}>
+              </Button>
+              <Button
+                fullWidth variant="contained"
+                onClick={handleAccion}
+                disabled={saving || (accion.tipo === 'cambiar' && accion.solicitud.estado === 'PENDIENTE' && !movilId)}
+                color={accion.tipo === 'cancelar' || accion.tipo === 'sin_contacto' ? 'error' : undefined}
+                sx={accion.tipo === 'cambiar' ? {
+                  color: colors.ink,
+                  background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+                  '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+                } : undefined}
+              >
                 {saving ? 'Procesando...' : 'Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
       {/* Modal historial completo */}
-      {showHistorial && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Historial completo</h2>
-              <button onClick={() => setShowHistorial(false)} className="p-1 rounded hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
-                  <tr>
-                    {['Folio', 'Origen → Destino', 'Móvil', 'Estado', 'Obs.', 'Fecha'].map(h => (
-                      <th key={h} className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {historial.map(s => (
-                    <tr key={s.id_solicitud} className="hover:bg-gray-50">
-                      <td className="px-3 py-2 font-mono text-xs text-gray-500">{s.folio}</td>
-                      <td className="px-3 py-2 text-gray-700 max-w-[200px]">
-                        <span className="truncate block">{s.origen} → {s.destino}</span>
-                      </td>
-                      <td className="px-3 py-2 text-gray-500">{s.movil_patente ?? '—'}</td>
-                      <td className="px-3 py-2">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${ESTADO_COLOR[s.estado]}`}>
-                          {s.estado}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-xs text-gray-400 max-w-[100px] truncate">
-                        {s.observaciones ?? '—'}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-gray-400">
-                        {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
-                      </td>
-                    </tr>
+      <Dialog open={showHistorial} onClose={() => setShowHistorial(false)} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 4, maxHeight: '80vh' } } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
+          Historial completo
+          <IconButton size="small" onClick={() => setShowHistorial(false)}><X size={18} /></IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  {['Folio', 'Origen → Destino', 'Móvil', 'Estado', 'Obs.', 'Fecha'].map(h => (
+                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {historial.map(s => (
+                  <TableRow key={s.id_solicitud} hover>
+                    <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 11, color: 'text.secondary' }}>{s.folio}</TableCell>
+                    <TableCell sx={{ fontSize: 13, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.origen} → {s.destino}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{s.movil_patente ?? '—'}</TableCell>
+                    <TableCell><EstadoChip estado={s.estado} /></TableCell>
+                    <TableCell sx={{ fontSize: 11, color: 'text.secondary', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.observaciones ?? '—'}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 11, color: 'text.secondary' }}>
+                      {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        </DialogContent>
+      </Dialog>
+    </Box>
   );
 }

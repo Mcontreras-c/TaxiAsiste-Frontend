@@ -4,11 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LogIn } from 'lucide-react';
+import { Box, Typography, TextField, Button, Alert, InputAdornment, Paper } from '@mui/material';
+import { LogIn, User, Lock } from 'lucide-react';
 import logo from '../assets/logo.jpg';
 import taxiHero from '../assets/taxiasiste.webp';
 import { useAuthStore } from '../store/authStore';
-import { Button } from '../components/ui';
+import { colors } from '../theme';
 
 const schema = z.object({
   username: z.string().min(1, 'Usuario requerido'),
@@ -36,110 +37,112 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Foto de fondo */}
-      <img
-        src={taxiHero}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
+    <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <Box
+        component="img" src={taxiHero} alt=""
+        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-slate-900/50" />
-      {/* Línea de "calle" en el borde inferior */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-2 opacity-60 z-10"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(90deg, #fbbf24 0, #fbbf24 28px, transparent 28px, transparent 52px)',
-        }}
-      />
+      <Box sx={{
+        position: 'absolute', inset: 0,
+        background: `linear-gradient(100deg, ${colors.ink}f2 0%, ${colors.inkSoft}cc 45%, ${colors.accent700}55 100%)`,
+      }} />
+      <Box sx={{
+        position: 'absolute', inset: 0,
+        background: `linear-gradient(0deg, ${colors.ink}cc 0%, transparent 45%, ${colors.ink}66 100%)`,
+      }} />
+      <Box sx={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, zIndex: 1,
+        backgroundImage: `repeating-linear-gradient(90deg, ${colors.accent500} 0, ${colors.accent500} 28px, transparent 28px, transparent 52px)`,
+        opacity: 0.7,
+      }} />
 
-      <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Navbar */}
-        <header className="px-6 lg:px-10 py-5 flex items-center justify-between flex-shrink-0">
-          <img src={logo} alt="TaxiAsiste" className="h-9 object-contain rounded-md shadow-lg" />
-          <span className="hidden sm:block text-sm text-slate-200/90">
+      <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Box component="header" sx={{ px: { xs: 3, lg: 5 }, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 36, borderRadius: 1.5, boxShadow: 3 }} />
+          <Typography sx={{ display: { xs: 'none', sm: 'block' }, fontSize: 14, color: 'rgba(255,255,255,.85)' }}>
             Sistema de gestión del sindicato
-          </span>
-        </header>
+          </Typography>
+        </Box>
 
-        {/* Hero */}
-        <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-10 py-8 lg:py-12 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Tarjeta de login */}
-          <div className="order-2 lg:order-1 flex justify-center lg:justify-start">
-            <div className="card shadow-elevated w-full max-w-md p-8">
-              <img src={logo} alt="TaxiAsiste" className="h-10 object-contain mb-6" />
-              <div className="mb-2">
-                <h1 className="text-2xl font-bold text-slate-800">Iniciar sesión</h1>
-              </div>
-              <div className="w-14 h-1.5 bg-brand-400 rounded-full mb-6" />
-              <p className="text-sm text-slate-400 -mt-3 mb-6">
+        <Box
+          component="main"
+          sx={{
+            flex: 1, maxWidth: 1280, mx: 'auto', width: '100%', px: { xs: 3, lg: 5 }, py: { xs: 4, lg: 6 },
+            display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: { xs: 6, lg: 8 }, alignItems: 'center',
+          }}
+        >
+          <Box sx={{ order: { xs: 2, lg: 1 }, display: 'flex', justifyContent: { xs: 'center', lg: 'flex-start' } }}>
+            <Paper elevation={0} sx={{
+              width: '100%', maxWidth: 420, p: 4.5, borderRadius: 5,
+              boxShadow: '0 20px 50px -12px rgba(0,0,0,.45)',
+              border: '1px solid rgba(255,255,255,.08)',
+            }}>
+              <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 42, mb: 3 }} />
+              <Typography variant="h1" sx={{ fontSize: 26, fontWeight: 700, color: '#2a2519' }}>Iniciar sesión</Typography>
+              <Box sx={{
+                width: 56, height: 5, borderRadius: 3, my: 1.5,
+                background: `linear-gradient(90deg, ${colors.accent300}, ${colors.accent600})`,
+              }} />
+              <Typography sx={{ fontSize: 13.5, color: 'text.secondary', mb: 3 }}>
                 Ingresa tus credenciales para continuar
-              </p>
+              </Typography>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Usuario
-                  </label>
-                  <input
-                    {...register('username')}
-                    type="text"
-                    placeholder="admin"
-                    className="input-field"
-                  />
-                  {errors.username && (
-                    <p className="text-red-500 text-xs mt-1.5">{errors.username.message}</p>
-                  )}
-                </div>
+              <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
+                <TextField
+                  {...register('username')}
+                  label="Usuario" placeholder="admin" fullWidth
+                  error={!!errors.username} helperText={errors.username?.message}
+                  slotProps={{ input: { startAdornment: <InputAdornment position="start"><User size={16} color="#a89f8f" /></InputAdornment> } }}
+                />
+                <TextField
+                  {...register('password')}
+                  label="Contraseña" placeholder="••••••••" type="password" fullWidth
+                  error={!!errors.password} helperText={errors.password?.message}
+                  slotProps={{ input: { startAdornment: <InputAdornment position="start"><Lock size={16} color="#a89f8f" /></InputAdornment> } }}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Contraseña
-                  </label>
-                  <input
-                    {...register('password')}
-                    type="password"
-                    placeholder="••••••••"
-                    className="input-field"
-                  />
-                  {errors.password && (
-                    <p className="text-red-500 text-xs mt-1.5">{errors.password.message}</p>
-                  )}
-                </div>
+                {error && <Alert severity="error">{error}</Alert>}
 
-                {error && (
-                  <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
-
-                <Button type="submit" disabled={isLoading} className="w-full" size="lg">
-                  <LogIn className="w-4 h-4" />
+                <Button
+                  type="submit" disabled={isLoading} size="large" fullWidth
+                  startIcon={<LogIn size={17} />}
+                  sx={{
+                    color: colors.ink, py: 1.25, fontSize: 15,
+                    background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+                    boxShadow: '0 8px 20px rgba(245,166,35,.35)',
+                    '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+                  }}
+                >
                   {isLoading ? 'Ingresando...' : 'Ingresar'}
                 </Button>
-              </form>
+              </Box>
 
-              <p className="text-center text-xs text-slate-400 mt-6">
+              <Typography sx={{ textAlign: 'center', fontSize: 11, color: '#a89f8f', mt: 3.5 }}>
                 INACAP 2026 · TaxiAsiste v1.0
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Paper>
+          </Box>
 
-          {/* Titular */}
-          <div className="order-1 lg:order-2 text-white text-center lg:text-left">
-            <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5 drop-shadow-lg">
+          <Box sx={{ order: { xs: 1, lg: 2 }, color: '#fff', textAlign: { xs: 'center', lg: 'left' } }}>
+            <Typography variant="h2" sx={{
+              fontSize: { xs: 34, sm: 44 }, fontWeight: 800, letterSpacing: '-.01em', lineHeight: 1.1, mb: 2.5,
+              textShadow: '0 4px 20px rgba(0,0,0,.35)',
+            }}>
               Tu sindicato de taxis,{' '}
-              <span className="text-brand-400">conectado</span>
-            </h2>
-            <div className="w-16 h-1 bg-white/30 rounded-full mx-auto lg:mx-0 mb-5" />
-            <p className="text-slate-200 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 drop-shadow">
-              Administra socios, móviles, solicitudes y tesorería desde un solo lugar,
-              en tiempo real.
-            </p>
-          </div>
-        </main>
-      </div>
-    </div>
+              <Box component="span" sx={{
+                background: `linear-gradient(90deg, ${colors.accent300}, ${colors.accent500})`,
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>
+                conectado
+              </Box>
+            </Typography>
+            <Box sx={{ width: 64, height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,.3)', mx: { xs: 'auto', lg: 0 }, mb: 2.5 }} />
+            <Typography sx={{ fontSize: 18, color: 'rgba(255,255,255,.85)', lineHeight: 1.6, maxWidth: 440, mx: { xs: 'auto', lg: 0 }, textShadow: '0 2px 8px rgba(0,0,0,.3)' }}>
+              Administra socios, móviles, solicitudes y tesorería desde un solo lugar, en tiempo real.
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }
