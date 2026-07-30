@@ -4,10 +4,11 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton,
   Table, TableHead, TableRow, TableCell, TableBody, InputAdornment,
 } from '@mui/material';
-import { Users, Plus, AlertTriangle, X, Search } from 'lucide-react';
+import { Users, Plus, AlertTriangle, X, Search, Phone, MapPin } from 'lucide-react';
 import { getSocios, createSocio } from '../api/socios';
 import type { Socio } from '../types';
 import { colors } from '../theme';
+import { InitialsAvatar } from '../components/InitialsAvatar';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   ACTIVO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
@@ -145,10 +146,26 @@ export default function SociosPage() {
                 ) : filtered.map(s => (
                   <TableRow key={s.id_socio} hover>
                     <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 13 }}>{s.rut}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: 13.5 }}>{s.nombre_completo}</TableCell>
-                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{s.telefono ?? '—'}</TableCell>
-                    <TableCell sx={{ fontSize: 13, color: 'text.secondary', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {s.direccion ?? '—'}
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                        <InitialsAvatar nombre={s.nombre_completo} />
+                        <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{s.nombre_completo}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>
+                      {s.telefono ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Phone size={12} color="#a89f8f" /> {s.telefono}
+                        </Box>
+                      ) : '—'}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary', maxWidth: 200 }}>
+                      {s.direccion ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, overflow: 'hidden' }}>
+                          <MapPin size={12} color="#a89f8f" style={{ flexShrink: 0 }} />
+                          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.direccion}</Box>
+                        </Box>
+                      ) : '—'}
                     </TableCell>
                     <TableCell>
                       <Chip

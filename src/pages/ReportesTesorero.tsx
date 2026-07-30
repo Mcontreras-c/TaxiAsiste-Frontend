@@ -13,6 +13,7 @@ import { getResumenTesorero, cerrarPeriodo } from '../api/reportes';
 import { pagarMovil, pagarAtrasos } from '../api/tesoreria';
 import type { ResumenTesorero, DetalleMovilCuota } from '../types';
 import { colors } from '../theme';
+import { InitialsAvatar } from '../components/InitialsAvatar';
 
 const PAGO_STYLE: Record<string, { bg: string; fg: string }> = {
   PAGADO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
@@ -273,14 +274,22 @@ export default function ReportesTesorero() {
                       return (
                         <TableRow key={d.id_movil} hover sx={bloqueado ? { bgcolor: 'rgba(192,57,43,.04)' } : undefined}>
                           <TableCell>
-                            <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{d.patente}</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                              <Car size={13} color="#a89f8f" />
+                              <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{d.patente}</Typography>
+                            </Box>
                             {d.estado_movil === 'BLOQUEADO' && (
                               <Chip label="BLOQUEADO" size="small" sx={{ mt: 0.25, bgcolor: '#fbe9e9', color: '#c0392b', fontWeight: 700, fontSize: 9, height: 18 }} />
                             )}
                           </TableCell>
                           <TableCell>
-                            <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{d.socio}</Typography>
-                            <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>{d.rut}</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                              <InitialsAvatar nombre={d.socio} size={28} />
+                              <Box>
+                                <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{d.socio}</Typography>
+                                <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>{d.rut}</Typography>
+                              </Box>
+                            </Box>
                           </TableCell>
                           <TableCell>
                             {yaAtraso ? (

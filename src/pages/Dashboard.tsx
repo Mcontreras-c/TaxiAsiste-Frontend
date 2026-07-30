@@ -1,9 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography, IconButton, Card, CardContent, LinearProgress, Alert as MAlert, CircularProgress } from '@mui/material';
-import { Car, PhoneCall, RefreshCw, LayoutDashboard, UserCheck, UserX, CarFront, Timer, Route, CheckCircle2, Wallet, CalendarClock } from 'lucide-react';
-import { getDashboard } from '../api/reportes';
-import type { Dashboard } from '../types';
+import { Car, PhoneCall, RefreshCw, LayoutDashboard, UserCheck, UserX, CarFront, Timer, Route, CheckCircle2, Wallet, CalendarClock, BarChart3 } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { getDashboard, getSolicitudesPorEstado } from '../api/reportes';
+import type { Dashboard, SolicitudPorEstado } from '../types';
 import { colors } from '../theme';
+
+const ESTADO_CHART_COLOR: Record<string, string> = {
+  PENDIENTE:  '#c2410c',
+  ASIGNADO:   '#3355a8',
+  EN_CURSO:   '#7e22ce',
+  COMPLETADO: '#2f7d5b',
+  CANCELADO:  '#a89f8f',
+};
+
+const ESTADO_CHART_LABEL: Record<string, string> = {
+  PENDIENTE: 'Pendiente', ASIGNADO: 'Asignado', EN_CURSO: 'En curso', COMPLETADO: 'Completado', CANCELADO: 'Cancelado',
+};
+
+function EstadoTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  return (
+    <Box sx={{ bgcolor: colors.ink, color: '#fff', px: 1.5, py: 1, borderRadius: 2, fontSize: 12 }}>
+      <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>{p.label}</Typography>
+      <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{p.total}</Typography>
+    </Box>
+  );
+}
 
 type Tone = { fg: string; bg: string; grad: string };
 
@@ -64,6 +88,7 @@ const gridSx = { display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', lg
 
 export default function DashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
+  const [porEstado, setPorEstado] = useState<SolicitudPorEstado[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +96,9 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      setData(await getDashboard());
+      const [d, e] = await Promise.all([getDashboard(), getSolicitudesPorEstado()]);
+      setData(d);
+      setPorEstado(e);
     } catch {
       setError('No se pudo cargar el dashboard. Verifica la conexión con el servidor.');
     } finally {
@@ -151,6 +178,43 @@ export default function DashboardPage() {
           <StatCard title="Completadas hoy" value={data.solicitudes.completadas_hoy} icon={<CheckCircle2 size={17} />} tone={TONES.emerald} />
         </Box>
       </Box>
+
+      {porEstado.some(e => e.total > 0) && (
+        <Box>
+          <SectionLabel>Historial de solicitudes por estado</SectionLabel>
+          <Card sx={{ borderRadius: 4 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <BarChart3 size={16} color="#6b6152" />
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>
+                  Total: {porEstado.reduce((acc, e) => acc + e.total, 0)} solicitudes
+                </Typography>
+              </Box>
+              <Box sx={{ height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={porEstado.map(e => ({ estado: e.estado, label: ESTADO_CHART_LABEL[e.estado], total: e.total }))}
+                    margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+                    barCategoryGap="28%"
+                  >
+                    <CartesianGrid vertical={false} stroke="#ece7db" />
+                    <XAxis
+                      dataKey="label" axisLine={false} tickLine={false}
+                      tick={{ fontSize: 11, fill: '#6b6152' }}
+                    />
+                    <Tooltip cursor={{ fill: '#f1efe9' }} content={<EstadoTooltip />} />
+                    <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={56}>
+                      {porEstado.map(e => (
+                        <Cell key={e.estado} fill={ESTADO_CHART_COLOR[e.estado] ?? colors.accent500} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
 
       <Box>
         <SectionLabel>Cuotas</SectionLabel>

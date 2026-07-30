@@ -1,32 +1,53 @@
 import { createTheme } from '@mui/material/styles';
 
-// Paleta ambar -> negro calido, alineada con brand/surface de tailwind.config.js
+// Paleta corporativa TaxiAsiste
 export const colors = {
-  accent300: '#ffe08a',
-  accent500: '#f5a623',
-  accent600: '#e08e0a',
-  accent700: '#b45309',
-  ink: '#14110b',
-  inkSoft: '#2a2115',
-  paper: '#fbf9f4',
-  sidebarGradient: 'linear-gradient(160deg, #f5a623 0%, #2a2115 46%, #14110b 100%)',
+  // Marca (ambar)
+  accent300: '#FFD54D',
+  accent500: '#FFB300', // primary
+  accent600: '#E5A100',
+  accent700: '#B37400',
+
+  // Secundario / textos oscuros (slate)
+  ink: '#1E293B', // secondary
+  inkSoft: '#334155',
+
+  // Fondos
+  paper: '#F8FAFC', // background.default
+  surface: '#FFFFFF', // background.paper
+
+  // Semanticos
+  success: '#10B981',
+  error: '#EF4444',
+  info: '#3B82F6',
+  warning: '#F59E0B',
+
+  sidebarGradient: 'linear-gradient(160deg, #FFB300 0%, #334155 46%, #1E293B 100%)',
 };
 
 export const theme = createTheme({
   palette: {
     primary: {
-      main: colors.accent500,
+      main: '#FFB300',
       light: colors.accent300,
       dark: colors.accent700,
-      contrastText: '#1c1300',
+      contrastText: '#1E293B',
+    },
+    secondary: {
+      main: '#1E293B',
+      contrastText: '#FFFFFF',
     },
     background: {
-      default: colors.paper,
-      paper: '#ffffff',
+      default: '#F8FAFC',
+      paper: '#FFFFFF',
     },
+    success: { main: '#10B981' },
+    error:   { main: '#EF4444' },
+    info:    { main: '#3B82F6' },
+    warning: { main: '#F59E0B' },
     text: {
-      primary: '#1c1710',
-      secondary: '#6b6152',
+      primary: '#1E293B',
+      secondary: '#64748B',
     },
   },
   typography: {
@@ -46,8 +67,8 @@ export const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          border: '1px solid rgba(20,17,11,0.1)',
-          boxShadow: '0 1px 3px rgba(20,17,11,.08)',
+          border: '1px solid rgba(30,41,59,0.08)',
+          boxShadow: '0 1px 3px rgba(30,41,59,.06)',
         },
       },
     },

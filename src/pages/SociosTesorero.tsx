@@ -3,9 +3,10 @@ import {
   Box, Typography, Chip, IconButton, TextField, Alert, CircularProgress, Card, CardContent,
   Table, TableHead, TableRow, TableCell, TableBody, InputAdornment,
 } from '@mui/material';
-import { Users, Search, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Users, Search, RefreshCw, AlertTriangle, Phone } from 'lucide-react';
 import { getSocios } from '../api/socios';
 import type { Socio } from '../types';
+import { InitialsAvatar } from '../components/InitialsAvatar';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   ACTIVO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
@@ -93,8 +94,19 @@ export default function SociosTesorero() {
                 ) : filtered.map(s => (
                   <TableRow key={s.id_socio} hover>
                     <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 13 }}>{s.rut}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: 13.5 }}>{s.nombre_completo}</TableCell>
-                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{s.telefono ?? '—'}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                        <InitialsAvatar nombre={s.nombre_completo} />
+                        <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{s.nombre_completo}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>
+                      {s.telefono ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Phone size={12} color="#a89f8f" /> {s.telefono}
+                        </Box>
+                      ) : '—'}
+                    </TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {s.direccion ?? '—'}
                     </TableCell>

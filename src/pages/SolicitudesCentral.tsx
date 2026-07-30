@@ -16,6 +16,7 @@ import {
 import { getMoviles, getFilaBase } from '../api/moviles';
 import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../types';
 import { colors } from '../theme';
+import { InitialsAvatar } from '../components/InitialsAvatar';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
@@ -152,12 +153,18 @@ function SolicitudCard({
           <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sol.destino}</Box>
         </Box>
         {sol.movil_patente && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-            Móvil: <strong>{sol.movil_patente}</strong>
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Car size={12} color="#a89f8f" />
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              Móvil: <strong>{sol.movil_patente}</strong>
+            </Typography>
+          </Box>
         )}
         {sol.pasajero_nombre && (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Pasajero: {sol.pasajero_nombre}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
+            <InitialsAvatar nombre={sol.pasajero_nombre} size={22} />
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{sol.pasajero_nombre}</Typography>
+          </Box>
         )}
         <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>
           {new Date(sol.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}

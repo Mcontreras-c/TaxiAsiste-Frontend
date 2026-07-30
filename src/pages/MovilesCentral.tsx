@@ -3,9 +3,10 @@ import {
   Box, Typography, Chip, IconButton, TextField, Alert, CircularProgress,
   Table, TableHead, TableRow, TableCell, TableBody, InputAdornment,
 } from '@mui/material';
-import { Car, Search, RefreshCw } from 'lucide-react';
+import { Car, Search, RefreshCw, Phone } from 'lucide-react';
 import { getMoviles } from '../api/moviles';
 import type { Movil } from '../types';
+import { InitialsAvatar } from '../components/InitialsAvatar';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
@@ -74,9 +75,25 @@ export default function MovilesCentralPage() {
                   <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: 'text.secondary', py: 5 }}>No hay móviles operativos.</TableCell></TableRow>
                 ) : filtered.map(m => (
                   <TableRow key={m.id_movil} hover>
-                    <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{m.patente}</TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: 13.5 }}>{m.socio_nombre}</TableCell>
-                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.socio_telefono ?? '—'}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                        <Car size={13} color="#a89f8f" />
+                        <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{m.patente}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                        <InitialsAvatar nombre={m.socio_nombre} />
+                        <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{m.socio_nombre}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>
+                      {m.socio_telefono ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Phone size={12} color="#a89f8f" /> {m.socio_telefono}
+                        </Box>
+                      ) : '—'}
+                    </TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{[m.marca, m.modelo].filter(Boolean).join(' ') || '—'}</TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.anio ?? '—'}</TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.color ?? '—'}</TableCell>
