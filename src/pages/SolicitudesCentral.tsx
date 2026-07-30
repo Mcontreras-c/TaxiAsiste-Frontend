@@ -8,7 +8,23 @@ import {
   cambiarEstado, buscarPasajeroPorRut, type ResumenCentral,
 } from '../api/solicitudes';
 import { getMoviles, getFilaBase } from '../api/moviles';
+import MapaDespacho from '../components/MapaDespacho';
+import { useUbicacionesMoviles } from '../hooks/useUbicacionesMoviles';
 import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../types';
+
+// Coordenadas de respaldo para moviles que aun no han reportado GPS
+// (conductor sin la app abierta, o recien agregado). Se usan solo como
+// referencia visual, nunca sobrescriben una posicion real ya conocida.
+const CENTRO_MOCK = { lat: -33.4489, lng: -70.6693 };
+function coordenadasMock(idMovil: number) {
+  const angulo = (idMovil * 47) % 360;
+  const radio = 0.01 + ((idMovil * 13) % 30) / 1000;
+  const rad = (angulo * Math.PI) / 180;
+  return {
+    lat: CENTRO_MOCK.lat + radio * Math.cos(rad),
+    lng: CENTRO_MOCK.lng + radio * Math.sin(rad),
+  };
+}
 
 const ESTADO_COLOR: Record<string, string> = {
   PENDIENTE:  'bg-orange-100 text-orange-700 border-orange-200',
@@ -105,13 +121,24 @@ export default function SolicitudesCentralPage() {
   const [movilId, setMovilId]       = useState('');
   const [buscandoRut, setBuscandoRut] = useState(false);
   const [pasajeroEncontrado, setPasajeroEncontrado] = useState<Pasajero | null>(null);
+  const ubicacionesEnVivo = useUbicacionesMoviles();
+
+  // Solo los DISPONIBLE se ofrecen para asignar a una solicitud; el mapa en
+  // cambio muestra todos los estados (para reflejar en vivo cuando un
+  // conductor se desconecta y su movil pasa a INACTIVO).
+  const movilesDisponibles = moviles.filter(m => m.estado_operativo === 'DISPONIBLE');
+
+  const movilesConEstadoEnVivo = moviles.map(m => {
+    const enVivo = ubicacionesEnVivo[m.id_movil];
+    return enVivo ? { ...m, estado_operativo: enVivo.estado_operativo as Movil['estado_operativo'] } : m;
+  });
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
       const [r, m, f] = await Promise.all([getResumenCentral(), getMoviles(), getFilaBase()]);
       setResumen(r);
-      setMoviles(m.filter(m => m.estado_operativo === 'DISPONIBLE'));
+      setMoviles(m);
       setFilaBase(f.sort((a, b) => a.posicion - b.posicion));
     } catch {
       setError('No se pudo cargar las solicitudes.');
@@ -230,6 +257,30 @@ export default function SolicitudesCentralPage() {
           <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando...
         </div>
       ) : resumen && (
+        <>
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <MapPin className="w-4 h-4 text-gray-500" />
+            <h2 className="text-sm font-bold text-gray-700">Mapa de flota</h2>
+            <span className="ml-auto text-xs text-gray-400">
+              {Object.keys(ubicacionesEnVivo).length > 0
+                ? 'GPS en tiempo real'
+                : 'Sin reportes GPS aun — mostrando ubicación de referencia'}
+            </span>
+          </div>
+          <MapaDespacho
+            moviles={movilesConEstadoEnVivo.map(m => {
+              const enVivo = ubicacionesEnVivo[m.id_movil];
+              return {
+                ...m,
+                ...(enVivo && enVivo.lat != null
+                  ? { lat: enVivo.lat, lng: enVivo.lng, heading: enVivo.heading }
+                  : coordenadasMock(m.id_movil)),
+              };
+            })}
+          />
+        </div>
+
         <div className="grid grid-cols-4 gap-4">
           {/* Fila virtual (base) */}
           <div>
@@ -321,6 +372,7 @@ export default function SolicitudesCentralPage() {
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* Modal nueva solicitud */}
@@ -443,7 +495,7 @@ export default function SolicitudesCentralPage() {
                 <select value={movilId} onChange={e => setMovilId(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
                   <option value="">Seleccionar móvil disponible...</option>
-                  {moviles.map(m => (
+                  {movilesDisponibles.map(m => (
                     <option key={m.id_movil} value={m.id_movil}>
                       {m.patente} — {m.socio_nombre}
                     </option>

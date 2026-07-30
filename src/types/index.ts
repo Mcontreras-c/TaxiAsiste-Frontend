@@ -85,6 +85,9 @@ export interface Movil {
   color: string | null;
   estado_operativo: 'DISPONIBLE' | 'EN_SERVICIO' | 'BLOQUEADO' | 'INACTIVO';
   fecha_registro: string;
+  // Pendiente de implementar en el backend (tracking GPS en tiempo real).
+  lat?: number | null;
+  lng?: number | null;
 }
 
 // ── Fila Base ─────────────────────────────────────────────────────────────────
