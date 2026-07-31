@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
+  Avatar, Typography, AppBar, Toolbar, Divider, Breadcrumbs, Link as MLink,
+} from '@mui/material';
 import { LogOut, Menu, PanelLeftClose, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { NAV_ITEMS, type Rol } from '../config/permisos';
+import { colors } from '../theme';
 import logo from '../assets/logo.jpg';
 
 const ROL_LABEL: Record<Rol, string> = {
@@ -11,6 +16,9 @@ const ROL_LABEL: Record<Rol, string> = {
   Tesorero:      'Tesorero',
   Conductor:     'Conductor',
 };
+
+const DRAWER_OPEN = 240;
+const DRAWER_CLOSED = 72;
 
 export default function Layout() {
   const [open, setOpen] = useState(true);
@@ -31,106 +39,134 @@ export default function Layout() {
     ? usuario.username.slice(0, 2).toUpperCase()
     : '??';
 
+  const drawerWidth = open ? DRAWER_OPEN : DRAWER_CLOSED;
+
   return (
-    <div className="flex h-screen bg-surface-muted overflow-hidden">
-      {/* Sidebar */}
-      <aside
-        className={`flex flex-col bg-surface-sidebar text-white shadow-sidebar transition-all duration-300 ease-in-out ${
-          open ? 'w-60' : 'w-[4.5rem]'
-        }`}
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          transition: 'width .25s ease',
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            overflowX: 'hidden',
+            transition: 'width .25s ease',
+            background: colors.sidebarGradient,
+            color: '#fff',
+            border: 'none',
+          },
+        }}
       >
-        {/* Brand */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 2.5, borderBottom: '1px solid rgba(255,255,255,.14)' }}>
           {open ? (
-            <img src={logo} alt="TaxiAsiste" className="h-9 object-contain flex-1 min-w-0" />
+            <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 34, objectFit: 'contain', flex: 1, minWidth: 0 }} />
           ) : (
-            <div className="w-9 h-9 mx-auto bg-brand-400 rounded-lg flex items-center justify-center">
-              <span className="text-slate-900 font-bold text-xs">TA</span>
-            </div>
+            <Box sx={{
+              width: 34, height: 34, mx: 'auto', borderRadius: 2,
+              background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Typography sx={{ color: colors.ink, fontWeight: 700, fontSize: 12 }}>TA</Typography>
+            </Box>
           )}
-          <button
+          <IconButton
             onClick={() => setOpen(!open)}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition flex-shrink-0"
-            title={open ? 'Contraer menú' : 'Expandir menú'}
+            size="small"
+            sx={{ color: 'rgba(255,255,255,.6)', '&:hover': { bgcolor: 'rgba(255,255,255,.1)', color: '#fff' } }}
           >
-            {open ? <PanelLeftClose className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
-        </div>
+            {open ? <PanelLeftClose size={16} /> : <Menu size={16} />}
+          </IconButton>
+        </Box>
 
-        {/* Navigation */}
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        <List sx={{ flex: 1, py: 2, px: 1.25 }}>
           {open && (
-            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+            <Typography sx={{ px: 1.5, mb: 1, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,.45)' }}>
               Menú
-            </p>
+            </Typography>
           )}
-          {navFiltrado.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              title={!open ? label : undefined}
-              className={({ isActive }) =>
-                `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? 'bg-brand-400 text-slate-900 shadow-sm'
-                    : 'text-slate-400 hover:bg-white/8 hover:text-white'
-                }`
-              }
-            >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              {open && <span>{label}</span>}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* User footer */}
-        <div className="border-t border-white/10 p-3">
-          {open ? (
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-9 h-9 rounded-full bg-brand-400/20 border border-brand-400/30 flex items-center justify-center flex-shrink-0">
-                <span className="text-brand-300 text-xs font-bold">{initials}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate text-white">{usuario?.username}</p>
-                <p className="text-xs text-slate-500 truncate">
-                  {rol ? ROL_LABEL[rol] : ''}
-                </p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-red-400 transition"
-                title="Cerrar sesión"
+          {navFiltrado.map(({ to, label, icon: Icon }) => {
+            const isActive = location.pathname === to;
+            return (
+              <ListItemButton
+                key={to}
+                component={NavLink}
+                to={to}
+                title={!open ? label : undefined}
+                sx={{
+                  borderRadius: 2.5,
+                  mb: 0.5,
+                  py: 1.1,
+                  color: isActive ? '#fff' : 'rgba(255,255,255,.78)',
+                  bgcolor: isActive ? 'rgba(255,255,255,.14)' : 'transparent',
+                  position: 'relative',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,.08)' },
+                  '&::before': isActive ? {
+                    content: '""', position: 'absolute', left: -10, top: 8, bottom: 8, width: 3,
+                    borderRadius: '0 4px 4px 0',
+                    background: `linear-gradient(180deg, ${colors.accent300}, ${colors.accent500})`,
+                  } : undefined,
+                }}
               >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleLogout}
-              className="w-full flex justify-center p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-red-400 transition"
-              title="Cerrar sesión"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+                <ListItemIcon sx={{ minWidth: 0, mr: open ? 1.5 : 'auto', color: 'inherit', justifyContent: 'center' }}>
+                  <Icon size={19} />
+                </ListItemIcon>
+                {open && <ListItemText slotProps={{ primary: { fontSize: 14, fontWeight: 500 } }}>{label}</ListItemText>}
+              </ListItemButton>
+            );
+          })}
+        </List>
+
+        <Divider sx={{ borderColor: 'rgba(255,255,255,.14)' }} />
+        <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Avatar sx={{
+            width: 34, height: 34, fontSize: 13, fontWeight: 700, color: colors.ink,
+            background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
+          }}>
+            {initials}
+          </Avatar>
+          {open && (
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {usuario?.username}
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>
+                {rol ? ROL_LABEL[rol] : ''}
+              </Typography>
+            </Box>
           )}
-        </div>
-      </aside>
+          <IconButton onClick={handleLogout} size="small" sx={{ color: 'rgba(255,255,255,.55)', '&:hover': { color: '#ff8a8a', bgcolor: 'rgba(255,255,255,.1)' } }}>
+            <LogOut size={16} />
+          </IconButton>
+        </Box>
+      </Drawer>
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-surface-border px-6 py-3.5 flex items-center gap-2">
-          <span className="text-sm text-slate-400">TaxiAsiste</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <span className="text-sm font-medium text-slate-700">
-            {currentPage?.label ?? 'Inicio'}
-          </span>
-        </header>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <AppBar
+          position="static"
+          elevation={0}
+          sx={{
+            bgcolor: 'rgba(255,255,255,.85)',
+            backdropFilter: 'blur(8px)',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            color: 'text.primary',
+          }}
+        >
+          <Toolbar variant="dense" sx={{ minHeight: 56 }}>
+            <Breadcrumbs separator={<ChevronRight size={14} color="#c4bda9" />}>
+              <MLink underline="none" sx={{ fontSize: 14, color: 'text.secondary' }}>TaxiAsiste</MLink>
+              <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{currentPage?.label ?? 'Inicio'}</Typography>
+            </Breadcrumbs>
+          </Toolbar>
+        </AppBar>
 
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, lg: 4 } }}>
           <Outlet />
-        </div>
-      </main>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

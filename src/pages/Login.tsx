@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LogIn } from 'lucide-react';
+import { Box, Container, Grid, Typography, TextField, Button, Alert, InputAdornment } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import LockIcon from '@mui/icons-material/Lock';
+import LoginIcon from '@mui/icons-material/Login';
 import logo from '../assets/logo.jpg';
 import taxiHero from '../assets/taxiasiste.webp';
 import { useAuthStore } from '../store/authStore';
-import { Button } from '../components/ui';
 
 const schema = z.object({
   username: z.string().min(1, 'Usuario requerido'),
@@ -36,110 +38,95 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Foto de fondo */}
-      <img
-        src={taxiHero}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-slate-900/50" />
-      {/* Línea de "calle" en el borde inferior */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-2 opacity-60 z-10"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(90deg, #fbbf24 0, #fbbf24 28px, transparent 28px, transparent 52px)',
+    <Grid container sx={{ minHeight: '100vh' }}>
+      {/* Lado imagen — puramente visual */}
+      <Grid
+        size={{ xs: 12, md: 6 }}
+        sx={{
+          minHeight: { xs: 260, md: '100vh' },
+          display: { xs: 'none', md: 'block' },
         }}
-      />
+      >
+        <Box
+          component="img" src={taxiHero} alt=""
+          sx={{ width: '100%', height: '100%', minHeight: '100vh', objectFit: 'cover', display: 'block' }}
+        />
+      </Grid>
 
-      <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Navbar */}
-        <header className="px-6 lg:px-10 py-5 flex items-center justify-between flex-shrink-0">
-          <img src={logo} alt="TaxiAsiste" className="h-9 object-contain rounded-md shadow-lg" />
-          <span className="hidden sm:block text-sm text-slate-200/90">
-            Sistema de gestión del sindicato
-          </span>
-        </header>
+      {/* Lado formulario */}
+      <Grid
+        size={{ xs: 12, md: 6 }}
+        sx={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: '#ffffff',
+          backgroundImage:
+            'linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px)',
+          backgroundSize: '30px 30px',
+          minHeight: { xs: '100vh', md: 'auto' },
+        }}
+      >
+        <Container maxWidth="sm" sx={{ py: { xs: 6, md: 0 } }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, p: { xs: 0, sm: 6 } }}>
+            <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 44 }} />
 
-        {/* Hero */}
-        <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-10 py-8 lg:py-12 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Tarjeta de login */}
-          <div className="order-2 lg:order-1 flex justify-center lg:justify-start">
-            <div className="card shadow-elevated w-full max-w-md p-8">
-              <img src={logo} alt="TaxiAsiste" className="h-10 object-contain mb-6" />
-              <div className="mb-2">
-                <h1 className="text-2xl font-bold text-slate-800">Iniciar sesión</h1>
-              </div>
-              <div className="w-14 h-1.5 bg-brand-400 rounded-full mb-6" />
-              <p className="text-sm text-slate-400 -mt-3 mb-6">
-                Ingresa tus credenciales para continuar
-              </p>
+            <Box>
+              <Typography fontWeight="bold" variant="h4" sx={{ color: 'secondary.main', mb: 1.5 }}>
+                Iniciar sesión
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
+                Tu sindicato de taxis, conectado. Administra socios, móviles, solicitudes
+                y tesorería desde un solo lugar, en tiempo real.
+              </Typography>
+            </Box>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Usuario
-                  </label>
-                  <input
-                    {...register('username')}
-                    type="text"
-                    placeholder="admin"
-                    className="input-field"
-                  />
-                  {errors.username && (
-                    <p className="text-red-500 text-xs mt-1.5">{errors.username.message}</p>
-                  )}
-                </div>
+            <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <TextField
+                {...register('username')}
+                label="Usuario" placeholder="admin" fullWidth
+                error={!!errors.username} helperText={errors.username?.message}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              <TextField
+                {...register('password')}
+                label="Contraseña" placeholder="••••••••" type="password" fullWidth
+                error={!!errors.password} helperText={errors.password?.message}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Contraseña
-                  </label>
-                  <input
-                    {...register('password')}
-                    type="password"
-                    placeholder="••••••••"
-                    className="input-field"
-                  />
-                  {errors.password && (
-                    <p className="text-red-500 text-xs mt-1.5">{errors.password.message}</p>
-                  )}
-                </div>
+              {error && <Alert severity="error">{error}</Alert>}
 
-                {error && (
-                  <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-600">
-                    {error}
-                  </div>
-                )}
+              <Button
+                type="submit" disabled={isLoading}
+                variant="contained" color="primary" fullWidth size="large"
+                startIcon={<LoginIcon />}
+                sx={{ py: 1.4, fontSize: 15.5 }}
+              >
+                {isLoading ? 'Ingresando...' : 'Ingresar'}
+              </Button>
+            </Box>
 
-                <Button type="submit" disabled={isLoading} className="w-full" size="lg">
-                  <LogIn className="w-4 h-4" />
-                  {isLoading ? 'Ingresando...' : 'Ingresar'}
-                </Button>
-              </form>
-
-              <p className="text-center text-xs text-slate-400 mt-6">
-                INACAP 2026 · TaxiAsiste v1.0
-              </p>
-            </div>
-          </div>
-
-          {/* Titular */}
-          <div className="order-1 lg:order-2 text-white text-center lg:text-left">
-            <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5 drop-shadow-lg">
-              Tu sindicato de taxis,{' '}
-              <span className="text-brand-400">conectado</span>
-            </h2>
-            <div className="w-16 h-1 bg-white/30 rounded-full mx-auto lg:mx-0 mb-5" />
-            <p className="text-slate-200 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 drop-shadow">
-              Administra socios, móviles, solicitudes y tesorería desde un solo lugar,
-              en tiempo real.
-            </p>
-          </div>
-        </main>
-      </div>
-    </div>
+            <Typography sx={{ textAlign: 'center', fontSize: 12, color: 'text.secondary' }}>
+              INACAP 2026 · TaxiAsiste v1.0
+            </Typography>
+          </Box>
+        </Container>
+      </Grid>
+    </Grid>
   );
 }

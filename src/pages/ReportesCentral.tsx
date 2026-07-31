@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react';
-import { BarChart2, RefreshCw, AlertCircle, PhoneCall } from 'lucide-react';
+import {
+  Box, Typography, IconButton, Alert, CircularProgress, Card, CardContent,
+  Table, TableHead, TableRow, TableCell, TableBody, LinearProgress,
+} from '@mui/material';
+import { BarChart2, RefreshCw, PhoneCall } from 'lucide-react';
 import { getSolicitudesPorEstado } from '../api/reportes';
 import { getSolicitudes } from '../api/solicitudes';
 import type { SolicitudPorEstado, Solicitud } from '../types';
 
 const ESTADO_COLOR: Record<string, string> = {
-  PENDIENTE:  'bg-orange-400',
-  ASIGNADO:   'bg-blue-400',
-  EN_CURSO:   'bg-purple-400',
-  COMPLETADO: 'bg-green-400',
-  CANCELADO:  'bg-gray-400',
+  PENDIENTE:  '#c2410c',
+  ASIGNADO:   '#3355a8',
+  EN_CURSO:   '#7e22ce',
+  COMPLETADO: '#2f7d5b',
+  CANCELADO:  '#a89f8f',
 };
 
 const ESTADO_LABEL: Record<string, string> = {
-  PENDIENTE:  'Pendiente',
-  ASIGNADO:   'Asignado',
-  EN_CURSO:   'En curso',
-  COMPLETADO: 'Completado',
-  CANCELADO:  'Cancelado',
+  PENDIENTE: 'Pendiente', ASIGNADO: 'Asignado', EN_CURSO: 'En curso', COMPLETADO: 'Completado', CANCELADO: 'Cancelado',
 };
 
 export default function ReportesCentralPage() {
@@ -44,115 +44,113 @@ export default function ReportesCentralPage() {
   const sinContacto     = solicitudes.filter(s => s.observaciones === 'SIN_CONTACTO');
   const totalSolicitudes = porEstado.reduce((acc, e) => acc + e.total, 0);
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 text-gray-400">
-      <RefreshCw className="w-6 h-6 animate-spin mr-2" /> Cargando...
-    </div>
-  );
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 10, color: 'text.secondary' }}>
+        <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
+      </Box>
+    );
+  }
 
-  if (error) return (
-    <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-600 flex items-center gap-3">
-      <AlertCircle className="w-5 h-5" /> {error}
-      <button onClick={load} className="ml-auto text-sm underline">Reintentar</button>
-    </div>
-  );
+  if (error) {
+    return <Alert severity="error" action={<IconButton size="small" onClick={load}><RefreshCw size={16} /></IconButton>}>{error}</Alert>;
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BarChart2 className="w-6 h-6 text-gray-700" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Reportes</h1>
-            <p className="text-sm text-gray-400">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <BarChart2 size={22} color="#3a3327" />
+          <Box>
+            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Reportes</Typography>
+            <Typography sx={{ fontSize: 12.5, color: 'text.secondary', textTransform: 'capitalize' }}>
               {new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
-        </div>
-        <button onClick={load} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition">
-          <RefreshCw className="w-4 h-4" /> Actualizar
-        </button>
-      </div>
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+      </Box>
 
-      {/* Resumen del día */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-5 text-center">
-          <p className="text-3xl font-bold text-gray-800">{solicitudesHoy.length}</p>
-          <p className="text-sm text-gray-500 mt-1">Solicitudes hoy</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-5 text-center">
-          <p className="text-3xl font-bold text-green-600">
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>
+        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{solicitudesHoy.length}</Typography>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>Solicitudes hoy</Typography>
+        </CardContent></Card>
+        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#2f7d5b' }}>
             {solicitudesHoy.filter(s => s.estado === 'COMPLETADO').length}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">Completadas hoy</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-5 text-center">
-          <p className="text-3xl font-bold text-orange-500">{sinContacto.length}</p>
-          <p className="text-sm text-gray-500 mt-1">Sin contacto (total)</p>
-        </div>
-      </div>
+          </Typography>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>Completadas hoy</Typography>
+        </CardContent></Card>
+        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#c2410c' }}>{sinContacto.length}</Typography>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>Sin contacto (total)</Typography>
+        </CardContent></Card>
+      </Box>
 
-      {/* Solicitudes por estado */}
-      <section className="bg-white rounded-xl shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <PhoneCall className="w-5 h-5 text-gray-600" />
-          <h2 className="text-base font-bold text-gray-700">Solicitudes por estado</h2>
-          <span className="ml-auto text-sm text-gray-400">Total: <strong className="text-gray-700">{totalSolicitudes}</strong></span>
-        </div>
+      <Card sx={{ borderRadius: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <PhoneCall size={17} color="#6b6152" />
+            <Typography sx={{ fontSize: 15, fontWeight: 700 }}>Solicitudes por estado</Typography>
+            <Typography sx={{ ml: 'auto', fontSize: 13, color: 'text.secondary' }}>
+              Total: <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{totalSolicitudes}</Box>
+            </Typography>
+          </Box>
 
-        {totalSolicitudes > 0 && (
-          <div className="flex h-4 rounded-full overflow-hidden mb-4 gap-0.5">
-            {porEstado.filter(e => e.total > 0).map(e => (
-              <div key={e.estado}
-                className={`${ESTADO_COLOR[e.estado]} transition-all`}
-                style={{ width: `${(e.total / totalSolicitudes) * 100}%` }}
-                title={`${e.estado}: ${e.total}`}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {porEstado.map(e => (
-            <div key={e.estado} className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full flex-shrink-0 ${ESTADO_COLOR[e.estado]}`} />
-              <span className="text-sm text-gray-600 w-28">{ESTADO_LABEL[e.estado]}</span>
-              <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                <div className={`h-full rounded-full ${ESTADO_COLOR[e.estado]}`}
-                  style={{ width: totalSolicitudes > 0 ? `${(e.total / totalSolicitudes) * 100}%` : '0%' }} />
-              </div>
-              <span className="text-sm font-semibold text-gray-700 w-8 text-right">{e.total}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Casos sin contacto */}
-      {sinContacto.length > 0 && (
-        <section className="bg-white rounded-xl shadow-sm p-5">
-          <h2 className="text-base font-bold text-gray-700 mb-4">Sin contacto registrados</h2>
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['Folio', 'Origen → Destino', 'Fecha'].map(h => (
-                  <th key={h} className="text-left px-4 py-2 text-xs font-semibold text-gray-500 uppercase">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {sinContacto.map(s => (
-                <tr key={s.id_solicitud} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-mono text-xs text-gray-500">{s.folio}</td>
-                  <td className="px-4 py-2 text-gray-700">{s.origen} → {s.destino}</td>
-                  <td className="px-4 py-2 text-xs text-gray-400">
-                    {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
-                  </td>
-                </tr>
+          {totalSolicitudes > 0 && (
+            <Box sx={{ display: 'flex', height: 14, borderRadius: 999, overflow: 'hidden', mb: 2.5, gap: '2px' }}>
+              {porEstado.filter(e => e.total > 0).map(e => (
+                <Box key={e.estado} title={`${e.estado}: ${e.total}`} sx={{ bgcolor: ESTADO_COLOR[e.estado], width: `${(e.total / totalSolicitudes) * 100}%` }} />
               ))}
-            </tbody>
-          </table>
-        </section>
+            </Box>
+          )}
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+            {porEstado.map(e => (
+              <Box key={e.estado} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: ESTADO_COLOR[e.estado], flexShrink: 0 }} />
+                <Typography sx={{ fontSize: 13, color: 'text.secondary', width: 100 }}>{ESTADO_LABEL[e.estado]}</Typography>
+                <LinearProgress
+                  variant="determinate" value={totalSolicitudes > 0 ? (e.total / totalSolicitudes) * 100 : 0}
+                  sx={{ flex: 1, height: 8, borderRadius: 4, bgcolor: '#f1efe9', '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: ESTADO_COLOR[e.estado] } }}
+                />
+                <Typography sx={{ fontSize: 13, fontWeight: 700, width: 28, textAlign: 'right', fontFamily: 'Roboto Mono, monospace' }}>{e.total}</Typography>
+              </Box>
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
+
+      {sinContacto.length > 0 && (
+        <Card sx={{ borderRadius: 3 }}>
+          <CardContent>
+            <Typography sx={{ fontSize: 15, fontWeight: 700, mb: 2 }}>Sin contacto registrados</Typography>
+            <Box sx={{ overflowX: 'auto' }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {['Folio', 'Origen → Destino', 'Fecha'].map(h => (
+                      <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sinContacto.map(s => (
+                    <TableRow key={s.id_solicitud} hover>
+                      <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 12, color: 'text.secondary' }}>{s.folio}</TableCell>
+                      <TableCell sx={{ fontSize: 13 }}>{s.origen} → {s.destino}</TableCell>
+                      <TableCell sx={{ fontSize: 12, color: '#a89f8f' }}>
+                        {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          </CardContent>
+        </Card>
       )}
-    </div>
+    </Box>
   );
 }

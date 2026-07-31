@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Car, Search, RefreshCw, AlertCircle } from 'lucide-react';
+import {
+  Box, Typography, Chip, IconButton, TextField, Alert, CircularProgress,
+  Table, TableHead, TableRow, TableCell, TableBody, InputAdornment,
+} from '@mui/material';
+import { Car, Search, RefreshCw, Phone } from 'lucide-react';
 import { getMoviles } from '../api/moviles';
 import type { Movil } from '../types';
+import { InitialsAvatar } from '../components/InitialsAvatar';
 
-const ESTADO_COLOR: Record<string, string> = {
-  DISPONIBLE:  'bg-green-100 text-green-700',
-  EN_SERVICIO: 'bg-blue-100 text-blue-700',
+const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
+  DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
+  EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
 };
 
 export default function MovilesCentralPage() {
@@ -31,71 +36,80 @@ export default function MovilesCentralPage() {
   );
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Car className="w-6 h-6 text-gray-700" />
-          <h1 className="text-2xl font-bold text-gray-800">Móviles</h1>
-          <span className="bg-gray-200 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-            {moviles.length} operativos
-          </span>
-        </div>
-        <button onClick={load} className="p-2 text-gray-500 hover:text-gray-700 transition">
-          <RefreshCw className="w-4 h-4" />
-        </button>
-      </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Car size={22} color="#3a3327" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Móviles</Typography>
+          <Chip label={`${moviles.length} operativos`} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+        </Box>
+        <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+      </Box>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input type="text" placeholder="Buscar por nombre, patente o marca..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
-      </div>
+      <TextField
+        size="small" placeholder="Buscar por nombre, patente o marca..." value={search}
+        onChange={e => setSearch(e.target.value)} fullWidth
+        sx={{ bgcolor: 'background.paper', borderRadius: 2 }}
+        slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={16} color="#a89f8f" /></InputAdornment> } }}
+      />
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5" /> {error}
-        </div>
-      )}
+      {error && <Alert severity="error">{error}</Alert>}
 
       {loading ? (
-        <div className="flex justify-center py-16 text-gray-400">
-          <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Cargando...
-        </div>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}>
+          <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
+        </Box>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {['Patente', 'Socio / Conductor', 'Teléfono', 'Vehículo', 'Año', 'Color', 'Estado'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ overflowX: 'auto' }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  {['Patente', 'Socio / Conductor', 'Teléfono', 'Vehículo', 'Año', 'Color', 'Estado'].map(h => (
+                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: 'text.secondary', py: 5 }}>No hay móviles operativos.</TableCell></TableRow>
+                ) : filtered.map(m => (
+                  <TableRow key={m.id_movil} hover>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                        <Car size={13} color="#a89f8f" />
+                        <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{m.patente}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                        <InitialsAvatar nombre={m.socio_nombre} />
+                        <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{m.socio_nombre}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>
+                      {m.socio_telefono ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Phone size={12} color="#a89f8f" /> {m.socio_telefono}
+                        </Box>
+                      ) : '—'}
+                    </TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{[m.marca, m.modelo].filter(Boolean).join(' ') || '—'}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.anio ?? '—'}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.color ?? '—'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={m.estado_operativo.replace('_', ' ')} size="small"
+                        sx={{ bgcolor: ESTADO_STYLE[m.estado_operativo]?.bg, color: ESTADO_STYLE[m.estado_operativo]?.fg, fontWeight: 700, fontSize: 10.5 }}
+                      />
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">No hay móviles operativos.</td>
-                </tr>
-              ) : filtered.map(m => (
-                <tr key={m.id_movil} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-mono font-bold text-gray-800">{m.patente}</td>
-                  <td className="px-4 py-3 text-gray-700 font-medium">{m.socio_nombre}</td>
-                  <td className="px-4 py-3 text-gray-500">{m.socio_telefono ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{[m.marca, m.modelo].filter(Boolean).join(' ') || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{m.anio ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{m.color ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${ESTADO_COLOR[m.estado_operativo]}`}>
-                      {m.estado_operativo.replace('_', ' ')}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </TableBody>
+            </Table>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
