@@ -70,7 +70,7 @@ export default function Login() {
             <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 44 }} />
 
             <Box>
-              <Typography fontWeight="bold" variant="h4" sx={{ color: 'secondary.main', mb: 1.5 }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', mb: 1.5 }}>
                 Iniciar sesión
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">

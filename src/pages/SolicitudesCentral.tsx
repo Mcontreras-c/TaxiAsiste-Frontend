@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight,
-  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Maximize2, Navigation,
+  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
@@ -76,64 +76,6 @@ function EmptyHint({ text }: { text: string }) {
     <Typography sx={{ fontSize: 12, color: 'text.secondary', textAlign: 'center', py: 3 }}>
       {text}
     </Typography>
-  );
-}
-
-const MAPA_PINES = [
-  { top: '28%', left: '22%' }, { top: '52%', left: '38%' }, { top: '20%', left: '58%' },
-  { top: '68%', left: '64%' }, { top: '40%', left: '78%' }, { top: '74%', left: '30%' },
-];
-
-function MapaPreview({ pendientes, enCurso }: { pendientes: number; enCurso: number }) {
-  const total = pendientes + enCurso;
-  return (
-    <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
-      <Box
-        sx={{
-          position: 'relative', height: 210,
-          background: `
-            radial-gradient(circle at 20% 30%, rgba(245,166,35,.10), transparent 40%),
-            radial-gradient(circle at 80% 70%, rgba(51,85,168,.10), transparent 40%),
-            linear-gradient(#faf7f0, #f3efe4)
-          `,
-          backgroundSize: '18px 18px, 18px 18px, 100% 100%',
-          backgroundImage:
-            'linear-gradient(rgba(20,17,11,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(20,17,11,.05) 1px, transparent 1px)',
-        }}
-      >
-        <Box sx={{ position: 'absolute', top: 12, left: 14, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Navigation size={13} color="#6b6152" />
-          <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary' }}>Santiago Centro</Typography>
-        </Box>
-        <IconButton size="small" disabled sx={{ position: 'absolute', top: 8, right: 8, bgcolor: '#fff', boxShadow: 1, '&.Mui-disabled': { bgcolor: '#fff' } }}>
-          <Maximize2 size={13} />
-        </IconButton>
-
-        {MAPA_PINES.slice(0, Math.max(total, 2)).map((p, i) => {
-          const esPendiente = i < pendientes;
-          return (
-            <Box
-              key={i}
-              sx={{
-                position: 'absolute', top: p.top, left: p.left, transform: 'translate(-50%,-100%)',
-                color: esPendiente ? '#c2410c' : '#3355a8', filter: 'drop-shadow(0 2px 3px rgba(0,0,0,.18))',
-              }}
-            >
-              <MapPin size={24} fill={esPendiente ? '#fdece2' : '#e8ecf9'} strokeWidth={2} />
-            </Box>
-          );
-        })}
-
-        <Chip
-          label="Mapa en vivo — próximamente"
-          size="small"
-          sx={{
-            position: 'absolute', bottom: 12, left: 14,
-            bgcolor: 'rgba(255,255,255,.9)', fontWeight: 600, fontSize: 11, color: 'text.secondary',
-          }}
-        />
-      </Box>
-    </Card>
   );
 }
 
@@ -213,17 +155,15 @@ export default function SolicitudesCentralPage() {
   const [movilId, setMovilId]       = useState('');
   const [buscandoRut, setBuscandoRut] = useState(false);
   const [pasajeroEncontrado, setPasajeroEncontrado] = useState<Pasajero | null>(null);
+  // Posiciones GPS por polling (GET /api/ubicaciones/ cada 4s — ver
+  // useUbicacionesMoviles). No trae estado_operativo: ese dato se refresca
+  // aparte junto con el resto de "moviles" (ver refrescoSilencioso abajo).
   const ubicacionesEnVivo = useUbicacionesMoviles();
 
   // Solo los DISPONIBLE se ofrecen para asignar a una solicitud; el mapa en
   // cambio muestra todos los estados (para reflejar en vivo cuando un
   // conductor se desconecta y su movil pasa a INACTIVO).
   const movilesDisponibles = moviles.filter(m => m.estado_operativo === 'DISPONIBLE');
-
-  const movilesConEstadoEnVivo = moviles.map(m => {
-    const enVivo = ubicacionesEnVivo[m.id_movil];
-    return enVivo ? { ...m, estado_operativo: enVivo.estado_operativo as Movil['estado_operativo'] } : m;
-  });
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -238,6 +178,24 @@ export default function SolicitudesCentralPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Polling silencioso (sin spinner) de moviles/solicitudes/fila, para que
+  // estado_operativo y las columnas se mantengan al dia sin recargar la
+  // pagina — misma cadencia que el polling de ubicaciones (arquitectura
+  // 100% REST, sin WebSockets).
+  useEffect(() => {
+    const id = setInterval(async () => {
+      try {
+        const [r, m, f] = await Promise.all([getResumenCentral(), getMoviles(), getFilaBase()]);
+        setResumen(r);
+        setMoviles(m);
+        setFilaBase(f.sort((a, b) => a.posicion - b.posicion));
+      } catch {
+        // se reintenta en el siguiente ciclo
+      }
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
 
   const loadHistorial = async () => {
     const all = await getSolicitudes();
@@ -359,30 +317,29 @@ export default function SolicitudesCentralPage() {
         </Box>
       ) : resumen && (
         <>
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <MapPin className="w-4 h-4 text-gray-500" />
-            <h2 className="text-sm font-bold text-gray-700">Mapa de flota</h2>
-            <span className="ml-auto text-xs text-gray-400">
-              {Object.keys(ubicacionesEnVivo).length > 0
-                ? 'GPS en tiempo real'
-                : 'Sin reportes GPS aun — mostrando ubicación de referencia'}
-            </span>
-          </div>
-          <MapaDespacho
-            moviles={movilesConEstadoEnVivo.map(m => {
-              const enVivo = ubicacionesEnVivo[m.id_movil];
-              return {
-                ...m,
-                ...(enVivo && enVivo.lat != null
-                  ? { lat: enVivo.lat, lng: enVivo.lng, heading: enVivo.heading }
-                  : coordenadasMock(m.id_movil)),
-              };
-            })}
+        <Box>
+          <ColumnHeader
+            icon={<MapPin size={15} color="#6b6152" />}
+            title="Mapa de flota"
+            count={
+              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                {Object.keys(ubicacionesEnVivo).length > 0
+                  ? 'GPS en vivo (actualiza cada 4s)'
+                  : 'Sin reportes GPS aun'}
+              </Typography>
+            }
           />
-        </div>
+          <MapaDespacho
+            moviles={moviles
+              .filter(m => ubicacionesEnVivo[m.id_movil])
+              .map(m => {
+                const u = ubicacionesEnVivo[m.id_movil];
+                return { ...m, lat: u.lat, lng: u.lng, heading: u.heading };
+              })}
+          />
+        </Box>
 
-        <div className="grid grid-cols-4 gap-4">
+        <Box className="grid grid-cols-4 gap-4">
           {/* Fila virtual (base) */}
           <Box>
             <ColumnHeader
@@ -579,7 +536,7 @@ export default function SolicitudesCentralPage() {
                   onChange={e => setMovilId(e.target.value)} sx={{ mb: 2 }}
                 >
                   <MenuItem value="">Seleccionar móvil disponible...</MenuItem>
-                  {moviles.map(m => (
+                  {movilesDisponibles.map(m => (
                     <MenuItem key={m.id_movil} value={m.id_movil}>{m.patente} — {m.socio_nombre}</MenuItem>
                   ))}
                 </TextField>

@@ -113,7 +113,7 @@ export default function Layout() {
                 <ListItemIcon sx={{ minWidth: 0, mr: open ? 1.5 : 'auto', color: 'inherit', justifyContent: 'center' }}>
                   <Icon size={19} />
                 </ListItemIcon>
-                {open && <ListItemText slotProps={{ primary: { fontSize: 14, fontWeight: 500 } }}>{label}</ListItemText>}
+                {open && <ListItemText slotProps={{ primary: { sx: { fontSize: 14, fontWeight: 500 } } }}>{label}</ListItemText>}
               </ListItemButton>
             );
           })}
