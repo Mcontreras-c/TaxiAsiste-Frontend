@@ -7,14 +7,16 @@ import {
 } from '@mui/material';
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight,
-  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin,
+  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Navigation,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
   cambiarEstado, buscarPasajeroPorRut, type ResumenCentral,
 } from '../api/solicitudes';
 import { getMoviles, getFilaBase } from '../api/moviles';
+import { geocodificar, obtenerRuta } from '../api/mapas';
 import MapaDespacho from '../components/MapaDespacho';
+import type { PuntoRuta, RutaGeoJSON } from '../components/MapaDespacho';
 import { useUbicacionesMoviles } from '../hooks/useUbicacionesMoviles';
 import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../types';
 import { colors } from '../theme';
@@ -80,8 +82,13 @@ function EmptyHint({ text }: { text: string }) {
 }
 
 function SolicitudCard({
-  sol, onAccion,
-}: { sol: Solicitud; onAccion: (a: AccionModal) => void }) {
+  sol, onAccion, onVerRuta, cargandoRuta,
+}: {
+  sol: Solicitud;
+  onAccion: (a: AccionModal) => void;
+  onVerRuta?: (sol: Solicitud) => void;
+  cargandoRuta?: boolean;
+}) {
   return (
     <Card sx={{ borderRadius: 3 }}>
       <CardContent sx={{ p: '12px !important', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
@@ -126,6 +133,11 @@ function SolicitudCard({
             >
               Avanzar
             </Button>
+            {sol.estado === 'EN_CURSO' && onVerRuta && (
+              <IconButton size="small" title="Ver ruta en el mapa" onClick={() => onVerRuta(sol)} disabled={cargandoRuta} sx={{ color: '#7e22ce' }}>
+                <Navigation size={16} />
+              </IconButton>
+            )}
             <IconButton size="small" title="Sin contacto" onClick={() => onAccion({ solicitud: sol, tipo: 'sin_contacto' })} sx={{ color: '#c2410c' }}>
               <PhoneMissed size={16} />
             </IconButton>
@@ -155,6 +167,21 @@ export default function SolicitudesCentralPage() {
   const [movilId, setMovilId]       = useState('');
   const [buscandoRut, setBuscandoRut] = useState(false);
   const [pasajeroEncontrado, setPasajeroEncontrado] = useState<Pasajero | null>(null);
+
+  // Geocoding en vivo del formulario de nueva solicitud (Nominatim, via backend).
+  const [geocodOrigen, setGeocodOrigen] = useState<{ lat: number; lng: number; direccion_formateada: string } | null>(null);
+  const [geocodDestino, setGeocodDestino] = useState<{ lat: number; lng: number; direccion_formateada: string } | null>(null);
+  const [buscandoOrigen, setBuscandoOrigen] = useState(false);
+  const [buscandoDestino, setBuscandoDestino] = useState(false);
+  const [errorGeocodOrigen, setErrorGeocodOrigen] = useState<string | null>(null);
+  const [errorGeocodDestino, setErrorGeocodDestino] = useState<string | null>(null);
+
+  // Ruta trazada en el mapa principal para una solicitud EN_CURSO seleccionada.
+  const [rutaSeleccionada, setRutaSeleccionada] = useState<{
+    origenDestino: { origen: PuntoRuta; destino: PuntoRuta };
+    ruta: RutaGeoJSON;
+  } | null>(null);
+  const [cargandoRuta, setCargandoRuta] = useState(false);
   // Posiciones GPS por polling (GET /api/ubicaciones/ cada 4s — ver
   // useUbicacionesMoviles). No trae estado_operativo: ese dato se refresca
   // aparte junto con el resto de "moviles" (ver refrescoSilencioso abajo).
@@ -222,6 +249,45 @@ export default function SolicitudesCentralPage() {
     } finally { setBuscandoRut(false); }
   };
 
+  const handleOrigenBlur = async () => {
+    if (!form.origen) { setGeocodOrigen(null); setErrorGeocodOrigen(null); return; }
+    setBuscandoOrigen(true); setErrorGeocodOrigen(null);
+    try {
+      setGeocodOrigen(await geocodificar(form.origen));
+    } catch {
+      setGeocodOrigen(null);
+      setErrorGeocodOrigen('No se pudo ubicar esta dirección — se registrará solo como texto.');
+    } finally { setBuscandoOrigen(false); }
+  };
+
+  const handleDestinoBlur = async () => {
+    if (!form.destino) { setGeocodDestino(null); setErrorGeocodDestino(null); return; }
+    setBuscandoDestino(true); setErrorGeocodDestino(null);
+    try {
+      setGeocodDestino(await geocodificar(form.destino));
+    } catch {
+      setGeocodDestino(null);
+      setErrorGeocodDestino('No se pudo ubicar esta dirección — se registrará solo como texto.');
+    } finally { setBuscandoDestino(false); }
+  };
+
+  const handleVerRuta = async (sol: Solicitud) => {
+    setCargandoRuta(true);
+    try {
+      const [origen, destino] = await Promise.all([geocodificar(sol.origen), geocodificar(sol.destino)]);
+      const rutaCalculada = await obtenerRuta(origen, destino);
+      setRutaSeleccionada({
+        origenDestino: {
+          origen: { lat: origen.lat, lng: origen.lng, label: sol.origen },
+          destino: { lat: destino.lat, lng: destino.lng, label: sol.destino },
+        },
+        ruta: rutaCalculada.geometry,
+      });
+    } catch {
+      alert('No se pudo trazar la ruta para esta solicitud (direcciones no ubicables o servicio no disponible).');
+    } finally { setCargandoRuta(false); }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.origen || !form.destino) { setFormError('Origen y destino son obligatorios.'); return; }
@@ -235,6 +301,8 @@ export default function SolicitudesCentralPage() {
         pasajero: form.pasajero_id ?? null,
       });
       setForm(EMPTY_FORM); setPasajeroEncontrado(null);
+      setGeocodOrigen(null); setGeocodDestino(null);
+      setErrorGeocodOrigen(null); setErrorGeocodDestino(null);
       setShowForm(false);
       await load();
     } catch (err: any) {
@@ -296,7 +364,11 @@ export default function SolicitudesCentralPage() {
           <Button
             variant="contained"
             startIcon={<Plus size={16} />}
-            onClick={() => { setShowForm(true); setForm(EMPTY_FORM); setPasajeroEncontrado(null); setFormError(null); }}
+            onClick={() => {
+              setShowForm(true); setForm(EMPTY_FORM); setPasajeroEncontrado(null); setFormError(null);
+              setGeocodOrigen(null); setGeocodDestino(null);
+              setErrorGeocodOrigen(null); setErrorGeocodDestino(null);
+            }}
             sx={{
               color: colors.ink,
               background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
@@ -336,7 +408,14 @@ export default function SolicitudesCentralPage() {
                 const u = ubicacionesEnVivo[m.id_movil];
                 return { ...m, lat: u.lat, lng: u.lng, heading: u.heading };
               })}
+            origenDestino={rutaSeleccionada?.origenDestino ?? null}
+            ruta={rutaSeleccionada?.ruta ?? null}
           />
+          {rutaSeleccionada && (
+            <Button size="small" onClick={() => setRutaSeleccionada(null)} sx={{ fontSize: 11, mt: 0.5, color: 'text.secondary' }}>
+              Ocultar ruta
+            </Button>
+          )}
         </Box>
 
         <Box className="grid grid-cols-4 gap-4">
@@ -411,7 +490,7 @@ export default function SolicitudesCentralPage() {
               {resumen.en_curso.length === 0
                 ? <EmptyHint text="Sin viajes en curso" />
                 : resumen.en_curso.slice(0, 4).map(s => (
-                    <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
+                    <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} onVerRuta={handleVerRuta} cargandoRuta={cargandoRuta} />
                   ))
               }
             </Box>
@@ -469,10 +548,33 @@ export default function SolicitudesCentralPage() {
               )}
             </Box>
 
-            <TextField fullWidth size="small" label="Origen *" placeholder="Calle Falsa 123"
-              value={form.origen} onChange={e => setForm(f => ({ ...f, origen: e.target.value }))} />
-            <TextField fullWidth size="small" label="Destino *" placeholder="Plaza Italia"
-              value={form.destino} onChange={e => setForm(f => ({ ...f, destino: e.target.value }))} />
+            <Box>
+              <TextField fullWidth size="small" label="Origen *" placeholder="Calle Falsa 123"
+                value={form.origen}
+                onChange={e => { setForm(f => ({ ...f, origen: e.target.value })); setGeocodOrigen(null); setErrorGeocodOrigen(null); }}
+                onBlur={handleOrigenBlur} />
+              {buscandoOrigen && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Ubicando dirección...</Typography>}
+              {geocodOrigen && (
+                <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
+                  ✓ Ubicado ({geocodOrigen.lat.toFixed(4)}, {geocodOrigen.lng.toFixed(4)})
+                </Typography>
+              )}
+              {errorGeocodOrigen && <Typography sx={{ fontSize: 11, color: '#c2410c', mt: 0.5 }}>{errorGeocodOrigen}</Typography>}
+            </Box>
+
+            <Box>
+              <TextField fullWidth size="small" label="Destino *" placeholder="Plaza Italia"
+                value={form.destino}
+                onChange={e => { setForm(f => ({ ...f, destino: e.target.value })); setGeocodDestino(null); setErrorGeocodDestino(null); }}
+                onBlur={handleDestinoBlur} />
+              {buscandoDestino && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Ubicando dirección...</Typography>}
+              {geocodDestino && (
+                <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
+                  ✓ Ubicado ({geocodDestino.lat.toFixed(4)}, {geocodDestino.lng.toFixed(4)})
+                </Typography>
+              )}
+              {errorGeocodDestino && <Typography sx={{ fontSize: 11, color: '#c2410c', mt: 0.5 }}>{errorGeocodDestino}</Typography>}
+            </Box>
 
             <TextField fullWidth select size="small" label="Canal" value={form.canal_entrada}
               onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}>

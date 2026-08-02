@@ -1,7 +1,18 @@
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Polyline, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Movil } from '../types';
+
+export interface PuntoRuta {
+  lat: number;
+  lng: number;
+  label: string;
+}
+
+export interface RutaGeoJSON {
+  type: 'LineString';
+  coordinates: [number, number][]; // [lng, lat], formato GeoJSON estandar (OSRM)
+}
 
 const COLOR_ESTADO: Record<string, string> = {
   DISPONIBLE: '#16a34a',   // verde
@@ -73,9 +84,18 @@ interface MovilConUbicacion extends Movil {
 interface MapaDespachoProps {
   moviles: MovilConUbicacion[];
   altura?: string;
+  /** Origen/destino de la solicitud EN_CURSO seleccionada, ya geocodificados. */
+  origenDestino?: { origen: PuntoRuta; destino: PuntoRuta } | null;
+  /** Ruta OSRM entre origen y destino (GeoJSON LineString, coordenadas [lng, lat]). */
+  ruta?: RutaGeoJSON | null;
 }
 
-export default function MapaDespacho({ moviles, altura = '500px' }: MapaDespachoProps) {
+export default function MapaDespacho({ moviles, altura = '500px', origenDestino, ruta }: MapaDespachoProps) {
+  // Leaflet usa [lat, lng]; GeoJSON/OSRM entrega [lng, lat] — hay que invertir.
+  const posicionesRuta: [number, number][] = ruta
+    ? ruta.coordinates.map(([lng, lat]) => [lat, lng])
+    : [];
+
   return (
     // "isolate" crea un contexto de apilamiento propio: Leaflet usa z-index
     // internos altos (hasta 1000 para controles) que de otro modo se escapan
@@ -111,6 +131,27 @@ export default function MapaDespacho({ moviles, altura = '500px' }: MapaDespacho
             </Popup>
           </Marker>
         ))}
+
+        {posicionesRuta.length > 0 && (
+          <Polyline positions={posicionesRuta} pathOptions={{ color: '#7e22ce', weight: 4, opacity: 0.75 }} />
+        )}
+
+        {origenDestino && (
+          <>
+            <CircleMarker
+              center={[origenDestino.origen.lat, origenDestino.origen.lng]}
+              radius={8} pathOptions={{ color: 'white', weight: 2, fillColor: '#16a34a', fillOpacity: 1 }}
+            >
+              <Popup>Origen: {origenDestino.origen.label}</Popup>
+            </CircleMarker>
+            <CircleMarker
+              center={[origenDestino.destino.lat, origenDestino.destino.lng]}
+              radius={8} pathOptions={{ color: 'white', weight: 2, fillColor: '#c2410c', fillOpacity: 1 }}
+            >
+              <Popup>Destino: {origenDestino.destino.label}</Popup>
+            </CircleMarker>
+          </>
+        )}
       </MapContainer>
 
       {/* Leyenda */}
