@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
-  Avatar, Typography, AppBar, Toolbar, Divider, Breadcrumbs, Link as MLink,
+  Avatar, Typography, AppBar, Toolbar, Divider, Breadcrumbs, Link as MLink, Chip,
 } from '@mui/material';
-import { LogOut, Menu, PanelLeftClose, ChevronRight } from 'lucide-react';
+import { LogOut, Menu, PanelLeftClose, ChevronRight, WifiOff } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { useConnectionStore } from '../store/connectionStore';
 import { NAV_ITEMS, type Rol } from '../config/permisos';
 import { colors } from '../theme';
 import logo from '../assets/logo.jpg';
@@ -23,6 +24,7 @@ const DRAWER_CLOSED = 72;
 export default function Layout() {
   const [open, setOpen] = useState(true);
   const { usuario, logout } = useAuthStore();
+  const conexionInestable = useConnectionStore((s) => s.estado === 'inestable');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -160,6 +162,19 @@ export default function Layout() {
               <MLink underline="none" sx={{ fontSize: 14, color: 'text.secondary' }}>TaxiAsiste</MLink>
               <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{currentPage?.label ?? 'Inicio'}</Typography>
             </Breadcrumbs>
+            {conexionInestable && (
+              <Chip
+                icon={<WifiOff size={14} />}
+                label="Conexión inestable"
+                size="small"
+                title="Las actualizaciones automáticas (solicitudes, móviles, mapa) están fallando repetidamente."
+                sx={{
+                  ml: 'auto', fontWeight: 700, fontSize: 11.5,
+                  bgcolor: '#fdece2', color: '#c2410c',
+                  '& .MuiChip-icon': { color: '#c2410c' },
+                }}
+              />
+            )}
           </Toolbar>
         </AppBar>
 

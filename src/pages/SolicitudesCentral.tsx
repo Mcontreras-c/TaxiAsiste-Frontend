@@ -18,6 +18,7 @@ import { geocodificar, obtenerRuta } from '../api/mapas';
 import MapaDespacho from '../components/MapaDespacho';
 import type { PuntoRuta, RutaGeoJSON } from '../components/MapaDespacho';
 import { useUbicacionesMoviles } from '../hooks/useUbicacionesMoviles';
+import { useConnectionStore } from '../store/connectionStore';
 import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../types';
 import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
@@ -199,6 +200,7 @@ export default function SolicitudesCentralPage() {
       setResumen(r);
       setMoviles(m);
       setFilaBase(f.sort((a, b) => a.posicion - b.posicion));
+      useConnectionStore.getState().reportarExito();
     } catch {
       setError('No se pudo cargar las solicitudes.');
     } finally { setLoading(false); }
@@ -217,8 +219,10 @@ export default function SolicitudesCentralPage() {
         setResumen(r);
         setMoviles(m);
         setFilaBase(f.sort((a, b) => a.posicion - b.posicion));
+        useConnectionStore.getState().reportarExito();
       } catch {
         // se reintenta en el siguiente ciclo
+        useConnectionStore.getState().reportarFallo();
       }
     }, 5000);
     return () => clearInterval(id);

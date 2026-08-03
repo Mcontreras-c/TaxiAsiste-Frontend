@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getUbicaciones } from '../api/moviles';
+import { useConnectionStore } from '../store/connectionStore';
 
 export interface UbicacionMovil {
   id_movil: number;
@@ -36,9 +37,11 @@ export function useUbicacionesMoviles() {
           };
         }
         setUbicaciones(mapa);
+        useConnectionStore.getState().reportarExito();
       } catch {
         // Si falla un ciclo de polling (red inestable), se reintenta en el
         // siguiente intervalo sin limpiar las posiciones ya conocidas.
+        useConnectionStore.getState().reportarFallo();
       }
     }
 
