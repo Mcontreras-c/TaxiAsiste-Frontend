@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, Car, PhoneCall, BarChart2, DollarSign, Truck,
+  LayoutDashboard, Users, PhoneCall, BarChart2, DollarSign, Truck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -24,12 +24,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Socios',
     icon: Users,
     roles: ['Administrador', 'Tesorero'],
-  },
-  {
-    to: '/moviles',
-    label: 'Móviles',
-    icon: Car,
-    roles: ['Administrador', 'Central'],
   },
   {
     to: '/solicitudes',

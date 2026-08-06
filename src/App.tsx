@@ -6,13 +6,11 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Socios from './pages/Socios';
 import SociosTesorero from './pages/SociosTesorero';
-import Moviles from './pages/Moviles';
 import Solicitudes from './pages/Solicitudes';
 import SolicitudesCentral from './pages/SolicitudesCentral';
 import Reportes from './pages/Reportes';
 import ReportesCentral from './pages/ReportesCentral';
 import ReportesTesorero from './pages/ReportesTesorero';
-import MovilesCentral from './pages/MovilesCentral';
 import Tesoreria from './pages/Tesoreria';
 import TesoreriaAdmin from './pages/TesoreriaAdmin';
 import Conductor from './pages/Conductor';
@@ -54,11 +52,6 @@ function App() {
           <Route path="/socios" element={
             <RoleRoute ruta="/socios">
               {usuario?.rol === 'Tesorero' ? <SociosTesorero /> : <Socios />}
-            </RoleRoute>
-          } />
-          <Route path="/moviles" element={
-            <RoleRoute ruta="/moviles">
-              {usuario?.rol === 'Central' ? <MovilesCentral /> : <Moviles />}
             </RoleRoute>
           } />
           <Route path="/solicitudes" element={
