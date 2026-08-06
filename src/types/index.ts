@@ -166,6 +166,7 @@ export interface DetalleMovilCuota {
   estado_pago: 'PENDIENTE' | 'PAGADO' | 'VENCIDO' | 'EXENTO' | 'SIN_CUOTA';
   fecha_pago: string | null;
   cuotas_vencidas: number;
+  monto_adeudado: number;
 }
 
 export interface ResumenTesorero {

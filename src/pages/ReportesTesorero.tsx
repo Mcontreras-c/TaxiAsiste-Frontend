@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   Box, Typography, Chip, IconButton, Button, Alert, CircularProgress, Card, CardContent,
-  Table, TableHead, TableRow, TableCell, TableBody, LinearProgress,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from '@mui/material';
 import {
   DollarSign, RefreshCw, CheckCircle2,
   ChevronLeft, ChevronRight, Lock, Car, Settings,
-  AlertTriangle, ShieldOff, X,
+  AlertTriangle, ShieldOff, X, LockKeyhole,
 } from 'lucide-react';
 import { getResumenTesorero, cerrarPeriodo } from '../api/reportes';
 import { pagarMovil, pagarAtrasos } from '../api/tesoreria';
+import { bloquearPorNoPago } from '../api/socios';
 import type { ResumenTesorero, DetalleMovilCuota } from '../types';
 import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
@@ -106,6 +106,7 @@ export default function ReportesTesorero() {
   const [tarifa, setTarifa]               = useState<string>('7000');
   const [editTarifa, setEditTarifa]       = useState(false);
   const [modalAtrasos, setModalAtrasos]   = useState<DetalleMovilCuota | null>(null);
+  const [bloqueando, setBloqueando]       = useState<number | null>(null);
 
   const load = async (p = periodo) => {
     setLoading(true); setError(null);
@@ -125,6 +126,17 @@ export default function ReportesTesorero() {
     } catch {
       alert('Error al registrar el pago.');
     } finally { setPagando(null); }
+  };
+
+  const bloquearManual = async (item: DetalleMovilCuota) => {
+    if (!confirm(`¿Bloquear a ${item.socio} por no pago? Se bloquea de inmediato, sin esperar al cierre de período.`)) return;
+    setBloqueando(item.id_socio);
+    try {
+      await bloquearPorNoPago(item.id_socio, periodo);
+      await load(periodo);
+    } catch {
+      alert('Error al bloquear al socio.');
+    } finally { setBloqueando(null); }
   };
 
   const ejecutarCierre = async () => {
@@ -258,94 +270,110 @@ export default function ReportesTesorero() {
             {detalle.length === 0 ? (
               <Typography sx={{ textAlign: 'center', color: 'text.secondary', py: 5, fontSize: 13 }}>No hay móviles registrados.</Typography>
             ) : (
-              <Box sx={{ overflowX: 'auto' }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      {['Patente', 'Socio / Conductor', 'Atrasos', 'Cuota actual', 'Estado', 'Acción'].map(h => (
-                        <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {detalle.map(d => {
-                      const bloqueado = d.estado_socio === 'BLOQUEADO';
-                      const yaAtraso  = d.cuotas_vencidas > 0;
-                      return (
-                        <TableRow key={d.id_movil} hover sx={bloqueado ? { bgcolor: 'rgba(192,57,43,.04)' } : undefined}>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                              <Car size={13} color="#a89f8f" />
-                              <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{d.patente}</Typography>
+              <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                {detalle.map(d => {
+                  const bloqueado = d.estado_socio === 'BLOQUEADO';
+                  const yaAtraso  = d.cuotas_vencidas > 0;
+                  const puedeBloquear = !bloqueado && d.estado_pago !== 'PAGADO' && d.estado_pago !== 'EXENTO';
+                  return (
+                    <Box
+                      key={d.id_movil}
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: '140px 1fr 130px 150px 130px auto' },
+                        alignItems: 'center', gap: 1.5,
+                        bgcolor: bloqueado ? '#fdf6f5' : 'background.paper',
+                        border: '1px solid', borderColor: bloqueado ? '#f3c9c4' : 'divider',
+                        borderRadius: 3, px: 2, py: 1.5,
+                      }}
+                    >
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                          <Car size={13} color="#a89f8f" />
+                          <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{d.patente}</Typography>
+                        </Box>
+                        {d.estado_movil === 'BLOQUEADO' && (
+                          <Chip label="MÓVIL BLOQ." size="small" sx={{ mt: 0.4, bgcolor: '#fbe9e9', color: '#c0392b', fontWeight: 700, fontSize: 9, height: 18 }} />
+                        )}
+                      </Box>
+
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                        <InitialsAvatar nombre={d.socio} size={32} />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{d.socio}</Typography>
+                          <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>{d.rut}</Typography>
+                        </Box>
+                      </Box>
+
+                      <Box>
+                        {yaAtraso ? (
+                          <>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#c0392b', fontWeight: 700, fontSize: 12 }}>
+                              <AlertTriangle size={13} /> {d.cuotas_vencidas} cuota{d.cuotas_vencidas !== 1 ? 's' : ''}
                             </Box>
-                            {d.estado_movil === 'BLOQUEADO' && (
-                              <Chip label="BLOQUEADO" size="small" sx={{ mt: 0.25, bgcolor: '#fbe9e9', color: '#c0392b', fontWeight: 700, fontSize: 9, height: 18 }} />
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                              <InitialsAvatar nombre={d.socio} size={28} />
-                              <Box>
-                                <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{d.socio}</Typography>
-                                <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>{d.rut}</Typography>
-                              </Box>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            {yaAtraso ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#c0392b', fontWeight: 700, fontSize: 12 }}>
-                                <AlertTriangle size={13} /> {d.cuotas_vencidas} cuota{d.cuotas_vencidas !== 1 ? 's' : ''}
-                              </Box>
-                            ) : <Typography sx={{ fontSize: 12, color: '#c4bda9' }}>—</Typography>}
-                          </TableCell>
-                          <TableCell>
-                            <Chip label={PAGO_LABEL[d.estado_pago]} size="small" sx={{ bgcolor: PAGO_STYLE[d.estado_pago].bg, color: PAGO_STYLE[d.estado_pago].fg, fontWeight: 700, fontSize: 10.5 }} />
-                            {d.fecha_pago && <Typography sx={{ fontSize: 11, color: '#a89f8f', mt: 0.25 }}>{new Date(d.fecha_pago).toLocaleDateString('es-CL')}</Typography>}
-                          </TableCell>
-                          <TableCell>
-                            {bloqueado ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#c0392b' }}>
-                                <Lock size={13} /> BLOQUEADO
-                              </Box>
-                            ) : (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#2f7d5b' }}>
-                                <CheckCircle2 size={13} /> Activo
-                              </Box>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                              {d.estado_pago !== 'PAGADO' && d.estado_pago !== 'EXENTO' && (
-                                <Button
-                                  size="small" variant="contained" color="success" disabled={pagando === d.id_socio}
-                                  onClick={() => marcarPagado(d)}
-                                  startIcon={pagando === d.id_socio ? <CircularProgress size={12} color="inherit" /> : <CheckCircle2 size={13} />}
-                                  sx={{ fontSize: 11 }}
-                                >
-                                  Pagar período
-                                </Button>
-                              )}
-                              {yaAtraso && (
-                                <Button
-                                  size="small" variant="contained" onClick={() => setModalAtrasos(d)}
-                                  startIcon={<ShieldOff size={13} />}
-                                  sx={{ fontSize: 11, bgcolor: colors.accent600, '&:hover': { bgcolor: colors.accent700 } }}
-                                >
-                                  Saldar atrasos
-                                </Button>
-                              )}
-                              {d.estado_pago === 'PAGADO' && !yaAtraso && (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#2f7d5b', fontSize: 12, fontWeight: 600 }}>
-                                  <CheckCircle2 size={15} /> Al día
-                                </Box>
-                              )}
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#c0392b', fontFamily: 'Roboto Mono, monospace' }}>
+                              ${d.monto_adeudado.toLocaleString('es-CL')}
+                            </Typography>
+                          </>
+                        ) : <Typography sx={{ fontSize: 12, color: '#c4bda9' }}>Sin atrasos</Typography>}
+                      </Box>
+
+                      <Box>
+                        <Chip label={PAGO_LABEL[d.estado_pago]} size="small" sx={{ bgcolor: PAGO_STYLE[d.estado_pago].bg, color: PAGO_STYLE[d.estado_pago].fg, fontWeight: 700, fontSize: 10.5 }} />
+                        {d.fecha_pago && <Typography sx={{ fontSize: 11, color: '#a89f8f', mt: 0.4 }}>{new Date(d.fecha_pago).toLocaleDateString('es-CL')}</Typography>}
+                      </Box>
+
+                      <Box>
+                        {bloqueado ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#c0392b' }}>
+                            <Lock size={13} /> Bloqueado
+                          </Box>
+                        ) : (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#2f7d5b' }}>
+                            <CheckCircle2 size={13} /> Activo
+                          </Box>
+                        )}
+                      </Box>
+
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 140 }}>
+                        {d.estado_pago !== 'PAGADO' && d.estado_pago !== 'EXENTO' && (
+                          <Button
+                            size="small" variant="contained" color="success" disabled={pagando === d.id_socio}
+                            onClick={() => marcarPagado(d)}
+                            startIcon={pagando === d.id_socio ? <CircularProgress size={12} color="inherit" /> : <CheckCircle2 size={13} />}
+                            sx={{ fontSize: 11 }}
+                          >
+                            Pagar período
+                          </Button>
+                        )}
+                        {yaAtraso && (
+                          <Button
+                            size="small" variant="contained" onClick={() => setModalAtrasos(d)}
+                            startIcon={<ShieldOff size={13} />}
+                            sx={{ fontSize: 11, bgcolor: colors.accent600, '&:hover': { bgcolor: colors.accent700 } }}
+                          >
+                            Saldar atrasos
+                          </Button>
+                        )}
+                        {puedeBloquear && (
+                          <Button
+                            size="small" variant="outlined" color="error" disabled={bloqueando === d.id_socio}
+                            onClick={() => bloquearManual(d)}
+                            startIcon={bloqueando === d.id_socio ? <CircularProgress size={12} color="inherit" /> : <LockKeyhole size={13} />}
+                            sx={{ fontSize: 11 }}
+                          >
+                            Bloquear por no pago
+                          </Button>
+                        )}
+                        {d.estado_pago === 'PAGADO' && !yaAtraso && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#2f7d5b', fontSize: 12, fontWeight: 600 }}>
+                            <CheckCircle2 size={15} /> Al día
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
               </Box>
             )}
           </Box>

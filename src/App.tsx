@@ -8,7 +8,6 @@ import Socios from './pages/Socios';
 import SociosTesorero from './pages/SociosTesorero';
 import Solicitudes from './pages/Solicitudes';
 import SolicitudesCentral from './pages/SolicitudesCentral';
-import Reportes from './pages/Reportes';
 import ReportesCentral from './pages/ReportesCentral';
 import ReportesTesorero from './pages/ReportesTesorero';
 import Tesoreria from './pages/Tesoreria';
@@ -63,11 +62,7 @@ function App() {
           } />
           <Route path="/reportes" element={
             <RoleRoute ruta="/reportes">
-              {usuario?.rol === 'Central'
-                ? <ReportesCentral />
-                : usuario?.rol === 'Tesorero' || usuario?.rol === 'Administrador'
-                  ? <ReportesTesorero />
-                  : <Reportes />}
+              {usuario?.rol === 'Central' ? <ReportesCentral /> : <ReportesTesorero />}
             </RoleRoute>
           } />
           <Route path="/tesoreria" element={
