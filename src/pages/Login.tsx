@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Box, Container, Grid, Typography, TextField, Button, Alert, InputAdornment } from '@mui/material';
+import { Box, Typography, TextField, Button, Alert, InputAdornment } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import LoginIcon from '@mui/icons-material/Login';
@@ -38,95 +38,107 @@ export default function Login() {
   };
 
   return (
-    <Grid container sx={{ minHeight: '100vh' }}>
-      {/* Lado imagen — puramente visual */}
-      <Grid
-        size={{ xs: 12, md: 6 }}
-        sx={{
-          minHeight: { xs: 260, md: '100vh' },
-          display: { xs: 'none', md: 'block' },
-        }}
-      >
-        <Box
-          component="img" src={taxiHero} alt=""
-          sx={{ width: '100%', height: '100%', minHeight: '100vh', objectFit: 'cover', display: 'block' }}
-        />
-      </Grid>
+    <Box sx={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+      {/* Imagen de fondo a pantalla completa */}
+      <Box
+        component="img" src={taxiHero} alt=""
+        sx={{ position: 'fixed', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+      />
+      <Box sx={{
+        position: 'fixed', inset: 0, zIndex: 1,
+        background: 'linear-gradient(160deg, rgba(0,0,0,.55) 0%, rgba(0,20,40,.55) 55%, rgba(0,0,0,.65) 100%)',
+      }} />
 
-      {/* Lado formulario */}
-      <Grid
-        size={{ xs: 12, md: 6 }}
-        sx={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: '#ffffff',
-          backgroundImage:
-            'linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px)',
-          backgroundSize: '30px 30px',
-          minHeight: { xs: '100vh', md: 'auto' },
-        }}
-      >
-        <Container maxWidth="sm" sx={{ py: { xs: 6, md: 0 } }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, p: { xs: 0, sm: 6 } }}>
-            <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 44 }} />
+      {/* Marca creadora — chica, esquina superior */}
+      <Box sx={{
+        position: 'fixed', top: { xs: 20, sm: 28 }, right: { xs: 20, sm: 28 }, zIndex: 2,
+        display: 'flex', alignItems: 'center', gap: 0.75, opacity: 0.85,
+      }}>
+        <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 20, borderRadius: 0.5 }} />
+        <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>TaxiAsiste</Typography>
+      </Box>
 
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', mb: 1.5 }}>
-                Iniciar sesión
-              </Typography>
-              <Typography variant="subtitle1" color="text.secondary">
-                Tu sindicato de taxis, conectado. Administra socios, móviles, solicitudes
-                y tesorería desde un solo lugar, en tiempo real.
-              </Typography>
-            </Box>
+      {/* Card con fondo difuso (glassmorphism) sobre la imagen */}
+      <Box sx={{
+        position: 'relative', zIndex: 2, width: '100%', maxWidth: 420,
+        borderRadius: 5, p: { xs: 3.5, sm: 5 },
+        backgroundColor: 'rgba(255,255,255,.14)',
+        backdropFilter: 'blur(22px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(22px) saturate(160%)',
+        border: '1px solid rgba(255,255,255,.25)',
+        boxShadow: '0 20px 60px rgba(0,0,0,.35)',
+        display: 'flex', flexDirection: 'column', gap: 3,
+      }}>
+        <Box>
+          <Typography sx={{
+            fontSize: 12.5, fontWeight: 800, color: 'primary.main',
+            textTransform: 'uppercase', letterSpacing: '.08em', mb: 0.75,
+          }}>
+            Agrupación de Taxistas — Cerro Navia · Félix Bulnes
+          </Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff' }}>
+            Iniciar sesión
+          </Typography>
+        </Box>
 
-            <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <TextField
-                {...register('username')}
-                label="Usuario" placeholder="admin" fullWidth
-                error={!!errors.username} helperText={errors.username?.message}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-              <TextField
-                {...register('password')}
-                label="Contraseña" placeholder="••••••••" type="password" fullWidth
-                error={!!errors.password} helperText={errors.password?.message}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <TextField
+            {...register('username')}
+            label="Usuario" placeholder="admin" fullWidth
+            error={!!errors.username} helperText={errors.username?.message}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon fontSize="small" sx={{ color: 'rgba(255,255,255,.7)' }} />
+                  </InputAdornment>
+                ),
+                sx: { color: '#fff' },
+              },
+              inputLabel: { sx: { color: 'rgba(255,255,255,.75)' } },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.3)' },
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.5)' },
+            }}
+          />
+          <TextField
+            {...register('password')}
+            label="Contraseña" placeholder="••••••••" type="password" fullWidth
+            error={!!errors.password} helperText={errors.password?.message}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon fontSize="small" sx={{ color: 'rgba(255,255,255,.7)' }} />
+                  </InputAdornment>
+                ),
+                sx: { color: '#fff' },
+              },
+              inputLabel: { sx: { color: 'rgba(255,255,255,.75)' } },
+            }}
+            sx={{
+              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.3)' },
+              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.5)' },
+            }}
+          />
 
-              {error && <Alert severity="error">{error}</Alert>}
+          {error && <Alert severity="error">{error}</Alert>}
 
-              <Button
-                type="submit" disabled={isLoading}
-                variant="contained" color="primary" fullWidth size="large"
-                startIcon={<LoginIcon />}
-                sx={{ py: 1.4, fontSize: 15.5 }}
-              >
-                {isLoading ? 'Ingresando...' : 'Ingresar'}
-              </Button>
-            </Box>
+          <Button
+            type="submit" disabled={isLoading}
+            variant="contained" color="primary" fullWidth size="large"
+            startIcon={<LoginIcon />}
+            sx={{ py: 1.4, fontSize: 15.5 }}
+          >
+            {isLoading ? 'Ingresando...' : 'Ingresar'}
+          </Button>
+        </Box>
 
-            <Typography sx={{ textAlign: 'center', fontSize: 12, color: 'text.secondary' }}>
-              INACAP 2026 · TaxiAsiste v1.0
-            </Typography>
-          </Box>
-        </Container>
-      </Grid>
-    </Grid>
+        <Typography sx={{ textAlign: 'center', fontSize: 11.5, color: 'rgba(255,255,255,.65)' }}>
+          TaxiAsiste v1.0
+        </Typography>
+      </Box>
+    </Box>
   );
 }

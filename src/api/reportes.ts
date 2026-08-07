@@ -12,3 +12,8 @@ export const getResumenTesorero = (periodo?: string) =>
 
 export const cerrarPeriodo = () =>
   apiClient.post<{ cuotas_vencidas: number; socios_bloqueados: number; fecha: string }>('/reportes/cerrar_periodo/').then(r => r.data);
+
+export const cerrarSemana = (periodo: string, tarifa: number) =>
+  apiClient.post<{
+    periodo: string; recaudado: number; cuotas_vencidas: number; socios_bloqueados: number; fecha: string;
+  }>('/reportes/cerrar_semana/', { periodo, tarifa }).then(r => r.data);

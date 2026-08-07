@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
   Box, Typography, Chip, IconButton, TextField, Alert, CircularProgress, Card, CardContent,
-  Table, TableHead, TableRow, TableCell, TableBody, InputAdornment,
+  Table, TableHead, TableRow, TableCell, TableBody, InputAdornment, Button,
 } from '@mui/material';
-import { Users, Search, RefreshCw, AlertTriangle, Phone } from 'lucide-react';
-import { getSocios } from '../api/socios';
+import { Users, Search, RefreshCw, AlertTriangle, Phone, Unlock, Lock } from 'lucide-react';
+import { getSocios, desbloquearSocio, bloquearSocio } from '../api/socios';
 import type { Socio } from '../types';
 import { InitialsAvatar } from '../components/InitialsAvatar';
 
@@ -19,6 +19,8 @@ export default function SociosTesorero() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [search, setSearch]   = useState('');
+  const [desbloqueando, setDesbloqueando] = useState<number | null>(null);
+  const [bloqueando, setBloqueando] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -28,6 +30,33 @@ export default function SociosTesorero() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleDesbloquear = async (s: Socio) => {
+    if (!confirm(`¿Desbloquear a ${s.nombre_completo}? Vuelve a estar ACTIVO de inmediato.`)) return;
+    setDesbloqueando(s.id_socio);
+    try {
+      await desbloquearSocio(s.id_socio);
+      await load();
+    } catch {
+      setError('No se pudo desbloquear al socio.');
+    } finally {
+      setDesbloqueando(null);
+    }
+  };
+
+  const handleBloquear = async (s: Socio) => {
+    const motivo = prompt(`Motivo del bloqueo de ${s.nombre_completo}:`);
+    if (motivo === null) return;
+    setBloqueando(s.id_socio);
+    try {
+      await bloquearSocio(s.id_socio, motivo);
+      await load();
+    } catch {
+      setError('No se pudo bloquear al socio.');
+    } finally {
+      setBloqueando(null);
+    }
+  };
 
   const filtered = socios.filter(s =>
     `${s.nombre_completo} ${s.rut}`.toLowerCase().includes(search.toLowerCase())
@@ -83,14 +112,14 @@ export default function SociosTesorero() {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  {['RUT', 'Nombre', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas vencidas'].map(h => (
+                  {['RUT', 'Nombre', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas vencidas', ''].map(h => (
                     <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
                   ))}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: 'text.secondary', py: 5 }}>No se encontraron socios.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} sx={{ textAlign: 'center', color: 'text.secondary', py: 5 }}>No se encontraron socios.</TableCell></TableRow>
                 ) : filtered.map(s => (
                   <TableRow key={s.id_socio} hover>
                     <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 13 }}>{s.rut}</TableCell>
@@ -121,6 +150,29 @@ export default function SociosTesorero() {
                         </Box>
                       ) : (
                         <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2f7d5b' }}>Al día</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {s.estado_socio === 'BLOQUEADO' ? (
+                        <Button
+                          size="small" variant="outlined" color="success"
+                          disabled={desbloqueando === s.id_socio}
+                          onClick={() => handleDesbloquear(s)}
+                          startIcon={<Unlock size={13} />}
+                          sx={{ fontSize: 11, whiteSpace: 'nowrap' }}
+                        >
+                          Desbloquear
+                        </Button>
+                      ) : (
+                        <Button
+                          size="small" variant="outlined" color="error"
+                          disabled={bloqueando === s.id_socio}
+                          onClick={() => handleBloquear(s)}
+                          startIcon={<Lock size={13} />}
+                          sx={{ fontSize: 11, whiteSpace: 'nowrap' }}
+                        >
+                          Bloquear
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>

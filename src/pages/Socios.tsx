@@ -8,7 +8,7 @@ import {
   Users, Plus, AlertTriangle, X, Search, Phone, MapPin,
   Car, ChevronDown, ChevronRight, Lock, Unlock, Pencil, Check,
 } from 'lucide-react';
-import { getSocios, createSocio, updateSocio } from '../api/socios';
+import { getSocios, createSocio, updateSocio, desbloquearSocio, bloquearSocio } from '../api/socios';
 import { getMoviles, createMovil, updateMovil } from '../api/moviles';
 import type { Socio, Movil } from '../types';
 import { colors } from '../theme';
@@ -238,7 +238,7 @@ function TarjetaVehiculo({
             borderColor: movil.estado_operativo === 'BLOQUEADO' ? '#2f7d5b' : '#c0392b',
           }}
         >
-          {movil.estado_operativo === 'BLOQUEADO' ? 'Desbloquear' : 'Bloquear'}
+          {movil.estado_operativo === 'BLOQUEADO' ? 'Desbloquear móvil' : 'Bloquear móvil'}
         </Button>
       </Box>
     </Box>
@@ -260,6 +260,8 @@ export default function SociosPage() {
   const [vehiculoForm, setVehiculoForm] = useState<VehiculoFormData>(VEHICULO_EMPTY);
   const [saving, setSaving]         = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
+  const [desbloqueando, setDesbloqueando] = useState<number | null>(null);
+  const [bloqueando, setBloqueando] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -301,6 +303,33 @@ export default function SociosPage() {
   };
 
   const cerrarModal = () => setModal(null);
+
+  const handleDesbloquear = async (s: Socio) => {
+    if (!confirm(`¿Desbloquear a ${s.nombre_completo}? Vuelve a estar ACTIVO de inmediato.`)) return;
+    setDesbloqueando(s.id_socio);
+    try {
+      await desbloquearSocio(s.id_socio);
+      await load();
+    } catch {
+      setError('No se pudo desbloquear al socio.');
+    } finally {
+      setDesbloqueando(null);
+    }
+  };
+
+  const handleBloquear = async (s: Socio) => {
+    const motivo = prompt(`Motivo del bloqueo de ${s.nombre_completo}:`);
+    if (motivo === null) return;
+    setBloqueando(s.id_socio);
+    try {
+      await bloquearSocio(s.id_socio, motivo);
+      await load();
+    } catch {
+      setError('No se pudo bloquear al socio.');
+    } finally {
+      setBloqueando(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,7 +412,7 @@ export default function SociosPage() {
             <>
               <Box sx={{
                 display: { xs: 'none', md: 'grid' },
-                gridTemplateColumns: '28px 2fr 1.3fr 1.6fr 110px 100px 130px 40px',
+                gridTemplateColumns: '28px 2fr 1.3fr 1.6fr 110px 100px 130px 180px',
                 gap: 1.5, px: 2.5, pb: 0.5,
               }}>
                 {['', 'Socio', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas', ''].map((h, i) => (
@@ -401,7 +430,7 @@ export default function SociosPage() {
                       onClick={() => setExpandido(abierto ? null : s.id_socio)}
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: { xs: '28px 1fr 40px', md: '28px 2fr 1.3fr 1.6fr 110px 100px 130px 40px' },
+                        gridTemplateColumns: { xs: '28px 1fr 40px', md: '28px 2fr 1.3fr 1.6fr 110px 100px 130px 180px' },
                         alignItems: 'center', gap: 1.5,
                         bgcolor: 'background.paper',
                         border: '1px solid', borderColor: abierto ? colors.accent500 : 'divider',
@@ -464,12 +493,35 @@ export default function SociosPage() {
                         )}
                       </Box>
 
-                      <IconButton
-                        size="small" onClick={e => { e.stopPropagation(); abrirEditar(s); }}
-                        sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
-                      >
-                        <Pencil size={13} />
-                      </IconButton>
+                      <Box sx={{ display: 'flex', gap: 0.75 }}>
+                        {s.estado_socio === 'BLOQUEADO' ? (
+                          <Button
+                            size="small" variant="outlined" color="success"
+                            disabled={desbloqueando === s.id_socio}
+                            onClick={e => { e.stopPropagation(); handleDesbloquear(s); }}
+                            startIcon={<Unlock size={13} />}
+                            sx={{ fontSize: 11, whiteSpace: 'nowrap' }}
+                          >
+                            Desbloquear
+                          </Button>
+                        ) : (
+                          <Button
+                            size="small" variant="outlined" color="error"
+                            disabled={bloqueando === s.id_socio}
+                            onClick={e => { e.stopPropagation(); handleBloquear(s); }}
+                            startIcon={<Lock size={13} />}
+                            sx={{ fontSize: 11, whiteSpace: 'nowrap' }}
+                          >
+                            Bloquear
+                          </Button>
+                        )}
+                        <IconButton
+                          size="small" onClick={e => { e.stopPropagation(); abrirEditar(s); }}
+                          sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
+                        >
+                          <Pencil size={13} />
+                        </IconButton>
+                      </Box>
                     </Box>
 
                     <Collapse in={abierto} timeout="auto" unmountOnExit>

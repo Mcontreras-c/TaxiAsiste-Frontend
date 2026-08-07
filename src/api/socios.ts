@@ -13,7 +13,10 @@ export const createSocio = (data: Partial<Socio>) =>
 export const updateSocio = (id: number, data: Partial<Socio>) =>
   apiClient.patch<Socio>(`/socios/${id}/`, data).then(r => r.data);
 
-export const bloquearPorNoPago = (idSocio: number, periodo?: string) =>
-  apiClient.post<{ message: string; estado_socio: string; monto_adeudado: number }>(
-    `/socios/${idSocio}/bloquear_por_no_pago/`, periodo ? { periodo } : {},
+export const desbloquearSocio = (idSocio: number) =>
+  apiClient.post<{ message: string; estado_socio: string }>(`/socios/${idSocio}/desbloquear/`).then(r => r.data);
+
+export const bloquearSocio = (idSocio: number, motivo: string, tipoBloqueo?: string) =>
+  apiClient.post<{ message: string; estado_socio: string }>(
+    `/socios/${idSocio}/bloquear/`, { motivo, tipo_bloqueo: tipoBloqueo },
   ).then(r => r.data);

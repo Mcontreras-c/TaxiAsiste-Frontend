@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, IconButton, Card, CardContent, LinearProgress, Alert as MAlert, CircularProgress } from '@mui/material';
-import { Car, PhoneCall, RefreshCw, LayoutDashboard, UserCheck, UserX, CarFront, Timer, Route, CheckCircle2, Wallet, CalendarClock, BarChart3 } from 'lucide-react';
+import { Box, Typography, IconButton, Card, CardContent, Alert as MAlert, CircularProgress } from '@mui/material';
+import {
+  Car, PhoneCall, RefreshCw, LayoutDashboard, UserCheck, UserX, CarFront,
+  Timer, Route, CheckCircle2, Wallet, CalendarClock, BarChart3,
+} from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { getDashboard, getSolicitudesPorEstado } from '../api/reportes';
 import type { Dashboard, SolicitudPorEstado } from '../types';
@@ -40,39 +43,54 @@ const TONES: Record<string, Tone> = {
   orange:  { fg: '#c2410c', bg: '#fdece2', grad: 'linear-gradient(135deg,#f5a06b,#c2410c)' },
 };
 
-function StatCard({
-  title, value, icon, tone, sub, percent,
-}: { title: string; value: number; icon: React.ReactNode; tone: Tone; sub?: string; percent?: number }) {
+function HeroStat({
+  title, value, total, icon, tone, unidad,
+}: { title: string; value: number; total: number; icon: React.ReactNode; tone: Tone; unidad: string }) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
     <Card sx={{ borderRadius: 4, position: 'relative', overflow: 'hidden' }}>
-      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+      <Box sx={{ position: 'absolute', inset: 0, opacity: 0.06, background: tone.grad }} />
+      <CardContent sx={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'text.secondary' }}>
-            {title}
-          </Typography>
           <Box sx={{
-            width: 34, height: 34, borderRadius: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: tone.grad, color: '#fff', boxShadow: `0 4px 10px ${tone.fg}33`,
+            width: 40, height: 40, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: tone.grad, color: '#fff', boxShadow: `0 4px 12px ${tone.fg}40`,
           }}>
             {icon}
           </Box>
+          {total > 0 && (
+            <Typography sx={{ fontSize: 12, fontWeight: 700, color: tone.fg, bgcolor: tone.bg, px: 1.25, py: 0.4, borderRadius: 5 }}>
+              {pct}%
+            </Typography>
+          )}
         </Box>
-        <Typography sx={{ fontSize: 30, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', lineHeight: 1 }}>
-          {String(value).padStart(2, '0')}
-        </Typography>
-        {percent !== undefined ? (
-          <Box>
-            <LinearProgress
-              variant="determinate" value={percent}
-              sx={{ height: 6, borderRadius: 3, bgcolor: tone.bg, '& .MuiLinearProgress-bar': { borderRadius: 3, background: tone.grad } }}
-            />
-            <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{sub}</Typography>
-          </Box>
-        ) : sub && (
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{sub}</Typography>
-        )}
+        <Box>
+          <Typography sx={{ fontSize: 36, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', lineHeight: 1, color: '#2a2519' }}>
+            {value}
+          </Typography>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
+            {title} <Box component="span" sx={{ color: '#c4bda9' }}>· {unidad}</Box>
+          </Typography>
+        </Box>
       </CardContent>
     </Card>
+  );
+}
+
+function MiniRow({
+  icon, label, value, tone,
+}: { icon: React.ReactNode; label: string; value: number; tone: Tone }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.1 }}>
+      <Box sx={{
+        width: 30, height: 30, borderRadius: 2.25, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        bgcolor: tone.bg, color: tone.fg,
+      }}>
+        {icon}
+      </Box>
+      <Typography sx={{ fontSize: 13, color: 'text.secondary', flex: 1 }}>{label}</Typography>
+      <Typography sx={{ fontSize: 15, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{value}</Typography>
+    </Box>
   );
 }
 
@@ -83,8 +101,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     </Typography>
   );
 }
-
-const gridSx = { display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', lg: 'repeat(4,1fr)' }, gap: 2 };
 
 export default function DashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
@@ -126,13 +142,12 @@ export default function DashboardPage() {
     return <MAlert severity="error" action={<IconButton size="small" onClick={load}><RefreshCw size={16} /></IconButton>}>{error ?? 'Error desconocido'}</MAlert>;
   }
 
-  const totalSocios = data.socios.activos + data.socios.bloqueados;
+  const totalSocios  = data.socios.activos + data.socios.bloqueados;
   const totalMoviles = data.moviles.disponibles + data.moviles.en_servicio;
-  const totalCuotas = data.cuotas.pendientes + data.cuotas.vencidas;
-  const pct = (v: number, t: number) => (t > 0 ? Math.round((v / t) * 100) : 0);
+  const hayChart = porEstado.some(e => e.total > 0);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <LayoutDashboard size={22} color="#3a3327" />
@@ -149,48 +164,34 @@ export default function DashboardPage() {
         </IconButton>
       </Box>
 
-      <Box>
-        <SectionLabel>Socios</SectionLabel>
-        <Box sx={gridSx}>
-          <StatCard title="Socios activos" value={data.socios.activos} icon={<UserCheck size={17} />} tone={TONES.emerald}
-            percent={pct(data.socios.activos, totalSocios)} sub={`${pct(data.socios.activos, totalSocios)}% del total`} />
-          <StatCard title="Socios bloqueados" value={data.socios.bloqueados} icon={<UserX size={17} />} tone={TONES.red}
-            percent={pct(data.socios.bloqueados, totalSocios)} sub={`${pct(data.socios.bloqueados, totalSocios)}% del total`} />
-        </Box>
+      {/* Fila hero: 3 métricas principales */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3,1fr)' }, gap: 2 }}>
+        <HeroStat
+          title="Socios activos" value={data.socios.activos} total={totalSocios} unidad={`${data.socios.bloqueados} bloqueados`}
+          icon={<UserCheck size={19} />} tone={TONES.emerald}
+        />
+        <HeroStat
+          title="Móviles disponibles" value={data.moviles.disponibles} total={totalMoviles} unidad={`${data.moviles.en_servicio} en servicio`}
+          icon={<Car size={19} />} tone={TONES.blue}
+        />
+        <HeroStat
+          title="Solicitudes en curso" value={data.solicitudes.en_curso} total={0} unidad={`${data.solicitudes.pendientes} pendientes`}
+          icon={<Route size={19} />} tone={TONES.violet}
+        />
       </Box>
 
-      <Box>
-        <SectionLabel>Móviles</SectionLabel>
-        <Box sx={gridSx}>
-          <StatCard title="Disponibles" value={data.moviles.disponibles} icon={<Car size={17} />} tone={TONES.blue}
-            percent={pct(data.moviles.disponibles, totalMoviles)} sub={`${pct(data.moviles.disponibles, totalMoviles)}% del total`} />
-          <StatCard title="En servicio" value={data.moviles.en_servicio} icon={<CarFront size={17} />} tone={TONES.amber}
-            percent={pct(data.moviles.en_servicio, totalMoviles)} sub={`${pct(data.moviles.en_servicio, totalMoviles)}% del total`} />
-        </Box>
-      </Box>
-
-      <Box>
-        <SectionLabel>Solicitudes</SectionLabel>
-        <Box sx={gridSx}>
-          <StatCard title="Hoy" value={data.solicitudes.hoy} icon={<PhoneCall size={17} />} tone={TONES.violet} />
-          <StatCard title="Pendientes" value={data.solicitudes.pendientes} icon={<Timer size={17} />} tone={TONES.orange} />
-          <StatCard title="En curso" value={data.solicitudes.en_curso} icon={<Route size={17} />} tone={TONES.blue} />
-          <StatCard title="Completadas hoy" value={data.solicitudes.completadas_hoy} icon={<CheckCircle2 size={17} />} tone={TONES.emerald} />
-        </Box>
-      </Box>
-
-      {porEstado.some(e => e.total > 0) && (
-        <Box>
-          <SectionLabel>Historial de solicitudes por estado</SectionLabel>
-          <Card sx={{ borderRadius: 4 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <BarChart3 size={16} color="#6b6152" />
-                <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>
-                  Total: {porEstado.reduce((acc, e) => acc + e.total, 0)} solicitudes
-                </Typography>
-              </Box>
-              <Box sx={{ height: 220 }}>
+      {/* Fila principal: gráfico + panel resumen */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 2, alignItems: 'stretch' }}>
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <BarChart3 size={16} color="#6b6152" />
+              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>
+                Solicitudes por estado — Total: {porEstado.reduce((acc, e) => acc + e.total, 0)}
+              </Typography>
+            </Box>
+            {hayChart ? (
+              <Box sx={{ flex: 1, minHeight: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={porEstado.map(e => ({ estado: e.estado, label: ESTADO_CHART_LABEL[e.estado], total: e.total }))}
@@ -211,19 +212,31 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
-            </CardContent>
-          </Card>
-        </Box>
-      )}
+            ) : (
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary', fontSize: 13, minHeight: 260 }}>
+                Todavía no hay solicitudes registradas.
+              </Box>
+            )}
+          </CardContent>
+        </Card>
 
-      <Box>
-        <SectionLabel>Cuotas</SectionLabel>
-        <Box sx={gridSx}>
-          <StatCard title="Pendientes de pago" value={data.cuotas.pendientes} icon={<Wallet size={17} />} tone={TONES.amber}
-            percent={pct(data.cuotas.pendientes, totalCuotas)} sub={`${pct(data.cuotas.pendientes, totalCuotas)}% del total`} />
-          <StatCard title="Vencidas" value={data.cuotas.vencidas} icon={<CalendarClock size={17} />} tone={TONES.red}
-            percent={pct(data.cuotas.vencidas, totalCuotas)} sub={`${pct(data.cuotas.vencidas, totalCuotas)}% del total`} />
-        </Box>
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent>
+            <SectionLabel>Resumen</SectionLabel>
+            <Box sx={{
+              display: 'flex', flexDirection: 'column',
+              '& > *:not(:last-child)': { borderBottom: '1px solid', borderColor: 'divider' },
+            }}>
+              <MiniRow icon={<PhoneCall size={14} />} label="Solicitudes hoy" value={data.solicitudes.hoy} tone={TONES.violet} />
+              <MiniRow icon={<CheckCircle2 size={14} />} label="Completadas hoy" value={data.solicitudes.completadas_hoy} tone={TONES.emerald} />
+              <MiniRow icon={<Timer size={14} />} label="Solicitudes pendientes" value={data.solicitudes.pendientes} tone={TONES.orange} />
+              <MiniRow icon={<CarFront size={14} />} label="Móviles en servicio" value={data.moviles.en_servicio} tone={TONES.amber} />
+              <MiniRow icon={<UserX size={14} />} label="Socios bloqueados" value={data.socios.bloqueados} tone={TONES.red} />
+              <MiniRow icon={<Wallet size={14} />} label="Cuotas pendientes" value={data.cuotas.pendientes} tone={TONES.amber} />
+              <MiniRow icon={<CalendarClock size={14} />} label="Cuotas vencidas" value={data.cuotas.vencidas} tone={TONES.red} />
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );

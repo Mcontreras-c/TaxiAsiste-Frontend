@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight, Landmark } from 'lucide-react';
 import {
-  getMovimientos, getBalance, createMovimiento, registrarPagoCuota, getCuotas,
-  type TesoreriaMovimiento, type Balance,
+  getMovimientos, getBalance, createMovimiento, registrarPagoCuota, getCuotas, getResumenMensual,
+  type TesoreriaMovimiento, type Balance, type ResumenMensual,
 } from '../api/tesoreria';
 import type { Cuota } from '../types';
 import {
@@ -33,6 +33,25 @@ interface MovForm {
 
 const MOV_EMPTY: MovForm = { tipo: 'INGRESO', categoria: 'OTRO', descripcion: '', monto: '' };
 
+function hoyMes() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function mesLabel(m: string) {
+  const [y, mm] = m.split('-');
+  return new Date(Number(y), Number(mm) - 1, 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+}
+function prevMes(m: string) {
+  const [y, mm] = m.split('-').map(Number);
+  const d = new Date(y, mm - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function nextMes(m: string) {
+  const [y, mm] = m.split('-').map(Number);
+  const d = new Date(y, mm, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export default function TesoreriaPage() {
   const [movimientos, setMovimientos] = useState<TesoreriaMovimiento[]>([]);
   const [balance, setBalance]         = useState<Balance | null>(null);
@@ -42,6 +61,8 @@ export default function TesoreriaPage() {
   const [modal, setModal]             = useState<ModalTipo>(null);
   const [saving, setSaving]           = useState(false);
   const [formError, setFormError]     = useState<string | null>(null);
+  const [mes, setMes]                 = useState(hoyMes());
+  const [resumenMes, setResumenMes]   = useState<ResumenMensual | null>(null);
 
   // Pago cuota
   const [cuotaSeleccionada, setCuotaSeleccionada] = useState('');
@@ -67,6 +88,10 @@ export default function TesoreriaPage() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    getResumenMensual(mes).then(setResumenMes).catch(() => setResumenMes(null));
+  }, [mes]);
+
   const handlePagoCuota = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cuotaSeleccionada) { setFormError('Selecciona una cuota.'); return; }
@@ -75,6 +100,7 @@ export default function TesoreriaPage() {
       await registrarPagoCuota(Number(cuotaSeleccionada), observacion || undefined);
       setModal(null); setCuotaSeleccionada(''); setObservacion('');
       await load();
+      getResumenMensual(mes).then(setResumenMes).catch(() => {});
     } catch (err: any) {
       setFormError(err?.response?.data?.error ?? 'Error al registrar el pago.');
     } finally { setSaving(false); }
@@ -94,6 +120,7 @@ export default function TesoreriaPage() {
       });
       setModal(null); setMovForm(MOV_EMPTY);
       await load();
+      getResumenMensual(mes).then(setResumenMes).catch(() => {});
     } catch (err: any) {
       setFormError(err?.response?.data?.detail ?? 'Error al registrar el movimiento.');
     } finally { setSaving(false); }
@@ -148,6 +175,50 @@ export default function TesoreriaPage() {
           />
         </div>
       )}
+
+      <div className="card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <button onClick={() => setMes(prevMes(mes))} className="p-1.5 rounded-lg hover:bg-slate-100">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <h2 className="text-sm font-semibold text-slate-700 capitalize">Resumen de caja — {mesLabel(mes)}</h2>
+          <button onClick={() => setMes(nextMes(mes))} className="p-1.5 rounded-lg hover:bg-slate-100">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        {resumenMes && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard
+              title="Caja mes anterior"
+              value={`$${resumenMes.caja_anterior.toLocaleString('es-CL')}`}
+              icon={<Landmark className="w-5 h-5 text-slate-500" />}
+              accent="text-slate-700"
+              iconBg="bg-slate-100"
+            />
+            <StatCard
+              title="Ganancias del mes"
+              value={`$${resumenMes.ingresos_mes.toLocaleString('es-CL')}`}
+              icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
+              accent="text-emerald-600"
+              iconBg="bg-emerald-50"
+            />
+            <StatCard
+              title="Gastos del mes"
+              value={`$${resumenMes.egresos_mes.toLocaleString('es-CL')}`}
+              icon={<TrendingDown className="w-5 h-5 text-red-500" />}
+              accent="text-red-500"
+              iconBg="bg-red-50"
+            />
+            <StatCard
+              title="Total caja actual"
+              value={`$${resumenMes.total_caja.toLocaleString('es-CL')}`}
+              icon={<Wallet className={`w-5 h-5 ${resumenMes.total_caja >= 0 ? 'text-blue-600' : 'text-orange-500'}`} />}
+              accent={resumenMes.total_caja >= 0 ? 'text-blue-600' : 'text-orange-500'}
+              iconBg={resumenMes.total_caja >= 0 ? 'bg-blue-50' : 'bg-orange-50'}
+            />
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <LoadingState />

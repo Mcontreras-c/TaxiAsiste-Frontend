@@ -1,16 +1,16 @@
 import { createTheme } from '@mui/material/styles';
 
-// Paleta corporativa TaxiAsiste
+// Paleta corporativa TaxiAsiste — tomada del logo del sindicato (amarillo + azul)
 export const colors = {
-  // Marca (ambar)
-  accent300: '#FFD54D',
-  accent500: '#FFB300', // primary
-  accent600: '#E5A100',
-  accent700: '#B37400',
+  // Marca (amarillo del logo)
+  accent300: '#FFF176',
+  accent500: '#FFDE00', // primary
+  accent600: '#F2C400',
+  accent700: '#C79A00',
 
-  // Secundario / textos oscuros (slate)
-  ink: '#1E293B', // secondary
-  inkSoft: '#334155',
+  // Secundario (azul del logo)
+  ink: '#0072BC', // secondary
+  inkSoft: '#1E86D1',
 
   // Fondos
   paper: '#F8FAFC', // background.default
@@ -22,19 +22,19 @@ export const colors = {
   info: '#3B82F6',
   warning: '#F59E0B',
 
-  sidebarGradient: 'linear-gradient(160deg, #FFB300 0%, #334155 46%, #1E293B 100%)',
+  sidebarGradient: 'linear-gradient(160deg, #FFDE00 0%, #1E86D1 46%, #0072BC 100%)',
 };
 
 export const theme = createTheme({
   palette: {
     primary: {
-      main: '#FFB300',
+      main: colors.accent500,
       light: colors.accent300,
       dark: colors.accent700,
-      contrastText: '#1E293B',
+      contrastText: colors.ink,
     },
     secondary: {
-      main: '#1E293B',
+      main: colors.ink,
       contrastText: '#FFFFFF',
     },
     background: {

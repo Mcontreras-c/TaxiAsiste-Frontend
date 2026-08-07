@@ -6,11 +6,10 @@ import {
 import {
   DollarSign, RefreshCw, CheckCircle2,
   ChevronLeft, ChevronRight, Lock, Car, Settings,
-  AlertTriangle, ShieldOff, X, LockKeyhole,
+  AlertTriangle, ShieldOff, X,
 } from 'lucide-react';
-import { getResumenTesorero, cerrarPeriodo } from '../api/reportes';
+import { getResumenTesorero, cerrarSemana } from '../api/reportes';
 import { pagarMovil, pagarAtrasos } from '../api/tesoreria';
-import { bloquearPorNoPago } from '../api/socios';
 import type { ResumenTesorero, DetalleMovilCuota } from '../types';
 import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
@@ -26,23 +25,39 @@ const PAGO_LABEL: Record<string, string> = {
   PAGADO: 'Pagado', PENDIENTE: 'Pendiente', VENCIDO: 'Vencido', EXENTO: 'Exento', SIN_CUOTA: 'Sin cuota',
 };
 
+function toISODate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function lunesDeSemana(d: Date) {
+  const dia = d.getDay(); // 0=domingo
+  const offset = dia === 0 ? -6 : 1 - dia;
+  const l = new Date(d);
+  l.setDate(d.getDate() + offset);
+  return l;
+}
 function hoyPeriodo() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return toISODate(lunesDeSemana(new Date()));
 }
 function periodoLabel(p: string) {
-  const [y, m] = p.split('-');
-  return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  const [y, m, d] = p.split('-').map(Number);
+  const inicio = new Date(y, m - 1, d);
+  const fin = new Date(inicio);
+  fin.setDate(inicio.getDate() + 6);
+  const mismoMes = inicio.getMonth() === fin.getMonth();
+  const mes = fin.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  return mismoMes
+    ? `${inicio.getDate()} – ${fin.getDate()} de ${mes}`
+    : `${inicio.getDate()} de ${inicio.toLocaleDateString('es-CL', { month: 'long' })} – ${fin.getDate()} de ${mes}`;
 }
-function prevMes(p: string) {
-  const [y, m] = p.split('-').map(Number);
-  const d = new Date(y, m - 2, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+function prevSemana(p: string) {
+  const [y, m, d] = p.split('-').map(Number);
+  const dt = new Date(y, m - 1, d - 7);
+  return toISODate(dt);
 }
-function nextMes(p: string) {
-  const [y, m] = p.split('-').map(Number);
-  const d = new Date(y, m, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+function nextSemana(p: string) {
+  const [y, m, d] = p.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + 7);
+  return toISODate(dt);
 }
 
 function ModalAtrasos({
@@ -106,7 +121,6 @@ export default function ReportesTesorero() {
   const [tarifa, setTarifa]               = useState<string>('7000');
   const [editTarifa, setEditTarifa]       = useState(false);
   const [modalAtrasos, setModalAtrasos]   = useState<DetalleMovilCuota | null>(null);
-  const [bloqueando, setBloqueando]       = useState<number | null>(null);
 
   const load = async (p = periodo) => {
     setLoading(true); setError(null);
@@ -128,31 +142,24 @@ export default function ReportesTesorero() {
     } finally { setPagando(null); }
   };
 
-  const bloquearManual = async (item: DetalleMovilCuota) => {
-    if (!confirm(`¿Bloquear a ${item.socio} por no pago? Se bloquea de inmediato, sin esperar al cierre de período.`)) return;
-    setBloqueando(item.id_socio);
-    try {
-      await bloquearPorNoPago(item.id_socio, periodo);
-      await load(periodo);
-    } catch {
-      alert('Error al bloquear al socio.');
-    } finally { setBloqueando(null); }
-  };
-
   const ejecutarCierre = async () => {
     setCerrando(true);
     try {
-      const r = await cerrarPeriodo();
+      const r = await cerrarSemana(periodo, Number(tarifa));
       setConfirmCierre(false);
-      alert(`Cierre ejecutado:\n• ${r.cuotas_vencidas} cuotas → VENCIDO\n• ${r.socios_bloqueados} socios bloqueados`);
+      alert(
+        `Cierre de semana ejecutado:\n` +
+        `• Recaudado: $${r.recaudado.toLocaleString('es-CL')}\n` +
+        `• ${r.cuotas_vencidas} cuota(s) → VENCIDO\n` +
+        `• ${r.socios_bloqueados} socio(s) bloqueado(s)`
+      );
       await load(periodo);
     } catch {
       alert('Error al ejecutar el cierre.');
     } finally { setCerrando(false); }
   };
 
-  const esPeriodoActual = periodo === hoyPeriodo();
-  const hayPendientes   = (resumen?.pendientes ?? 0) > 0;
+  const hayPendientes = (resumen?.pendientes ?? 0) > 0;
 
   const detalle = resumen?.detalle.slice().sort((a, b) => {
     if (a.estado_socio === 'BLOQUEADO' && b.estado_socio !== 'BLOQUEADO') return -1;
@@ -170,13 +177,13 @@ export default function ReportesTesorero() {
           <DollarSign size={22} color="#3a3327" />
           <Box>
             <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Reportes — Tesorería</Typography>
-            <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>Control de recaudación por período</Typography>
+            <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>Control de recaudación semanal</Typography>
           </Box>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          {esPeriodoActual && hayPendientes && (
+          {hayPendientes && (
             <Button variant="contained" color="error" startIcon={<Lock size={15} />} onClick={() => setConfirmCierre(true)}>
-              Cierre de período
+              Cerrar semana
             </Button>
           )}
           <IconButton onClick={() => load(periodo)} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
@@ -185,11 +192,11 @@ export default function ReportesTesorero() {
 
       <Card sx={{ borderRadius: 3 }}>
         <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: '10px !important' }}>
-          <IconButton size="small" onClick={() => setPeriodo(prevMes(periodo))}><ChevronLeft size={17} /></IconButton>
+          <IconButton size="small" onClick={() => setPeriodo(prevSemana(periodo))}><ChevronLeft size={17} /></IconButton>
           <Typography sx={{ flex: 1, textAlign: 'center', fontWeight: 700, fontSize: 14, textTransform: 'capitalize' }}>
-            {periodoLabel(periodo)}
+            Semana {periodoLabel(periodo)}
           </Typography>
-          <IconButton size="small" onClick={() => setPeriodo(nextMes(periodo))}><ChevronRight size={17} /></IconButton>
+          <IconButton size="small" onClick={() => setPeriodo(nextSemana(periodo))}><ChevronRight size={17} /></IconButton>
         </CardContent>
       </Card>
 
@@ -274,7 +281,6 @@ export default function ReportesTesorero() {
                 {detalle.map(d => {
                   const bloqueado = d.estado_socio === 'BLOQUEADO';
                   const yaAtraso  = d.cuotas_vencidas > 0;
-                  const puedeBloquear = !bloqueado && d.estado_pago !== 'PAGADO' && d.estado_pago !== 'EXENTO';
                   return (
                     <Box
                       key={d.id_movil}
@@ -355,16 +361,6 @@ export default function ReportesTesorero() {
                             Saldar atrasos
                           </Button>
                         )}
-                        {puedeBloquear && (
-                          <Button
-                            size="small" variant="outlined" color="error" disabled={bloqueando === d.id_socio}
-                            onClick={() => bloquearManual(d)}
-                            startIcon={bloqueando === d.id_socio ? <CircularProgress size={12} color="inherit" /> : <LockKeyhole size={13} />}
-                            sx={{ fontSize: 11 }}
-                          >
-                            Bloquear por no pago
-                          </Button>
-                        )}
                         {d.estado_pago === 'PAGADO' && !yaAtraso && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#2f7d5b', fontSize: 12, fontWeight: 600 }}>
                             <CheckCircle2 size={15} /> Al día
@@ -387,12 +383,13 @@ export default function ReportesTesorero() {
       <Dialog open={confirmCierre} onClose={() => setConfirmCierre(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
           <Lock size={20} color="#c0392b" />
-          <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Cierre de período</Typography>
+          <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Cerrar semana</Typography>
         </DialogTitle>
         <DialogContent>
           <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>
-            Se marcarán como <strong>VENCIDO</strong> las cuotas pendientes con fecha de vencimiento pasada
-            y se bloquearán los socios morosos.
+            Los móviles marcados <strong>Pagado</strong> quedan tal cual — ese dinero ya se sumó al fondo de tesorería.
+            Los que <strong>no pagaron</strong> esta semana quedarán <strong>VENCIDO</strong> y su socio se bloqueará
+            automáticamente (bloqueo acumulativo: si sigue sin pagar, se suma otra cuota la próxima semana).
             <br /><br />
             <strong>Esta acción no se puede deshacer.</strong>
           </Typography>
@@ -403,7 +400,7 @@ export default function ReportesTesorero() {
             fullWidth variant="contained" color="error" disabled={cerrando} onClick={ejecutarCierre}
             startIcon={cerrando ? <CircularProgress size={14} color="inherit" /> : <Lock size={15} />}
           >
-            Ejecutar cierre
+            Cerrar semana
           </Button>
         </DialogActions>
       </Dialog>

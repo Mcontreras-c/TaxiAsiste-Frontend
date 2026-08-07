@@ -3,8 +3,8 @@ import {
   Box, Typography, Chip, IconButton, Alert, CircularProgress, Card, CardContent,
   Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
-import { DollarSign, RefreshCw, TrendingUp, TrendingDown, Wallet, Info } from 'lucide-react';
-import { getMovimientos, getBalance, type TesoreriaMovimiento, type Balance } from '../api/tesoreria';
+import { DollarSign, RefreshCw, TrendingUp, TrendingDown, Wallet, Info, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getMovimientos, getBalance, getResumenMensual, type TesoreriaMovimiento, type Balance, type ResumenMensual } from '../api/tesoreria';
 
 const TIPO_STYLE = {
   INGRESO: { bg: '#e4f3ec', fg: '#2f7d5b' },
@@ -34,11 +34,32 @@ function ResumenCard({
   );
 }
 
+function hoyMes() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function mesLabel(m: string) {
+  const [y, mm] = m.split('-');
+  return new Date(Number(y), Number(mm) - 1, 1).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+}
+function prevMes(m: string) {
+  const [y, mm] = m.split('-').map(Number);
+  const d = new Date(y, mm - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function nextMes(m: string) {
+  const [y, mm] = m.split('-').map(Number);
+  const d = new Date(y, mm, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export default function TesoreriaAdmin() {
   const [movimientos, setMovimientos] = useState<TesoreriaMovimiento[]>([]);
   const [balance, setBalance]         = useState<Balance | null>(null);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
+  const [mes, setMes]                 = useState(hoyMes());
+  const [resumenMes, setResumenMes]   = useState<ResumenMensual | null>(null);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -52,6 +73,10 @@ export default function TesoreriaAdmin() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    getResumenMensual(mes).then(setResumenMes).catch(() => setResumenMes(null));
+  }, [mes]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -82,6 +107,28 @@ export default function TesoreriaAdmin() {
           />
         </Box>
       )}
+
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <IconButton size="small" onClick={() => setMes(prevMes(mes))}><ChevronLeft size={17} /></IconButton>
+            <Typography sx={{ fontWeight: 700, fontSize: 14, textTransform: 'capitalize' }}>Resumen de caja — {mesLabel(mes)}</Typography>
+            <IconButton size="small" onClick={() => setMes(nextMes(mes))}><ChevronRight size={17} /></IconButton>
+          </Box>
+          {resumenMes && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: 2 }}>
+              <ResumenCard icon={<Landmark size={19} />} tone={{ bg: '#f1efe9', fg: '#6b6152' }} label="Caja mes anterior" value={`$${resumenMes.caja_anterior.toLocaleString('es-CL')}`} />
+              <ResumenCard icon={<TrendingUp size={19} />} tone={{ bg: '#e4f3ec', fg: '#2f7d5b' }} label="Ganancias del mes" value={`$${resumenMes.ingresos_mes.toLocaleString('es-CL')}`} />
+              <ResumenCard icon={<TrendingDown size={19} />} tone={{ bg: '#fbe9e9', fg: '#c0392b' }} label="Gastos del mes" value={`$${resumenMes.egresos_mes.toLocaleString('es-CL')}`} />
+              <ResumenCard
+                icon={<Wallet size={19} />}
+                tone={resumenMes.total_caja >= 0 ? { bg: '#e8ecf9', fg: '#3355a8' } : { bg: '#fdece2', fg: '#c2410c' }}
+                label="Total caja actual" value={`$${resumenMes.total_caja.toLocaleString('es-CL')}`}
+              />
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}>

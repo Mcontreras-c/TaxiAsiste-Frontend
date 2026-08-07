@@ -42,3 +42,14 @@ export const pagarAtrasos = (id_socio: number) =>
 
 export const getCuotas = () =>
   apiClient.get<Cuota[]>('/cuotas/').then(r => r.data);
+
+export interface ResumenMensual {
+  mes: string;
+  caja_anterior: number;
+  ingresos_mes: number;
+  egresos_mes: number;
+  total_caja: number;
+}
+
+export const getResumenMensual = (mes?: string) =>
+  apiClient.get<ResumenMensual>('/tesoreria/resumen_mensual/', { params: mes ? { mes } : {} }).then(r => r.data);

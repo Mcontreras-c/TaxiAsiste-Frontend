@@ -171,6 +171,7 @@ export interface DetalleMovilCuota {
 
 export interface ResumenTesorero {
   periodo: string;
+  semana_fin: string;
   total_moviles: number;
   pagados: number;
   pendientes: number;
