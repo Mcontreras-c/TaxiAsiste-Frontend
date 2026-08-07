@@ -12,9 +12,9 @@ export const colors = {
   ink: '#0072BC', // secondary
   inkSoft: '#1E86D1',
 
-  // Fondos
-  paper: '#F8FAFC', // background.default
-  surface: '#FFFFFF', // background.paper
+  // Fondos (tono calido y suave, no blanco puro, para bajarle el brillo a la pantalla)
+  paper: '#F1EFE9', // background.default
+  surface: '#FDFCFA', // background.paper
 
   // Semanticos
   success: '#10B981',
@@ -38,8 +38,8 @@ export const theme = createTheme({
       contrastText: '#FFFFFF',
     },
     background: {
-      default: '#F8FAFC',
-      paper: '#FFFFFF',
+      default: colors.paper,
+      paper: colors.surface,
     },
     success: { main: '#10B981' },
     error:   { main: '#EF4444' },
