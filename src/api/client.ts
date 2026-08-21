@@ -13,4 +13,17 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Sesion invalida (token vencido, o se inicio sesion en otro dispositivo):
+      // cerramos sesion local para volver al login en vez de mostrar errores sueltos.
+      const { useAuthStore } = await import('../store/authStore');
+      useAuthStore.getState().logout();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;
