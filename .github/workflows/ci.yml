@@ -17,6 +17,8 @@ jobs:
 
       - run: npm ci
 
+      - run: npm test
+
       # tsc -b + vite build -- si esto pasa, el chequeo de tipos y el build
       # de produccion (con code-splitting, ver App.tsx) estan sanos.
       - run: npm run build
