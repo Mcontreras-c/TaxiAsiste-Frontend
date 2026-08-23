@@ -12,12 +12,16 @@ export async function login(username: string, password: string): Promise<LoginRe
 
 export async function refreshToken(): Promise<string> {
   const refresh = localStorage.getItem('refresh_token');
-  // ROTATE_REFRESH_TOKENS+BLACKLIST_AFTER_ROTATION en el backend: el
-  // refresh usado queda invalidado de inmediato, asi que hay que guardar
-  // el nuevo que devuelve la respuesta o el proximo refresh fallaria.
-  const { data } = await apiClient.post<{ access: string; refresh: string }>('/token/refresh/', { refresh });
+  const { data } = await apiClient.post<{ access: string; refresh?: string }>('/token/refresh/', { refresh });
   localStorage.setItem('access_token', data.access);
-  localStorage.setItem('refresh_token', data.refresh);
+  // El backend no rota el refresh token (ver settings.py, SIMPLE_JWT — se
+  // probo y se descarto por una condicion de carrera entre pollers
+  // concurrentes), asi que normalmente no viene 'refresh' en la respuesta.
+  // Se guarda solo si viene, para no pisar el token valido con "undefined"
+  // si el backend alguna vez vuelve a rotar.
+  if (data.refresh) {
+    localStorage.setItem('refresh_token', data.refresh);
+  }
   return data.access;
 }
 

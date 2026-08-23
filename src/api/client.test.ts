@@ -39,6 +39,19 @@ describe('interceptor de refresh automatico', () => {
     expect(localStorage.getItem('refresh_token')).toBe('refresh-nuevo');
   });
 
+  it('el backend no rota el refresh (caso real hoy): no pisa el refresh_token guardado', async () => {
+    localStorage.setItem('access_token', 'viejo');
+    localStorage.setItem('refresh_token', 'refresh-valido');
+
+    mock.onGet('/solicitudes/').replyOnce(401).onGet('/solicitudes/').reply(200, { ok: true });
+    mock.onPost('/token/refresh/').reply(200, { access: 'nuevo' }); // sin 'refresh'
+
+    await apiClient.get('/solicitudes/');
+
+    expect(localStorage.getItem('access_token')).toBe('nuevo');
+    expect(localStorage.getItem('refresh_token')).toBe('refresh-valido');
+  });
+
   it('sin refresh_token guardado, cierra sesion directo sin intentar refrescar', async () => {
     localStorage.setItem('access_token', 'viejo');
     mock.onGet('/solicitudes/').reply(401);
