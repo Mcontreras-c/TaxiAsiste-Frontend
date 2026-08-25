@@ -38,6 +38,22 @@ para la app mobile)
 - Los estados reales de una solicitud: PENDIENTE -> ASIGNADO -> EN_CURSO -> COMPLETADO
   (o CANCELADO en cualquier punto antes de COMPLETADO)
 
+## Tests
+
+```
+npm test
+```
+
+Vitest + React Testing Library + jsdom (`vitest.config.ts`). Cobertura
+actual: `config/permisos.ts` (logica de acceso por rol, incluye una
+verificacion de que `HOME_POR_ROL` y `NAV_ITEMS` no se desincronicen),
+`store/connectionStore.ts` (umbral de fallos consecutivos), y el hook de
+polling `hooks/useUbicacionesMoviles.ts` (con timers falsos y la API
+mockeada). Con fake timers activos, usar `vi.advanceTimersByTimeAsync()`
+en vez de `waitFor()` de Testing Library — su polling interno depende de
+timers reales y se cuelga (ver el helper `flush()` en
+`useUbicacionesMoviles.test.ts`).
+
 ## Notas
 - El backend debe correr con `python manage.py runserver 0.0.0.0:8000` (ver detalles
   y gotchas de entorno en `CONTEXTO.md` del repo `TaxiAsiste-Backend`)

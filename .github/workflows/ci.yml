@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      # tsc -b + vite build -- si esto pasa, el chequeo de tipos y el build
+      # de produccion (con code-splitting, ver App.tsx) estan sanos.
+      - run: npm run build
+
+      # Informativo por ahora: hay deuda de lint pre-existente (unos 25
+      # errores en Tesoreria.tsx/TesoreriaAdmin.tsx/authStore.ts) que no es
+      # parte de este cambio -- no bloquea el CI hasta que se limpie aparte.
+      - name: Lint (no bloquea)
+        run: npm run lint
+        continue-on-error: true

@@ -1,18 +1,27 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { tieneAcceso, HOME_POR_ROL, type Rol } from './config/permisos';
 import Layout from './components/Layout';
+import { LoadingState } from './components/ui';
+
+// Cada pagina en su propio chunk (import dinamico) — evita que TODO el panel
+// (incluido Leaflet, cargado solo por SolicitudesCentral via MapaDespacho)
+// termine en el bundle inicial de 1.28MB que Vite marcaba con el warning de
+// "chunks are larger than 500 kB". Login no se separa: es la primera
+// pantalla que ve cualquiera sin sesion, separarla solo agregaria un
+// round-trip extra sin beneficio.
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Socios from './pages/Socios';
-import SociosTesorero from './pages/SociosTesorero';
-import Solicitudes from './pages/Solicitudes';
-import SolicitudesCentral from './pages/SolicitudesCentral';
-import ReportesCentral from './pages/ReportesCentral';
-import ReportesTesorero from './pages/ReportesTesorero';
-import Tesoreria from './pages/Tesoreria';
-import TesoreriaAdmin from './pages/TesoreriaAdmin';
-import Conductor from './pages/Conductor';
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Socios = lazy(() => import('./pages/Socios'));
+const SociosTesorero = lazy(() => import('./pages/SociosTesorero'));
+const Solicitudes = lazy(() => import('./pages/Solicitudes'));
+const SolicitudesCentral = lazy(() => import('./pages/SolicitudesCentral'));
+const ReportesCentral = lazy(() => import('./pages/ReportesCentral'));
+const ReportesTesorero = lazy(() => import('./pages/ReportesTesorero'));
+const Tesoreria = lazy(() => import('./pages/Tesoreria'));
+const TesoreriaAdmin = lazy(() => import('./pages/TesoreriaAdmin'));
+const Conductor = lazy(() => import('./pages/Conductor'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -42,6 +51,7 @@ function App() {
   const { usuario } = useAuthStore();
   return (
     <BrowserRouter>
+      <Suspense fallback={<LoadingState label="Cargando..." className="py-24" />}>
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -75,6 +85,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
