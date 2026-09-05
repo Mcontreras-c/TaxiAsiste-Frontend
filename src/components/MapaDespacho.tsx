@@ -1,6 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Polyline, CircleMarker } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useState } from 'react';
+import { GoogleMap, MarkerF, InfoWindowF, PolylineF, useJsApiLoader } from '@react-google-maps/api';
 import type { Movil } from '../types';
 
 export interface PuntoRuta {
@@ -11,7 +10,7 @@ export interface PuntoRuta {
 
 export interface RutaGeoJSON {
   type: 'LineString';
-  coordinates: [number, number][]; // [lng, lat], formato GeoJSON estandar (OSRM)
+  coordinates: [number, number][]; // [lng, lat], formato GeoJSON estandar (OSRM/Directions)
 }
 
 const COLOR_ESTADO: Record<string, string> = {
@@ -29,9 +28,10 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 // Icono de auto vista-superior en SVG, coloreado por estado y rotado segun heading.
-// Se genera como divIcon (no marker.png) para poder rotar solo el vehiculo sin
-// afectar el punto de anclaje del marcador.
-function iconoVehiculo(estado: string, heading: number | null | undefined) {
+// La rotacion queda "horneada" dentro del propio SVG (transform en el <g>), asi
+// Google Maps solo necesita mostrar una imagen estatica por marcador — no hace
+// falta ninguna API de rotacion de iconos.
+function iconoVehiculoUrl(estado: string, heading: number | null | undefined) {
   const color = COLOR_ESTADO[estado] ?? COLOR_ESTADO.INACTIVO;
   const rotacion = heading ?? 0;
   const svg = `
@@ -63,17 +63,22 @@ function iconoVehiculo(estado: string, heading: number | null | undefined) {
       <circle cx="19" cy="19" r="18" fill="none" stroke="white" stroke-width="1.2" stroke-opacity="0.6"/>
     </svg>
   `;
-  return L.divIcon({
-    html: svg,
-    className: 'marcador-vehiculo',
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -19],
-  });
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function iconoPuntoUrl(color: string) {
+  const svg = `
+    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9" cy="9" r="7" fill="${color}" stroke="white" stroke-width="2.4"/>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
 // Centro por defecto: Santiago de Chile. Ajustar a la comuna real del sindicato.
-const CENTRO_DEFECTO: [number, number] = [-33.4489, -70.6693];
+const CENTRO_DEFECTO = { lat: -33.4489, lng: -70.6693 };
+
+const LIBRARIES: ('places')[] = [];
 
 interface MovilConUbicacion extends Movil {
   lat: number;
@@ -86,73 +91,113 @@ interface MapaDespachoProps {
   altura?: string;
   /** Origen/destino de la solicitud EN_CURSO seleccionada, ya geocodificados. */
   origenDestino?: { origen: PuntoRuta; destino: PuntoRuta } | null;
-  /** Ruta OSRM entre origen y destino (GeoJSON LineString, coordenadas [lng, lat]). */
+  /** Ruta (GeoJSON LineString, coordenadas [lng, lat]) entre origen y destino. */
   ruta?: RutaGeoJSON | null;
 }
 
 export default function MapaDespacho({ moviles, altura = '500px', origenDestino, ruta }: MapaDespachoProps) {
-  // Leaflet usa [lat, lng]; GeoJSON/OSRM entrega [lng, lat] — hay que invertir.
-  const posicionesRuta: [number, number][] = ruta
-    ? ruta.coordinates.map(([lng, lat]) => [lat, lng])
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-taxiasiste',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
+    libraries: LIBRARIES,
+  });
+
+  const [activo, setActivo] = useState<number | 'origen' | 'destino' | null>(null);
+
+  // Google Maps usa [lat, lng]; GeoJSON/Directions entrega [lng, lat] — hay que invertir.
+  const posicionesRuta = ruta
+    ? ruta.coordinates.map(([lng, lat]) => ({ lat, lng }))
     : [];
 
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        No se pudo cargar Google Maps. Revisa que la clave de API (VITE_GOOGLE_MAPS_API_KEY) esté configurada.
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="rounded-xl border border-gray-200 flex items-center justify-center text-sm text-gray-400" style={{ height: altura }}>
+        Cargando mapa...
+      </div>
+    );
+  }
+
   return (
-    // "isolate" crea un contexto de apilamiento propio: Leaflet usa z-index
-    // internos altos (hasta 1000 para controles) que de otro modo se escapan
-    // por encima de modales con z-index menor en el resto de la pagina.
     <div className="relative isolate rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-      <MapContainer
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: altura }}
         center={CENTRO_DEFECTO}
         zoom={13}
-        scrollWheelZoom
-        zoomControl={false}
-        style={{ width: '100%', height: altura }}
+        options={{
+          zoomControl: true,
+          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+        }}
       >
-        <ZoomControl position="bottomright" />
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
-          maxZoom={20}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        />
         {moviles.map((m) => (
-          <Marker key={m.id_movil} position={[m.lat, m.lng]} icon={iconoVehiculo(m.estado_operativo, m.heading)}>
-            <Popup>
-              <div className="text-sm min-w-[140px]">
-                <p className="font-semibold text-gray-800">{m.patente}</p>
-                <p className="text-gray-500">{m.socio_nombre}</p>
-                <span
-                  className="inline-block mt-1.5 text-xs font-semibold px-2 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: COLOR_ESTADO[m.estado_operativo] ?? COLOR_ESTADO.INACTIVO }}
-                >
-                  {ETIQUETA_ESTADO[m.estado_operativo] ?? m.estado_operativo}
-                </span>
-              </div>
-            </Popup>
-          </Marker>
+          <MarkerF
+            key={m.id_movil}
+            position={{ lat: m.lat, lng: m.lng }}
+            icon={{
+              url: iconoVehiculoUrl(m.estado_operativo, m.heading),
+              scaledSize: new google.maps.Size(38, 38),
+              anchor: new google.maps.Point(19, 19),
+            }}
+            onClick={() => setActivo(m.id_movil)}
+          >
+            {activo === m.id_movil && (
+              <InfoWindowF onCloseClick={() => setActivo(null)}>
+                <div className="text-sm min-w-[140px]">
+                  <p className="font-semibold text-gray-800">{m.patente}</p>
+                  <p className="text-gray-500">{m.socio_nombre}</p>
+                  <span
+                    className="inline-block mt-1.5 text-xs font-semibold px-2 py-0.5 rounded-full text-white"
+                    style={{ backgroundColor: COLOR_ESTADO[m.estado_operativo] ?? COLOR_ESTADO.INACTIVO }}
+                  >
+                    {ETIQUETA_ESTADO[m.estado_operativo] ?? m.estado_operativo}
+                  </span>
+                </div>
+              </InfoWindowF>
+            )}
+          </MarkerF>
         ))}
 
         {posicionesRuta.length > 0 && (
-          <Polyline positions={posicionesRuta} pathOptions={{ color: '#7e22ce', weight: 4, opacity: 0.75 }} />
+          <PolylineF path={posicionesRuta} options={{ strokeColor: '#7e22ce', strokeWeight: 4, strokeOpacity: 0.75 }} />
         )}
 
         {origenDestino && (
           <>
-            <CircleMarker
-              center={[origenDestino.origen.lat, origenDestino.origen.lng]}
-              radius={8} pathOptions={{ color: 'white', weight: 2, fillColor: '#16a34a', fillOpacity: 1 }}
+            <MarkerF
+              position={{ lat: origenDestino.origen.lat, lng: origenDestino.origen.lng }}
+              icon={{ url: iconoPuntoUrl('#16a34a'), scaledSize: new google.maps.Size(18, 18), anchor: new google.maps.Point(9, 9) }}
+              onClick={() => setActivo('origen')}
             >
-              <Popup>Origen: {origenDestino.origen.label}</Popup>
-            </CircleMarker>
-            <CircleMarker
-              center={[origenDestino.destino.lat, origenDestino.destino.lng]}
-              radius={8} pathOptions={{ color: 'white', weight: 2, fillColor: '#c2410c', fillOpacity: 1 }}
+              {activo === 'origen' && (
+                <InfoWindowF onCloseClick={() => setActivo(null)}>
+                  <span className="text-sm">Origen: {origenDestino.origen.label}</span>
+                </InfoWindowF>
+              )}
+            </MarkerF>
+            <MarkerF
+              position={{ lat: origenDestino.destino.lat, lng: origenDestino.destino.lng }}
+              icon={{ url: iconoPuntoUrl('#c2410c'), scaledSize: new google.maps.Size(18, 18), anchor: new google.maps.Point(9, 9) }}
+              onClick={() => setActivo('destino')}
             >
-              <Popup>Destino: {origenDestino.destino.label}</Popup>
-            </CircleMarker>
+              {activo === 'destino' && (
+                <InfoWindowF onCloseClick={() => setActivo(null)}>
+                  <span className="text-sm">Destino: {origenDestino.destino.label}</span>
+                </InfoWindowF>
+              )}
+            </MarkerF>
           </>
         )}
-      </MapContainer>
+      </GoogleMap>
 
       {/* Leyenda */}
       <div className="absolute bottom-3 left-3 z-[500] bg-white/95 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-1">

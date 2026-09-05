@@ -2,12 +2,12 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Box, Typography, Chip, IconButton, Button, Alert, CircularProgress,
   Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, MenuItem, Table, TableHead, TableRow, TableCell, TableBody,
-  Avatar,
+  TextField, MenuItem, InputAdornment, Avatar,
 } from '@mui/material';
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight,
   Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Navigation,
+  User, Flag, MessageSquare,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
@@ -64,10 +64,15 @@ function EstadoChip({ estado }: { estado: string }) {
   );
 }
 
-function ColumnHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count: React.ReactNode }) {
+function ColumnHeader({ icon, bg = '#f1efe9', title, count }: { icon: React.ReactNode; bg?: string; title: string; count: React.ReactNode }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-      {icon}
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.5 }}>
+      <Box sx={{
+        width: 28, height: 28, borderRadius: 2, flexShrink: 0, bgcolor: bg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {icon}
+      </Box>
       <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>{title}</Typography>
       <Box sx={{ ml: 'auto' }}>{count}</Box>
     </Box>
@@ -396,6 +401,7 @@ export default function SolicitudesCentralPage() {
         <Box>
           <ColumnHeader
             icon={<MapPin size={15} color="#6b6152" />}
+            bg="#f1efe9"
             title="Mapa de flota"
             count={
               <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
@@ -427,6 +433,7 @@ export default function SolicitudesCentralPage() {
           <Box>
             <ColumnHeader
               icon={<MapPin size={15} color="#6b6152" />}
+              bg="#f1efe9"
               title="Fila Virtual (Base)"
               count={countPill(filaBase.length, '#f1efe9', '#6b6152')}
             />
@@ -470,6 +477,7 @@ export default function SolicitudesCentralPage() {
           <Box>
             <ColumnHeader
               icon={<Clock size={15} color="#c2410c" />}
+              bg="#fdece2"
               title="Pendientes"
               count={countPill(resumen.pendientes.length, '#fdece2', '#c2410c')}
             />
@@ -487,6 +495,7 @@ export default function SolicitudesCentralPage() {
           <Box>
             <ColumnHeader
               icon={<Car size={15} color="#3355a8" />}
+              bg="#e8ecf9"
               title="En curso"
               count={countPill(resumen.en_curso.length, '#e8ecf9', '#3355a8')}
             />
@@ -504,6 +513,7 @@ export default function SolicitudesCentralPage() {
           <Box>
             <ColumnHeader
               icon={<CheckCircle size={15} color="#2f7d5b" />}
+              bg="#e4f3ec"
               title="Recientes"
               count={
                 <Button size="small" onClick={() => loadHistorial()} sx={{ fontSize: 11, color: '#3355a8', minWidth: 0, p: 0 }}>
@@ -526,8 +536,17 @@ export default function SolicitudesCentralPage() {
 
       {/* Modal nueva solicitud */}
       <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
-          Nueva solicitud
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Box sx={{
+              width: 36, height: 36, borderRadius: 2.5, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+            }}>
+              <Plus size={18} color={colors.ink} />
+            </Box>
+            <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Nueva solicitud</Typography>
+          </Box>
           <IconButton size="small" onClick={() => setShowForm(false)}><X size={18} /></IconButton>
         </DialogTitle>
         <Box component="form" onSubmit={handleCreate}>
@@ -538,6 +557,9 @@ export default function SolicitudesCentralPage() {
                 value={form.rut}
                 onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
                 onBlur={handleRutBlur}
+                slotProps={{ input: { startAdornment: (
+                  <InputAdornment position="start"><User size={15} color="#a89f8f" /></InputAdornment>
+                ) } }}
               />
               {buscandoRut && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Buscando...</Typography>}
               {pasajeroEncontrado && (
@@ -556,7 +578,10 @@ export default function SolicitudesCentralPage() {
               <TextField fullWidth size="small" label="Origen *" placeholder="Calle Falsa 123"
                 value={form.origen}
                 onChange={e => { setForm(f => ({ ...f, origen: e.target.value })); setGeocodOrigen(null); setErrorGeocodOrigen(null); }}
-                onBlur={handleOrigenBlur} />
+                onBlur={handleOrigenBlur}
+                slotProps={{ input: { startAdornment: (
+                  <InputAdornment position="start"><MapPin size={15} color="#a89f8f" /></InputAdornment>
+                ) } }} />
               {buscandoOrigen && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Ubicando dirección...</Typography>}
               {geocodOrigen && (
                 <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
@@ -570,7 +595,10 @@ export default function SolicitudesCentralPage() {
               <TextField fullWidth size="small" label="Destino *" placeholder="Plaza Italia"
                 value={form.destino}
                 onChange={e => { setForm(f => ({ ...f, destino: e.target.value })); setGeocodDestino(null); setErrorGeocodDestino(null); }}
-                onBlur={handleDestinoBlur} />
+                onBlur={handleDestinoBlur}
+                slotProps={{ input: { startAdornment: (
+                  <InputAdornment position="start"><Flag size={15} color="#a89f8f" /></InputAdornment>
+                ) } }} />
               {buscandoDestino && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Ubicando dirección...</Typography>}
               {geocodDestino && (
                 <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
@@ -581,12 +609,18 @@ export default function SolicitudesCentralPage() {
             </Box>
 
             <TextField fullWidth select size="small" label="Canal" value={form.canal_entrada}
-              onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}>
+              onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
+              slotProps={{ input: { startAdornment: (
+                <InputAdornment position="start"><PhoneCall size={15} color="#a89f8f" /></InputAdornment>
+              ) } }}>
               {CANALES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
             </TextField>
 
             <TextField fullWidth multiline rows={2} size="small" label="Observaciones" placeholder="Opcional..."
-              value={form.observaciones} onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))} />
+              value={form.observaciones} onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
+              slotProps={{ input: { startAdornment: (
+                <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1 }}><MessageSquare size={15} color="#a89f8f" /></InputAdornment>
+              ) } }} />
 
             {formError && <Alert severity="error">{formError}</Alert>}
           </DialogContent>
@@ -678,40 +712,74 @@ export default function SolicitudesCentralPage() {
 
       {/* Modal historial completo */}
       <Dialog open={showHistorial} onClose={() => setShowHistorial(false)} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 4, maxHeight: '80vh' } } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
-          Historial completo
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Box sx={{
+              width: 36, height: 36, borderRadius: 2.5, flexShrink: 0, bgcolor: '#f1efe9',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <History size={17} color="#6b6152" />
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2 }}>Historial completo</Typography>
+              <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>{historial.length} solicitudes registradas</Typography>
+            </Box>
+          </Box>
           <IconButton size="small" onClick={() => setShowHistorial(false)}><X size={18} /></IconButton>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow>
-                  {['Folio', 'Origen → Destino', 'Móvil', 'Estado', 'Obs.', 'Fecha'].map(h => (
-                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {historial.map(s => (
-                  <TableRow key={s.id_solicitud} hover>
-                    <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 11, color: 'text.secondary' }}>{s.folio}</TableCell>
-                    <TableCell sx={{ fontSize: 13, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {s.origen} → {s.destino}
-                    </TableCell>
-                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{s.movil_patente ?? '—'}</TableCell>
-                    <TableCell><EstadoChip estado={s.estado} /></TableCell>
-                    <TableCell sx={{ fontSize: 11, color: 'text.secondary', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {s.observaciones ?? '—'}
-                    </TableCell>
-                    <TableCell sx={{ fontSize: 11, color: 'text.secondary' }}>
-                      {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        <DialogContent sx={{ pt: 0 }}>
+          <Box sx={{
+            display: { xs: 'none', sm: 'grid' },
+            gridTemplateColumns: '105px 2fr 90px 110px 1.2fr 110px',
+            gap: 1.5, px: 1.5, pb: 1,
+          }}>
+            {['Folio', 'Origen → Destino', 'Móvil', 'Estado', 'Obs.', 'Fecha'].map(h => (
+              <Typography key={h} sx={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'text.secondary' }}>
+                {h}
+              </Typography>
+            ))}
           </Box>
+
+          {historial.length === 0 ? (
+            <EmptyHint text="Sin solicitudes registradas." />
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {historial.map(s => (
+                <Box
+                  key={s.id_solicitud}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr auto', sm: '105px 2fr 90px 110px 1.2fr 110px' },
+                    alignItems: 'center', gap: 1.5,
+                    bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
+                    borderRadius: 3, px: 1.75, py: 1.1,
+                  }}
+                >
+                  <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 11, color: 'text.secondary' }}>
+                    {s.folio}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 13, minWidth: 0 }}>
+                    <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.origen}</Box>
+                    <ChevronRight size={12} color="#9c9284" style={{ flexShrink: 0 }} />
+                    <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.destino}</Box>
+                  </Box>
+                  <Typography sx={{ fontSize: 12.5, color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}>
+                    {s.movil_patente ?? '—'}
+                  </Typography>
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}><EstadoChip estado={s.estado} /></Box>
+                  <Typography sx={{
+                    fontSize: 11.5, color: 'text.secondary', display: { xs: 'none', sm: '-webkit-box' },
+                    WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                  }}>
+                    {s.observaciones ?? '—'}
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: '#a89f8f', textAlign: { sm: 'right' } }}>
+                    {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
         </DialogContent>
       </Dialog>
     </Box>
