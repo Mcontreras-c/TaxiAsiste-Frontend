@@ -23,6 +23,7 @@ const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
 const MOVIL_ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
   EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
+  EN_VIAJE:    { bg: '#f1e7fb', fg: '#7128b8' },
   BLOQUEADO:   { bg: '#fbe9e9', fg: '#c0392b' },
   INACTIVO:    { bg: '#f1efe9', fg: '#6b6152' },
 };

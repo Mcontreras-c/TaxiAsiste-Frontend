@@ -15,7 +15,8 @@ export interface RutaGeoJSON {
 
 const COLOR_ESTADO: Record<string, string> = {
   DISPONIBLE: '#16a34a',   // verde
-  EN_SERVICIO: '#2563eb',  // azul
+  EN_SERVICIO: '#2563eb',  // azul — conductor asignado, en camino a buscar al pasajero
+  EN_VIAJE: '#9333ea',     // morado — pasajero a bordo, viaje en curso
   BLOQUEADO: '#dc2626',    // rojo
   INACTIVO: '#9ca3af',     // gris
 };
@@ -23,6 +24,7 @@ const COLOR_ESTADO: Record<string, string> = {
 const ETIQUETA_ESTADO: Record<string, string> = {
   DISPONIBLE: 'Disponible',
   EN_SERVICIO: 'En servicio',
+  EN_VIAJE: 'En viaje',
   BLOQUEADO: 'Bloqueado',
   INACTIVO: 'Inactivo',
 };
