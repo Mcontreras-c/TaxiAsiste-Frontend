@@ -21,3 +21,12 @@ export const cambiarEstado = (id: number, estado: EstadoSolicitud, movil?: numbe
 
 export const buscarPasajeroPorRut = (rut: string) =>
   apiClient.get<Pasajero[]>(`/pasajeros/buscar_rut/?rut=${rut}`).then(r => r.data);
+
+export const createPasajero = (data: { rut: string; nombre: string; apellido: string; telefono?: string | null }) =>
+  apiClient.post<Pasajero>('/pasajeros/', {
+    ...data,
+    fecha_registro: new Date().toISOString().slice(0, 10),
+  }).then(r => r.data);
+
+export const actualizarTelefonoPasajero = (id: number, telefono: string) =>
+  apiClient.patch<Pasajero>(`/pasajeros/${id}/`, { telefono }).then(r => r.data);

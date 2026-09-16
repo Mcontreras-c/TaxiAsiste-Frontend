@@ -7,11 +7,11 @@ import {
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight,
   Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Navigation,
-  User, Flag, MessageSquare,
+  User, MessageSquare, Cross,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
-  cambiarEstado, buscarPasajeroPorRut, type ResumenCentral,
+  cambiarEstado, buscarPasajeroPorRut, createPasajero, actualizarTelefonoPasajero, type ResumenCentral,
 } from '../api/solicitudes';
 import { getMoviles, getFilaBase } from '../api/moviles';
 import { geocodificar, obtenerRuta } from '../api/mapas';
@@ -31,21 +31,27 @@ const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   CANCELADO:  { bg: '#f1efe9', fg: '#8a8071' },
 };
 
-const CANALES = ['TELEFONO', 'APP', 'PRESENCIAL'] as const;
+const CANALES = ['TELEFONO', 'PRESENCIAL'] as const;
+
+// TaxiAsiste solo hace traslados a este hospital -- el backend fuerza este
+// mismo valor en Solicitud.save() sin importar lo que se envie, asi que el
+// formulario ni siquiera pide destino: solo confirma que siempre es este.
+const DESTINO_HOSPITAL = 'Hospital Félix Bulnes, Cerro Navia';
 
 interface FormData {
   rut: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
   origen: string;
-  destino: string;
   canal_entrada: string;
   observaciones: string;
   pasajero_id: number | null;
-  pasajero_nombre: string;
 }
 
 const EMPTY_FORM: FormData = {
-  rut: '', origen: '', destino: '', canal_entrada: 'TELEFONO',
-  observaciones: '', pasajero_id: null, pasajero_nombre: '',
+  rut: '', nombre: '', apellido: '', telefono: '', origen: '', canal_entrada: 'TELEFONO',
+  observaciones: '', pasajero_id: null,
 };
 
 interface AccionModal {
@@ -104,10 +110,18 @@ function SolicitudCard({
           </Typography>
           <EstadoChip estado={sol.estado} />
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 600, color: 'text.primary', fontSize: 13.5 }}>
-          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sol.origen}</Box>
-          <ChevronRight size={13} color="#9c9284" style={{ flexShrink: 0 }} />
-          <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sol.destino}</Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <MapPin size={13} color="#a89f8f" style={{ flexShrink: 0 }} />
+          <Box sx={{ fontWeight: 600, color: 'text.primary', fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {sol.origen}
+          </Box>
+        </Box>
+        <Box sx={{
+          display: 'inline-flex', alignItems: 'center', gap: 0.5, alignSelf: 'flex-start',
+          bgcolor: '#fdecec', color: '#c0392b', borderRadius: 10, px: 1, py: 0.25,
+        }}>
+          <Cross size={11} />
+          <Typography sx={{ fontSize: 11, fontWeight: 700 }}>Hospital Félix Bulnes</Typography>
         </Box>
         {sol.movil_patente && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -174,13 +188,11 @@ export default function SolicitudesCentralPage() {
   const [buscandoRut, setBuscandoRut] = useState(false);
   const [pasajeroEncontrado, setPasajeroEncontrado] = useState<Pasajero | null>(null);
 
-  // Geocoding en vivo del formulario de nueva solicitud (Nominatim, via backend).
+  // Geocoding en vivo del origen en el formulario de nueva solicitud (el
+  // destino ya no se geocodifica aca: siempre es el mismo hospital).
   const [geocodOrigen, setGeocodOrigen] = useState<{ lat: number; lng: number; direccion_formateada: string } | null>(null);
-  const [geocodDestino, setGeocodDestino] = useState<{ lat: number; lng: number; direccion_formateada: string } | null>(null);
   const [buscandoOrigen, setBuscandoOrigen] = useState(false);
-  const [buscandoDestino, setBuscandoDestino] = useState(false);
   const [errorGeocodOrigen, setErrorGeocodOrigen] = useState<string | null>(null);
-  const [errorGeocodDestino, setErrorGeocodDestino] = useState<string | null>(null);
 
   // Ruta trazada en el mapa principal para una solicitud EN_CURSO seleccionada.
   const [rutaSeleccionada, setRutaSeleccionada] = useState<{
@@ -240,20 +252,19 @@ export default function SolicitudesCentralPage() {
   };
 
   const handleRutBlur = async () => {
-    if (!form.rut) return;
+    if (!form.rut) { setPasajeroEncontrado(null); return; }
     setBuscandoRut(true);
     try {
       const res = await buscarPasajeroPorRut(form.rut);
       if (res.length > 0) {
         setPasajeroEncontrado(res[0]);
         setForm(f => ({
-          ...f,
-          pasajero_id: res[0].id_pasajero,
-          pasajero_nombre: `${res[0].nombre} ${res[0].apellido}`,
+          ...f, pasajero_id: res[0].id_pasajero, nombre: res[0].nombre, apellido: res[0].apellido,
+          telefono: res[0].telefono ?? '',
         }));
       } else {
         setPasajeroEncontrado(null);
-        setForm(f => ({ ...f, pasajero_id: null, pasajero_nombre: '' }));
+        setForm(f => ({ ...f, pasajero_id: null, nombre: '', apellido: '', telefono: '' }));
       }
     } finally { setBuscandoRut(false); }
   };
@@ -267,17 +278,6 @@ export default function SolicitudesCentralPage() {
       setGeocodOrigen(null);
       setErrorGeocodOrigen('No se pudo ubicar esta dirección — se registrará solo como texto.');
     } finally { setBuscandoOrigen(false); }
-  };
-
-  const handleDestinoBlur = async () => {
-    if (!form.destino) { setGeocodDestino(null); setErrorGeocodDestino(null); return; }
-    setBuscandoDestino(true); setErrorGeocodDestino(null);
-    try {
-      setGeocodDestino(await geocodificar(form.destino));
-    } catch {
-      setGeocodDestino(null);
-      setErrorGeocodDestino('No se pudo ubicar esta dirección — se registrará solo como texto.');
-    } finally { setBuscandoDestino(false); }
   };
 
   const handleVerRuta = async (sol: Solicitud) => {
@@ -299,19 +299,33 @@ export default function SolicitudesCentralPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.origen || !form.destino) { setFormError('Origen y destino son obligatorios.'); return; }
+    if (!form.origen) { setFormError('La dirección de recogida es obligatoria.'); return; }
+    if (form.rut && !pasajeroEncontrado && (!form.nombre || !form.apellido)) {
+      setFormError('Este RUT no está registrado — completa nombre y apellido para registrarlo.');
+      return;
+    }
     setSaving(true); setFormError(null);
     try {
+      let pasajeroId = form.pasajero_id;
+      if (!pasajeroId && form.rut) {
+        const nuevo = await createPasajero({
+          rut: form.rut, nombre: form.nombre, apellido: form.apellido,
+          telefono: form.telefono || null,
+        });
+        pasajeroId = nuevo.id_pasajero;
+      } else if (pasajeroId && !pasajeroEncontrado?.telefono && form.telefono) {
+        // El pasajero ya existia pero no tenia telefono registrado -- lo completamos.
+        await actualizarTelefonoPasajero(pasajeroId, form.telefono);
+      }
       await createSolicitud({
         origen: form.origen,
-        destino: form.destino,
         canal_entrada: form.canal_entrada as any,
         observaciones: form.observaciones || null,
-        pasajero: form.pasajero_id ?? null,
+        pasajero: pasajeroId ?? null,
       });
       setForm(EMPTY_FORM); setPasajeroEncontrado(null);
-      setGeocodOrigen(null); setGeocodDestino(null);
-      setErrorGeocodOrigen(null); setErrorGeocodDestino(null);
+      setGeocodOrigen(null);
+      setErrorGeocodOrigen(null);
       setShowForm(false);
       await load();
     } catch (err: any) {
@@ -375,8 +389,7 @@ export default function SolicitudesCentralPage() {
             startIcon={<Plus size={16} />}
             onClick={() => {
               setShowForm(true); setForm(EMPTY_FORM); setPasajeroEncontrado(null); setFormError(null);
-              setGeocodOrigen(null); setGeocodDestino(null);
-              setErrorGeocodOrigen(null); setErrorGeocodDestino(null);
+              setGeocodOrigen(null); setErrorGeocodOrigen(null);
             }}
             sx={{
               color: colors.ink,
@@ -545,82 +558,116 @@ export default function SolicitudesCentralPage() {
             }}>
               <Plus size={18} color={colors.ink} />
             </Box>
-            <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Nueva solicitud</Typography>
+            <Box>
+              <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2 }}>Nueva solicitud</Typography>
+              <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>Traslado a Hospital Félix Bulnes</Typography>
+            </Box>
           </Box>
           <IconButton size="small" onClick={() => setShowForm(false)}><X size={18} /></IconButton>
         </DialogTitle>
         <Box component="form" onSubmit={handleCreate}>
-          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0 }}>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 0 }}>
             <Box>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', mb: 1 }}>
+                Datos del pasajero
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1.25 }}>
+                <TextField
+                  size="small" label="RUT del pasajero" placeholder="12345678-9" sx={{ flex: 1.1 }}
+                  value={form.rut}
+                  onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
+                  onBlur={handleRutBlur}
+                  slotProps={{ input: { startAdornment: (
+                    <InputAdornment position="start"><User size={15} color="#a89f8f" /></InputAdornment>
+                  ) } }}
+                />
+                <TextField
+                  size="small" label="Nombre" sx={{ flex: 1 }}
+                  value={form.nombre}
+                  disabled={!!pasajeroEncontrado}
+                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                />
+                <TextField
+                  size="small" label="Apellido" sx={{ flex: 1 }}
+                  value={form.apellido}
+                  disabled={!!pasajeroEncontrado}
+                  onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))}
+                />
+              </Box>
               <TextField
-                fullWidth size="small" label="RUT pasajero" placeholder="12345678-9"
-                value={form.rut}
-                onChange={e => setForm(f => ({ ...f, rut: e.target.value }))}
-                onBlur={handleRutBlur}
+                fullWidth size="small" label="Teléfono de contacto" placeholder="912345678" sx={{ mt: 1.25 }}
+                value={form.telefono}
+                disabled={!!pasajeroEncontrado?.telefono}
+                onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
                 slotProps={{ input: { startAdornment: (
-                  <InputAdornment position="start"><User size={15} color="#a89f8f" /></InputAdornment>
+                  <InputAdornment position="start"><PhoneCall size={15} color="#a89f8f" /></InputAdornment>
                 ) } }}
               />
               {buscandoRut && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Buscando...</Typography>}
               {pasajeroEncontrado && (
                 <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
-                  ✓ {pasajeroEncontrado.nombre} {pasajeroEncontrado.apellido} — {pasajeroEncontrado.telefono ?? 'sin teléfono'}
+                  ✓ Pasajero registrado — {pasajeroEncontrado.telefono ?? 'sin teléfono'}
                 </Typography>
               )}
               {!buscandoRut && form.rut && !pasajeroEncontrado && (
                 <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>
-                  Pasajero no registrado — se creará la solicitud sin vincularlo.
+                  RUT no registrado — se registrará como pasajero nuevo con el nombre y apellido de arriba.
                 </Typography>
               )}
             </Box>
 
             <Box>
-              <TextField fullWidth size="small" label="Origen *" placeholder="Calle Falsa 123"
-                value={form.origen}
-                onChange={e => { setForm(f => ({ ...f, origen: e.target.value })); setGeocodOrigen(null); setErrorGeocodOrigen(null); }}
-                onBlur={handleOrigenBlur}
-                slotProps={{ input: { startAdornment: (
-                  <InputAdornment position="start"><MapPin size={15} color="#a89f8f" /></InputAdornment>
-                ) } }} />
-              {buscandoOrigen && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Ubicando dirección...</Typography>}
-              {geocodOrigen && (
-                <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
-                  ✓ Ubicado ({geocodOrigen.lat.toFixed(4)}, {geocodOrigen.lng.toFixed(4)})
-                </Typography>
-              )}
-              {errorGeocodOrigen && <Typography sx={{ fontSize: 11, color: '#c2410c', mt: 0.5 }}>{errorGeocodOrigen}</Typography>}
+              <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', mb: 1 }}>
+                Detalles del traslado
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                <Box>
+                  <TextField fullWidth size="small" label="Dirección de recogida *" placeholder="Calle Falsa 123"
+                    value={form.origen}
+                    onChange={e => { setForm(f => ({ ...f, origen: e.target.value })); setGeocodOrigen(null); setErrorGeocodOrigen(null); }}
+                    onBlur={handleOrigenBlur}
+                    slotProps={{ input: { startAdornment: (
+                      <InputAdornment position="start"><MapPin size={15} color="#a89f8f" /></InputAdornment>
+                    ) } }} />
+                  {buscandoOrigen && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Ubicando dirección...</Typography>}
+                  {geocodOrigen && (
+                    <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
+                      ✓ Ubicado ({geocodOrigen.lat.toFixed(4)}, {geocodOrigen.lng.toFixed(4)})
+                    </Typography>
+                  )}
+                  {errorGeocodOrigen && <Typography sx={{ fontSize: 11, color: '#c2410c', mt: 0.5 }}>{errorGeocodOrigen}</Typography>}
+                </Box>
+
+                <Box sx={{
+                  display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#fdecec', borderRadius: 3, px: 1.5, py: 1,
+                }}>
+                  <Box sx={{
+                    width: 30, height: 30, borderRadius: 2, flexShrink: 0, bgcolor: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Cross size={15} color="#c0392b" />
+                  </Box>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#7a2020', flex: 1 }}>
+                    Destino: {DESTINO_HOSPITAL}
+                  </Typography>
+                  <MapPin size={16} color="#c0392b" style={{ flexShrink: 0 }} />
+                </Box>
+
+                <TextField fullWidth select size="small" label="Canal de solicitud" value={form.canal_entrada}
+                  onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
+                  slotProps={{ input: { startAdornment: (
+                    <InputAdornment position="start"><PhoneCall size={15} color="#a89f8f" /></InputAdornment>
+                  ) } }}>
+                  {CANALES.map(c => <MenuItem key={c} value={c}>{c === 'TELEFONO' ? 'Teléfono' : 'Presencial (en la central)'}</MenuItem>)}
+                </TextField>
+
+                <TextField fullWidth multiline rows={2} size="small" label="Observaciones (opcional)"
+                  value={form.observaciones} onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
+                  slotProps={{ input: { startAdornment: (
+                    <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1 }}><MessageSquare size={15} color="#a89f8f" /></InputAdornment>
+                  ) } }} />
+              </Box>
             </Box>
-
-            <Box>
-              <TextField fullWidth size="small" label="Destino *" placeholder="Plaza Italia"
-                value={form.destino}
-                onChange={e => { setForm(f => ({ ...f, destino: e.target.value })); setGeocodDestino(null); setErrorGeocodDestino(null); }}
-                onBlur={handleDestinoBlur}
-                slotProps={{ input: { startAdornment: (
-                  <InputAdornment position="start"><Flag size={15} color="#a89f8f" /></InputAdornment>
-                ) } }} />
-              {buscandoDestino && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>Ubicando dirección...</Typography>}
-              {geocodDestino && (
-                <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
-                  ✓ Ubicado ({geocodDestino.lat.toFixed(4)}, {geocodDestino.lng.toFixed(4)})
-                </Typography>
-              )}
-              {errorGeocodDestino && <Typography sx={{ fontSize: 11, color: '#c2410c', mt: 0.5 }}>{errorGeocodDestino}</Typography>}
-            </Box>
-
-            <TextField fullWidth select size="small" label="Canal" value={form.canal_entrada}
-              onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
-              slotProps={{ input: { startAdornment: (
-                <InputAdornment position="start"><PhoneCall size={15} color="#a89f8f" /></InputAdornment>
-              ) } }}>
-              {CANALES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
-            </TextField>
-
-            <TextField fullWidth multiline rows={2} size="small" label="Observaciones" placeholder="Opcional..."
-              value={form.observaciones} onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
-              slotProps={{ input: { startAdornment: (
-                <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1 }}><MessageSquare size={15} color="#a89f8f" /></InputAdornment>
-              ) } }} />
 
             {formError && <Alert severity="error">{formError}</Alert>}
           </DialogContent>
@@ -634,7 +681,7 @@ export default function SolicitudesCentralPage() {
                 background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
                 '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
               }}>
-              {saving ? 'Guardando...' : 'Registrar'}
+              {saving ? 'Guardando...' : 'Registrar Solicitud'}
             </Button>
           </DialogActions>
         </Box>
