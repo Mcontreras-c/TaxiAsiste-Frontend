@@ -5,8 +5,8 @@ import {
 } from '@mui/material';
 import {
   DollarSign, RefreshCw, CheckCircle2,
-  ChevronLeft, ChevronRight, Lock, Car, Settings,
-  AlertTriangle, ShieldOff, X,
+  ChevronLeft, ChevronRight, Lock, Car,
+  AlertTriangle, ShieldOff, X, AlarmClock, HandCoins, Pencil,
 } from 'lucide-react';
 import { getResumenTesorero, cerrarSemana } from '../api/reportes';
 import { pagarMovil, pagarAtrasos } from '../api/tesoreria';
@@ -24,6 +24,41 @@ const PAGO_STYLE: Record<string, { bg: string; fg: string }> = {
 const PAGO_LABEL: Record<string, string> = {
   PAGADO: 'Pagado', PENDIENTE: 'Pendiente', VENCIDO: 'Vencido', EXENTO: 'Exento', SIN_CUOTA: 'Sin cuota',
 };
+
+type Tone = { fg: string; bg: string; iconBg: string };
+
+const TONES: Record<string, Tone> = {
+  blue:    { fg: '#3355a8', bg: '#e1e6f8', iconBg: 'rgba(255,255,255,.65)' },
+  emerald: { fg: '#2f7d5b', bg: '#dcf1e6', iconBg: 'rgba(255,255,255,.65)' },
+  red:     { fg: '#c0392b', bg: '#fbe9e9', iconBg: 'rgba(255,255,255,.65)' },
+  teal:    { fg: '#127a6b', bg: '#d7f3ee', iconBg: 'rgba(255,255,255,.65)' },
+};
+
+function StatHero({
+  icon, tone, label, value, sub,
+}: { icon: React.ReactNode; tone: Tone; label: string; value: React.ReactNode; sub: string }) {
+  return (
+    <Card sx={{ borderRadius: 4, bgcolor: tone.bg, boxShadow: 'none' }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{
+          width: 42, height: 42, borderRadius: 3, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          bgcolor: tone.iconBg, color: tone.fg,
+        }}>
+          {icon}
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: tone.fg }}>
+            {label}
+          </Typography>
+          <Typography sx={{ fontSize: 22, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#241f16', lineHeight: 1.2 }}>
+            {value}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: tone.fg, opacity: 0.85 }}>{sub}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
 
 function toISODate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -200,25 +235,27 @@ export default function ReportesTesorero() {
         </CardContent>
       </Card>
 
-      <Card sx={{ borderRadius: 3 }}>
+      <Card sx={{ borderRadius: 3, bgcolor: '#fdf1dc', border: '1px solid', borderColor: '#f0d9a8', boxShadow: 'none' }}>
         <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: '12px !important' }}>
-          <Settings size={16} color="#a89f8f" />
-          <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>Tarifa semanal por móvil:</Typography>
+          <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: colors.accent700 }}>Tarifa semanal por móvil:</Typography>
           {editTarifa ? (
             <TextField
               type="number" size="small" value={tarifa} autoFocus
               onChange={e => setTarifa(e.target.value)}
               onBlur={() => setEditTarifa(false)}
-              sx={{ width: 130 }}
+              sx={{ width: 130, bgcolor: 'background.paper' }}
             />
           ) : (
-            <Chip
-              label={`$${Number(tarifa).toLocaleString('es-CL')}`}
-              onClick={() => setEditTarifa(true)}
-              sx={{ bgcolor: '#fdf1dc', color: colors.accent700, fontWeight: 700, cursor: 'pointer' }}
-            />
+            <Typography sx={{ fontSize: 17, fontWeight: 800, color: colors.accent700, fontFamily: 'Roboto Mono, monospace' }}>
+              ${Number(tarifa).toLocaleString('es-CL')}
+            </Typography>
           )}
-          <Typography sx={{ fontSize: 11, color: '#a89f8f', ml: 'auto', display: { xs: 'none', sm: 'block' } }}>Haz clic para editar</Typography>
+          <Button
+            size="small" variant="outlined" startIcon={<Pencil size={13} />} onClick={() => setEditTarifa(true)}
+            sx={{ ml: 'auto', fontSize: 11.5, color: colors.accent700, borderColor: colors.accent500 }}
+          >
+            Editar
+          </Button>
         </CardContent>
       </Card>
 
@@ -231,22 +268,10 @@ export default function ReportesTesorero() {
       ) : resumen && (
         <>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: 2 }}>
-            <Card sx={{ borderRadius: 3 }}><CardContent>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>Total móviles</Typography>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{resumen.total_moviles}</Typography>
-            </CardContent></Card>
-            <Card sx={{ borderRadius: 3 }}><CardContent>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>Pagados</Typography>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#2f7d5b' }}>{resumen.pagados}</Typography>
-            </CardContent></Card>
-            <Card sx={{ borderRadius: 3 }}><CardContent>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>Sin pagar</Typography>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#c2410c' }}>{resumen.pendientes}</Typography>
-            </CardContent></Card>
-            <Card sx={{ borderRadius: 3 }}><CardContent>
-              <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>Cobrado período</Typography>
-              <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>${resumen.cobrado.toLocaleString('es-CL')}</Typography>
-            </CardContent></Card>
+            <StatHero icon={<Car size={19} />} tone={TONES.blue} label="Móviles totales" value={resumen.total_moviles} sub="Total flota" />
+            <StatHero icon={<HandCoins size={19} />} tone={TONES.emerald} label="Móviles pagados" value={resumen.pagados} sub="Semana actual" />
+            <StatHero icon={<AlarmClock size={19} />} tone={TONES.red} label="Móviles sin pagar" value={resumen.pendientes} sub="Semana actual" />
+            <StatHero icon={<DollarSign size={19} />} tone={TONES.teal} label="Recaudación semanal" value={`$${resumen.cobrado.toLocaleString('es-CL')}`} sub="Total cobrado" />
           </Box>
 
           {resumen.total_moviles > 0 && (

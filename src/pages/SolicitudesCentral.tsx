@@ -7,7 +7,7 @@ import {
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight,
   Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Navigation,
-  User, MessageSquare, Cross,
+  User, MessageSquare, Cross, Users,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
@@ -22,6 +22,7 @@ import { useConnectionStore } from '../store/connectionStore';
 import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../types';
 import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
+import ClimaWidget from '../components/ClimaWidget';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
@@ -32,6 +33,44 @@ const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
 };
 
 const CANALES = ['TELEFONO', 'PRESENCIAL'] as const;
+
+type Tone = { fg: string; bg: string; grad: string };
+
+const TONES: Record<string, Tone> = {
+  blue:   { fg: '#3355a8', bg: '#e8ecf9', grad: 'linear-gradient(135deg,#7d95d8,#3355a8)' },
+  violet: { fg: '#7e22ce', bg: '#f3e8fd', grad: 'linear-gradient(135deg,#c084f5,#7e22ce)' },
+  orange: { fg: '#c2410c', bg: '#fdece2', grad: 'linear-gradient(135deg,#f5a06b,#c2410c)' },
+};
+
+function HeroStat({ title, value, icon, tone }: { title: string; value: number; icon: React.ReactNode; tone: Tone }) {
+  return (
+    <Card sx={{ borderRadius: 4, position: 'relative', overflow: 'hidden', flex: '1 1 220px' }}>
+      <Box sx={{ position: 'absolute', inset: 0, opacity: 0.06, background: tone.grad }} />
+      <CardContent sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{
+          width: 40, height: 40, borderRadius: 3, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: tone.grad, color: '#fff', boxShadow: `0 4px 12px ${tone.fg}40`,
+        }}>
+          {icon}
+        </Box>
+        <Box>
+          <Typography sx={{ fontSize: 28, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', lineHeight: 1, color: '#2a2519' }}>
+            {value}
+          </Typography>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.3 }}>{title}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+const ESTADO_OPERATIVO_STYLE: Record<string, { dot: string; label: string; bg: string; fg: string }> = {
+  DISPONIBLE:  { dot: '#2f9e5e', label: 'Disponible', bg: '#e4f3ec', fg: '#2f7d5b' },
+  EN_SERVICIO: { dot: '#3355a8', label: 'En servicio', bg: '#e8ecf9', fg: '#3355a8' },
+  EN_VIAJE:    { dot: '#7e22ce', label: 'En viaje',    bg: '#f3e8fd', fg: '#7e22ce' },
+  BLOQUEADO:   { dot: '#c0392b', label: 'Bloqueado',   bg: '#fdecec', fg: '#c0392b' },
+  INACTIVO:    { dot: '#a89f8f', label: 'Inactivo',    bg: '#f1efe9', fg: '#6b6152' },
+};
 
 // TaxiAsiste solo hace traslados a este hospital -- el backend fuerza este
 // mismo valor en Solicitud.save() sin importar lo que se envie, asi que el
@@ -90,6 +129,40 @@ function EmptyHint({ text }: { text: string }) {
     <Typography sx={{ fontSize: 12, color: 'text.secondary', textAlign: 'center', py: 3 }}>
       {text}
     </Typography>
+  );
+}
+
+function tiempoRelativo(fechaISO: string): string {
+  const diffMin = Math.max(0, Math.round((Date.now() - new Date(fechaISO).getTime()) / 60000));
+  if (diffMin < 1) return 'ahora';
+  if (diffMin < 60) return `hace ${diffMin} min`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return `hace ${diffH} h`;
+  return `hace ${Math.round(diffH / 24)} d`;
+}
+
+function ActividadRow({ sol }: { sol: Solicitud }) {
+  const completada = sol.estado === 'COMPLETADO';
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, py: 1 }}>
+      <Box sx={{
+        width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        bgcolor: completada ? '#e4f3ec' : '#fbe9e9', color: completada ? '#2f7d5b' : '#c0392b',
+      }}>
+        {completada ? <CheckCircle size={14} /> : <XCircle size={14} />}
+      </Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography sx={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {sol.movil_patente ?? sol.folio}
+        </Typography>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+          {completada ? 'Completada' : 'Cancelada'}
+        </Typography>
+      </Box>
+      <Typography sx={{ fontSize: 10.5, color: '#a89f8f', whiteSpace: 'nowrap', flexShrink: 0 }}>
+        {tiempoRelativo(sol.fecha_termino ?? sol.fecha_hora)}
+      </Typography>
+    </Box>
   );
 }
 
@@ -410,141 +483,176 @@ export default function SolicitudesCentralPage() {
           <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
         </Box>
       ) : resumen && (
-        <>
-        <Box>
-          <ColumnHeader
-            icon={<MapPin size={15} color="#6b6152" />}
-            bg="#f1efe9"
-            title="Mapa de flota"
-            count={
-              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                {Object.keys(ubicacionesEnVivo).length > 0
-                  ? 'GPS en vivo (actualiza cada 4s)'
-                  : 'Sin reportes GPS aun'}
-              </Typography>
-            }
-          />
-          <MapaDespacho
-            moviles={moviles
-              .filter(m => ubicacionesEnVivo[m.id_movil])
-              .map(m => {
-                const u = ubicacionesEnVivo[m.id_movil];
-                return { ...m, lat: u.lat, lng: u.lng, heading: u.heading };
-              })}
-            origenDestino={rutaSeleccionada?.origenDestino ?? null}
-            ruta={rutaSeleccionada?.ruta ?? null}
-          />
-          {rutaSeleccionada && (
-            <Button size="small" onClick={() => setRutaSeleccionada(null)} sx={{ fontSize: 11, mt: 0.5, color: 'text.secondary' }}>
-              Ocultar ruta
-            </Button>
-          )}
-        </Box>
-
-        <Box className="grid grid-cols-4 gap-4">
-          {/* Fila virtual (base) */}
-          <Box>
-            <ColumnHeader
-              icon={<MapPin size={15} color="#6b6152" />}
-              bg="#f1efe9"
-              title="Fila Virtual (Base)"
-              count={countPill(filaBase.length, '#f1efe9', '#6b6152')}
-            />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {filaBase.length === 0
-                ? <EmptyHint text="Sin moviles en base" />
-                : filaBase.map(f => (
-                    <Card key={f.id_fila} sx={{ borderRadius: 3 }}>
-                      <CardContent sx={{ p: '10px 12px !important', display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                        <Avatar sx={{
-                          width: 24, height: 24, fontSize: 11.5, fontWeight: 700, color: colors.ink,
-                          background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
-                        }}>
-                          {f.posicion}
-                        </Avatar>
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography sx={{ fontWeight: 700, fontSize: 13, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {f.patente}
-                          </Typography>
-                          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {f.socio_nombre}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={f.estado}
-                          size="small"
-                          sx={{
-                            ml: 'auto', fontSize: 10, fontWeight: 700,
-                            bgcolor: f.estado === 'LLAMADO' ? '#e8ecf9' : '#f1efe9',
-                            color: f.estado === 'LLAMADO' ? '#3355a8' : '#6b6152',
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))
-              }
-            </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '230px 1fr 280px' }, gap: 2.5, alignItems: 'start' }}>
+          {/* Rail izquierdo: metricas clave */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <HeroStat title="Móviles en línea" value={Object.keys(ubicacionesEnVivo).length} icon={<Car size={19} />} tone={TONES.blue} />
+            <HeroStat title="Solicitudes en curso" value={resumen.en_curso.length} icon={<Navigation size={19} />} tone={TONES.violet} />
+            <HeroStat title="Solicitudes pendientes" value={resumen.pendientes.length} icon={<Clock size={19} />} tone={TONES.orange} />
           </Box>
 
-          {/* Pendientes */}
-          <Box>
-            <ColumnHeader
-              icon={<Clock size={15} color="#c2410c" />}
-              bg="#fdece2"
-              title="Pendientes"
-              count={countPill(resumen.pendientes.length, '#fdece2', '#c2410c')}
-            />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {resumen.pendientes.length === 0
-                ? <EmptyHint text="Sin pendientes" />
-                : resumen.pendientes.slice(0, 4).map(s => (
-                    <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
-                  ))
-              }
-            </Box>
-          </Box>
-
-          {/* En curso */}
-          <Box>
-            <ColumnHeader
-              icon={<Car size={15} color="#3355a8" />}
-              bg="#e8ecf9"
-              title="En curso"
-              count={countPill(resumen.en_curso.length, '#e8ecf9', '#3355a8')}
-            />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {resumen.en_curso.length === 0
-                ? <EmptyHint text="Sin viajes en curso" />
-                : resumen.en_curso.slice(0, 4).map(s => (
-                    <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} onVerRuta={handleVerRuta} cargandoRuta={cargandoRuta} />
-                  ))
-              }
-            </Box>
-          </Box>
-
-          {/* Finalizadas recientes */}
-          <Box>
-            <ColumnHeader
-              icon={<CheckCircle size={15} color="#2f7d5b" />}
-              bg="#e4f3ec"
-              title="Recientes"
-              count={
-                <Button size="small" onClick={() => loadHistorial()} sx={{ fontSize: 11, color: '#3355a8', minWidth: 0, p: 0 }}>
-                  ver todo
+          {/* Centro: mapa + pendientes/en curso lado a lado */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, minWidth: 0 }}>
+            <Box>
+              <ColumnHeader
+                icon={<MapPin size={15} color="#6b6152" />}
+                bg="#f1efe9"
+                title="Mapa de flota"
+                count={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    {Object.entries(ESTADO_OPERATIVO_STYLE).map(([k, s]) => (
+                      <Box key={k} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: s.dot, flexShrink: 0 }} />
+                        <Typography sx={{ fontSize: 10.5, color: 'text.secondary' }}>{s.label}</Typography>
+                      </Box>
+                    ))}
+                    <Typography sx={{ fontSize: 10.5, color: 'text.secondary', ml: 0.5 }}>
+                      {Object.keys(ubicacionesEnVivo).length > 0 ? '· GPS en vivo (4s)' : '· Sin reportes GPS aun'}
+                    </Typography>
+                  </Box>
+                }
+              />
+              <MapaDespacho
+                moviles={moviles
+                  .filter(m => ubicacionesEnVivo[m.id_movil])
+                  .map(m => {
+                    const u = ubicacionesEnVivo[m.id_movil];
+                    return { ...m, lat: u.lat, lng: u.lng, heading: u.heading };
+                  })}
+                origenDestino={rutaSeleccionada?.origenDestino ?? null}
+                ruta={rutaSeleccionada?.ruta ?? null}
+              />
+              {rutaSeleccionada && (
+                <Button size="small" onClick={() => setRutaSeleccionada(null)} sx={{ fontSize: 11, mt: 0.5, color: 'text.secondary' }}>
+                  Ocultar ruta
                 </Button>
-              }
-            />
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {resumen.finalizadas.length === 0
-                ? <EmptyHint text="Sin finalizadas" />
-                : resumen.finalizadas.map(s => (
-                    <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
-                  ))
-              }
+              )}
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              {/* Pendientes */}
+              <Box>
+                <ColumnHeader
+                  icon={<Clock size={15} color="#c2410c" />}
+                  bg="#fdece2"
+                  title="Solicitudes pendientes"
+                  count={countPill(resumen.pendientes.length, '#fdece2', '#c2410c')}
+                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {resumen.pendientes.length === 0
+                    ? <EmptyHint text="Sin pendientes" />
+                    : resumen.pendientes.map(s => (
+                        <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
+                      ))
+                  }
+                </Box>
+              </Box>
+
+              {/* En curso */}
+              <Box>
+                <ColumnHeader
+                  icon={<Car size={15} color="#3355a8" />}
+                  bg="#e8ecf9"
+                  title="Solicitudes en curso"
+                  count={countPill(resumen.en_curso.length, '#e8ecf9', '#3355a8')}
+                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {resumen.en_curso.length === 0
+                    ? <EmptyHint text="Sin viajes en curso" />
+                    : resumen.en_curso.map(s => (
+                        <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} onVerRuta={handleVerRuta} cargandoRuta={cargandoRuta} />
+                      ))
+                  }
+                </Box>
+              </Box>
             </Box>
           </Box>
+
+          {/* Rail derecho: conductores disponibles (fila virtual) + actividad reciente */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Fila virtual — la membresia sale SIEMPRE de filaBase (backend
+                filtra a EN_ESPERA por defecto: ver FilaBaseViewSet.get_queryset),
+                nunca de si el movil reporta GPS. Antes esto se armaba filtrando
+                por ubicacionesEnVivo, asi que un movil que se retiraba de la
+                fila (estado -> RETIRADO) seguia apareciendo aca mientras el
+                celular siguiera mandando ubicacion -- la fila y el GPS son
+                cosas independientes. El GPS ahora solo decora la fila (punto
+                verde = en linea), no decide quien aparece. */}
+            <Card sx={{ borderRadius: 4 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                  <Users size={15} color="#6b6152" />
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'text.secondary' }}>
+                    Conductores disponibles (fila virtual)
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {filaBase.length === 0
+                    ? <EmptyHint text="Sin conductores en la fila" />
+                    : filaBase.map(f => {
+                        const enLinea = !!ubicacionesEnVivo[f.movil];
+                        return (
+                          <Box key={f.id_fila} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                            <Avatar sx={{
+                              width: 24, height: 24, fontSize: 11.5, fontWeight: 700, color: colors.ink,
+                              background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
+                            }}>
+                              {f.posicion}
+                            </Avatar>
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: 12.5, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {f.patente}
+                              </Typography>
+                              <Typography sx={{ fontSize: 11, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {f.socio_nombre}
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={enLinea ? 'DISPONIBLE' : 'SIN GPS'}
+                              size="small"
+                              sx={{
+                                flexShrink: 0, fontSize: 9.5, fontWeight: 700,
+                                bgcolor: enLinea ? '#e4f3ec' : '#f1efe9',
+                                color: enLinea ? '#2f7d5b' : '#a89f8f',
+                              }}
+                            />
+                          </Box>
+                        );
+                      })
+                  }
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Actividad reciente (Completadas / Canceladas) */}
+            <Card sx={{ borderRadius: 4 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CheckCircle size={15} color="#2f7d5b" />
+                    <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'text.secondary' }}>
+                      Actividad reciente
+                    </Typography>
+                  </Box>
+                  <Button size="small" onClick={() => loadHistorial()} sx={{ fontSize: 11, color: '#3355a8', minWidth: 0, p: 0 }}>
+                    ver todo
+                  </Button>
+                </Box>
+                <Box sx={{
+                  display: 'flex', flexDirection: 'column',
+                  '& > *:not(:last-child)': { borderBottom: '1px solid', borderColor: 'divider' },
+                }}>
+                  {resumen.finalizadas.length === 0
+                    ? <EmptyHint text="Sin finalizadas" />
+                    : resumen.finalizadas.map(s => <ActividadRow key={s.id_solicitud} sol={s} />)
+                  }
+                </Box>
+              </CardContent>
+            </Card>
+
+            <ClimaWidget />
+          </Box>
         </Box>
-        </>
       )}
 
       {/* Modal nueva solicitud */}

@@ -3,7 +3,7 @@ import {
   Box, Typography, Chip, IconButton, Alert, CircularProgress, Card, CardContent,
   Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
-import { DollarSign, RefreshCw, TrendingUp, TrendingDown, Wallet, Info, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { DollarSign, RefreshCw, TrendingUp, TrendingDown, Wallet, Info, Landmark, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 import { getMovimientos, getBalance, getResumenMensual, type TesoreriaMovimiento, type Balance, type ResumenMensual } from '../api/tesoreria';
 
 const TIPO_STYLE = {
@@ -22,11 +22,11 @@ function ResumenCard({
   icon, tone, label, value,
 }: { icon: React.ReactNode; tone: { bg: string; fg: string }; label: string; value: string }) {
   return (
-    <Card sx={{ borderRadius: 4 }}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ p: 1.5, borderRadius: 2.5, bgcolor: tone.bg, color: tone.fg, display: 'flex' }}>{icon}</Box>
-        <Box>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{label}</Typography>
+    <Card sx={{ borderRadius: 999, boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: '14px !important', px: '20px !important' }}>
+        <Box sx={{ p: 1.5, borderRadius: '50%', bgcolor: tone.bg, color: tone.fg, display: 'flex' }}>{icon}</Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 12, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</Typography>
           <Typography sx={{ fontSize: 20, fontWeight: 700, color: tone.fg, fontFamily: 'Roboto Mono, monospace' }}>{value}</Typography>
         </Box>
       </CardContent>
@@ -110,11 +110,13 @@ export default function TesoreriaAdmin() {
 
       <Card sx={{ borderRadius: 4 }}>
         <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <IconButton size="small" onClick={() => setMes(prevMes(mes))}><ChevronLeft size={17} /></IconButton>
-            <Typography sx={{ fontWeight: 700, fontSize: 14, textTransform: 'capitalize' }}>Resumen de caja — {mesLabel(mes)}</Typography>
-            <IconButton size="small" onClick={() => setMes(nextMes(mes))}><ChevronRight size={17} /></IconButton>
-          </Box>
+          <Card sx={{ borderRadius: 999, boxShadow: 'none', border: '1px solid', borderColor: 'divider' }}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: '8px !important' }}>
+              <IconButton size="small" onClick={() => setMes(prevMes(mes))}><ChevronLeft size={17} /></IconButton>
+              <Typography sx={{ fontWeight: 700, fontSize: 14, textTransform: 'capitalize' }}>Resumen de caja — {mesLabel(mes)}</Typography>
+              <IconButton size="small" onClick={() => setMes(nextMes(mes))}><ChevronRight size={17} /></IconButton>
+            </CardContent>
+          </Card>
           {resumenMes && (
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: 2 }}>
               <ResumenCard icon={<Landmark size={19} />} tone={{ bg: '#f1efe9', fg: '#6b6152' }} label="Caja mes anterior" value={`$${resumenMes.caja_anterior.toLocaleString('es-CL')}`} />
@@ -137,7 +139,7 @@ export default function TesoreriaAdmin() {
       ) : (
         <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ px: 2.5, py: 1.75, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>Historial de movimientos</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>Historial de Movimientos Actuales</Typography>
           </Box>
           <Box sx={{ overflowX: 'auto' }}>
             <Table size="small">
@@ -150,7 +152,15 @@ export default function TesoreriaAdmin() {
               </TableHead>
               <TableBody>
                 {movimientos.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} sx={{ textAlign: 'center', color: 'text.secondary', py: 5 }}>No hay movimientos registrados.</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} sx={{ textAlign: 'center', py: 6, border: 'none' }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <BookOpen size={32} color="#c4bda9" strokeWidth={1.5} />
+                        <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Aún no hay movimientos registrados.</Typography>
+                        <Typography sx={{ fontSize: 12, color: '#a89f8f' }}>Los nuevos ingresos y egresos aparecerán aquí.</Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
                 ) : movimientos.map(m => (
                   <TableRow key={m.id_movimiento} hover>
                     <TableCell sx={{ fontSize: 12, color: 'text.secondary' }}>{new Date(m.fecha).toLocaleDateString('es-CL')}</TableCell>
