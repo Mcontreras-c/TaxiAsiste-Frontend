@@ -83,7 +83,7 @@ export interface Movil {
   modelo: string | null;
   anio: number | null;
   color: string | null;
-  estado_operativo: 'DISPONIBLE' | 'EN_SERVICIO' | 'BLOQUEADO' | 'INACTIVO';
+  estado_operativo: 'DISPONIBLE' | 'EN_SERVICIO' | 'EN_VIAJE' | 'BLOQUEADO' | 'INACTIVO';
   fecha_registro: string;
   // Pendiente de implementar en el backend (tracking GPS en tiempo real).
   lat?: number | null;

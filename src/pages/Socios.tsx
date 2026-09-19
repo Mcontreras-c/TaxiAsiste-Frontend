@@ -23,6 +23,7 @@ const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
 const MOVIL_ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
   EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
+  EN_VIAJE:    { bg: '#f1e7fb', fg: '#7128b8' },
   BLOQUEADO:   { bg: '#fbe9e9', fg: '#c0392b' },
   INACTIVO:    { bg: '#f1efe9', fg: '#6b6152' },
 };
@@ -412,7 +413,7 @@ export default function SociosPage() {
             <>
               <Box sx={{
                 display: { xs: 'none', md: 'grid' },
-                gridTemplateColumns: '28px 2fr 1.3fr 1.6fr 110px 100px 130px 180px',
+                gridTemplateColumns: '28px 2fr 1.3fr 1.6fr 110px 100px 170px 180px',
                 gap: 1.5, px: 2.5, pb: 0.5,
               }}>
                 {['', 'Socio', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas', ''].map((h, i) => (
@@ -430,7 +431,7 @@ export default function SociosPage() {
                       onClick={() => setExpandido(abierto ? null : s.id_socio)}
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: { xs: '28px 1fr 40px', md: '28px 2fr 1.3fr 1.6fr 110px 100px 130px 180px' },
+                        gridTemplateColumns: { xs: '28px 1fr 40px', md: '28px 2fr 1.3fr 1.6fr 110px 100px 170px 180px' },
                         alignItems: 'center', gap: 1.5,
                         bgcolor: 'background.paper',
                         border: '1px solid', borderColor: abierto ? colors.accent500 : 'divider',
@@ -485,9 +486,15 @@ export default function SociosPage() {
 
                       <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                         {(s.cuotas_vencidas ?? 0) > 0 ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#c2410c', fontWeight: 700, fontSize: 12 }}>
-                            <AlertTriangle size={13} /> {s.cuotas_vencidas}
-                          </Box>
+                          <Chip
+                            icon={<AlertTriangle size={12} />}
+                            label={`${s.cuotas_vencidas} Cuota${s.cuotas_vencidas === 1 ? '' : 's'} Pendiente${s.cuotas_vencidas === 1 ? '' : 's'}`}
+                            size="small"
+                            sx={{
+                              bgcolor: '#fdece2', color: '#c2410c', fontWeight: 700, fontSize: 10.5,
+                              '& .MuiChip-icon': { color: '#c2410c' },
+                            }}
+                          />
                         ) : (
                           <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2f7d5b' }}>Al día</Typography>
                         )}

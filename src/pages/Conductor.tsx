@@ -32,6 +32,7 @@ const CUOTA_ICON: Record<string, React.ReactNode> = {
 const MOVIL_ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
   EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
+  EN_VIAJE:    { bg: '#f1e7fb', fg: '#7128b8' },
 };
 
 export default function ConductorPage() {
