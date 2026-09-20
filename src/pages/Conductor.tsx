@@ -3,7 +3,7 @@ import {
   Box, Typography, Chip, IconButton, Alert, CircularProgress, Card, CardContent,
   Table, TableHead, TableRow, TableCell, TableBody,
 } from '@mui/material';
-import { Car, RefreshCw, CheckCircle, XCircle, Clock, PhoneCall } from 'lucide-react';
+import { Car, RefreshCw, CheckCircle, XCircle, Clock, PhoneCall, BarChart3, MapPin, Trophy } from 'lucide-react';
 import { getPerfilConductor, type PerfilConductor } from '../api/conductor';
 import { colors } from '../theme';
 
@@ -100,18 +100,27 @@ export default function ConductorPage() {
               <Typography sx={{ fontWeight: 700 }}>Mi móvil</Typography>
             </Box>
             {movil ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{movil.patente}</Typography>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{[movil.marca, movil.modelo].filter(Boolean).join(' ')} {movil.anio ?? ''}</Typography>
-                <Typography sx={{ fontSize: 12, color: '#a89f8f' }}>{movil.color ?? ''}</Typography>
-                <Chip
-                  label={movil.estado_operativo.replace('_', ' ')} size="small"
-                  sx={{
-                    mt: 0.5, alignSelf: 'flex-start', fontWeight: 700, fontSize: 10.5,
-                    bgcolor: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.bg ?? '#fbe9e9',
-                    color: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.fg ?? '#c0392b',
-                  }}
-                />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{
+                  bgcolor: '#e9e6dc', border: '2.5px solid #2a2519', borderRadius: 2, px: 2, py: 1,
+                  boxShadow: '0 2px 6px rgba(20,17,11,.15)', flexShrink: 0,
+                }}>
+                  <Typography sx={{ fontSize: 24, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', letterSpacing: 1, color: '#14110b' }}>
+                    {movil.patente}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{[movil.marca, movil.modelo].filter(Boolean).join(' ')} {movil.anio ?? ''}</Typography>
+                  <Typography sx={{ fontSize: 12, color: '#a89f8f' }}>{movil.color ?? ''}</Typography>
+                  <Chip
+                    label={movil.estado_operativo.replace('_', ' ')} size="small"
+                    sx={{
+                      mt: 0.5, alignSelf: 'flex-start', fontWeight: 700, fontSize: 10.5,
+                      bgcolor: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.bg ?? '#fbe9e9',
+                      color: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.fg ?? '#c0392b',
+                    }}
+                  />
+                </Box>
               </Box>
             ) : (
               <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>No tienes un móvil asignado.</Typography>
@@ -126,6 +135,7 @@ export default function ConductorPage() {
                 <PhoneCall size={18} />
               </Box>
               <Typography sx={{ fontWeight: 700 }}>Resumen de hoy</Typography>
+              <BarChart3 size={16} color="#c4bda9" style={{ marginLeft: 'auto' }} />
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {[
@@ -146,8 +156,9 @@ export default function ConductorPage() {
 
       <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
         <Box sx={{ px: 2.5, py: 1.75, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>Mis carreras de hoy</Typography>
-          <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>{solicitudes_hoy.length} carreras</Typography>
+          <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>
+            Mis carreras de hoy <Box component="span" sx={{ color: '#a89f8f', fontWeight: 400 }}>({solicitudes_hoy.length} carrera{solicitudes_hoy.length === 1 ? '' : 's'})</Box>
+          </Typography>
         </Box>
         {solicitudes_hoy.length === 0 ? (
           <Typography sx={{ textAlign: 'center', color: 'text.secondary', py: 5, fontSize: 13 }}>Sin carreras asignadas hoy.</Typography>
@@ -156,9 +167,14 @@ export default function ConductorPage() {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  {['Folio', 'Origen → Destino', 'Estado', 'Hora'].map(h => (
-                    <TableCell key={h} sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>{h}</TableCell>
-                  ))}
+                  <TableCell sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>Folio</TableCell>
+                  <TableCell sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><MapPin size={12} /> Origen → Destino</Box>
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}><Trophy size={12} /> Estado</Box>
+                  </TableCell>
+                  <TableCell sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary' }}>Hora</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

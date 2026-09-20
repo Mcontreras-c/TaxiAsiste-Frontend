@@ -1,9 +1,9 @@
 import {
-  LayoutDashboard, Users, PhoneCall, BarChart2, DollarSign, Truck,
+  LayoutDashboard, Users, PhoneCall, BarChart2, DollarSign, Truck, ListOrdered,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-export type Rol = 'Administrador' | 'Central' | 'Tesorero' | 'Conductor';
+export type Rol = 'Administrador' | 'Central' | 'Tesorero' | 'Secretario' | 'Conductor';
 
 export interface NavItem {
   to: string;
@@ -17,13 +17,13 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/dashboard',
     label: 'Dashboard',
     icon: LayoutDashboard,
-    roles: ['Administrador'],
+    roles: ['Administrador', 'Tesorero', 'Secretario'],
   },
   {
     to: '/socios',
     label: 'Socios',
     icon: Users,
-    roles: ['Administrador', 'Tesorero'],
+    roles: ['Administrador', 'Tesorero', 'Secretario'],
   },
   {
     to: '/solicitudes',
@@ -49,6 +49,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Truck,
     roles: ['Conductor'],
   },
+  {
+    to: '/fila-virtual',
+    label: 'Fila Virtual',
+    icon: ListOrdered,
+    roles: ['Conductor'],
+  },
 ];
 
 // Primera ruta disponible según el rol (página de inicio tras login)
@@ -56,6 +62,7 @@ export const HOME_POR_ROL: Record<Rol, string> = {
   Administrador: '/dashboard',
   Central:       '/solicitudes',
   Tesorero:      '/socios',
+  Secretario:    '/socios',
   Conductor:     '/conductor',
 };
 

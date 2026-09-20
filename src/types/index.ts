@@ -3,7 +3,7 @@ export interface UsuarioAuth {
   id_usuario: number;
   username: string;
   email: string;
-  rol: 'Administrador' | 'Central' | 'Tesorero' | 'Conductor';
+  rol: 'Administrador' | 'Central' | 'Tesorero' | 'Secretario' | 'Conductor';
   estado: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
 }
 

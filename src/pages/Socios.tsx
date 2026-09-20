@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Box, Typography, Chip, Button, Alert, CircularProgress, Collapse, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton,
-  InputAdornment,
+  InputAdornment, Card, CardContent,
 } from '@mui/material';
 import {
   Users, Plus, AlertTriangle, X, Search, Phone, MapPin,
@@ -13,6 +13,7 @@ import { getMoviles, createMovil, updateMovil } from '../api/moviles';
 import type { Socio, Movil } from '../types';
 import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
+import { useAuthStore } from '../store/authStore';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   ACTIVO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
@@ -72,12 +73,13 @@ const VEHICULO_CAMPOS: { label: string; key: keyof VehiculoFormData; placeholder
 
 // ---------- Tarjeta de vehiculo (dentro del desplegable de cada socio) ----------
 function TarjetaVehiculo({
-  socio, movil, onVehiculoCreado, onVehiculoActualizado,
+  socio, movil, onVehiculoCreado, onVehiculoActualizado, puedeEditar,
 }: {
   socio: Socio;
   movil: Movil | undefined;
   onVehiculoCreado: (m: Movil) => void;
   onVehiculoActualizado: (m: Movil) => void;
+  puedeEditar: boolean;
 }) {
   const [form, setForm] = useState<VehiculoFormData>(VEHICULO_EMPTY);
   const [editando, setEditando] = useState(false);
@@ -174,9 +176,11 @@ function TarjetaVehiculo({
           <Typography sx={{ fontSize: 13.5, fontWeight: 600 }}>Sin vehículo registrado</Typography>
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Este socio todavía no tiene un móvil asociado.</Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={15} />} onClick={iniciarEdicion} sx={gradientBtnSx}>
-          Agregar vehículo
-        </Button>
+        {puedeEditar && (
+          <Button variant="contained" startIcon={<Plus size={15} />} onClick={iniciarEdicion} sx={gradientBtnSx}>
+            Agregar vehículo
+          </Button>
+        )}
       </Box>
     );
   }
@@ -227,26 +231,31 @@ function TarjetaVehiculo({
         sx={{ bgcolor: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.bg, color: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.fg, fontWeight: 700, fontSize: 10.5 }}
       />
 
-      <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-        <IconButton size="small" onClick={iniciarEdicion} sx={{ border: '1px solid', borderColor: 'divider' }}>
-          <Pencil size={14} />
-        </IconButton>
-        <Button
-          size="small" variant="outlined" disabled={cambiandoEstado} onClick={toggleBloqueo}
-          startIcon={movil.estado_operativo === 'BLOQUEADO' ? <Unlock size={14} /> : <Lock size={14} />}
-          sx={{
-            color: movil.estado_operativo === 'BLOQUEADO' ? '#2f7d5b' : '#c0392b',
-            borderColor: movil.estado_operativo === 'BLOQUEADO' ? '#2f7d5b' : '#c0392b',
-          }}
-        >
-          {movil.estado_operativo === 'BLOQUEADO' ? 'Desbloquear móvil' : 'Bloquear móvil'}
-        </Button>
-      </Box>
+      {puedeEditar && (
+        <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+          <IconButton size="small" onClick={iniciarEdicion} sx={{ border: '1px solid', borderColor: 'divider' }}>
+            <Pencil size={14} />
+          </IconButton>
+          <Button
+            size="small" variant="outlined" disabled={cambiandoEstado} onClick={toggleBloqueo}
+            startIcon={movil.estado_operativo === 'BLOQUEADO' ? <Unlock size={14} /> : <Lock size={14} />}
+            sx={{
+              color: movil.estado_operativo === 'BLOQUEADO' ? '#2f7d5b' : '#c0392b',
+              borderColor: movil.estado_operativo === 'BLOQUEADO' ? '#2f7d5b' : '#c0392b',
+            }}
+          >
+            {movil.estado_operativo === 'BLOQUEADO' ? 'Desbloquear móvil' : 'Bloquear móvil'}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }
 
 export default function SociosPage() {
+  const { usuario } = useAuthStore();
+  const puedeEditar = usuario?.rol === 'Administrador';
+
   const [socios, setSocios]       = useState<Socio[]>([]);
   const [moviles, setMoviles]     = useState<Movil[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -285,6 +294,9 @@ export default function SociosPage() {
   );
 
   const movilDe = (idSocio: number) => moviles.find(m => m.socio === idSocio);
+
+  const morosos = socios.filter(s => (s.cuotas_vencidas ?? 0) > 0).length;
+  const totalVencidas = socios.reduce((acc, s) => acc + (s.cuotas_vencidas ?? 0), 0);
 
   const abrirCrear = () => {
     setForm(SOCIO_EMPTY);
@@ -381,10 +393,27 @@ export default function SociosPage() {
           <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Socios</Typography>
           <Chip label={socios.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={abrirCrear}
-          sx={{ ...gradientBtnSx, boxShadow: '0 4px 10px rgba(245,166,35,.25)' }}>
-          Nuevo socio
-        </Button>
+        {puedeEditar && (
+          <Button variant="contained" startIcon={<Plus size={16} />} onClick={abrirCrear}
+            sx={{ ...gradientBtnSx, boxShadow: '0 4px 10px rgba(245,166,35,.25)' }}>
+            Nuevo socio
+          </Button>
+        )}
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>
+        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{socios.length}</Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5 }}>Total socios</Typography>
+        </CardContent></Card>
+        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#c2410c' }}>{morosos}</Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5 }}>Con cuotas vencidas</Typography>
+        </CardContent></Card>
+        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#c0392b' }}>{totalVencidas}</Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5 }}>Cuotas vencidas totales</Typography>
+        </CardContent></Card>
       </Box>
 
       <TextField
@@ -522,12 +551,14 @@ export default function SociosPage() {
                             Bloquear
                           </Button>
                         )}
-                        <IconButton
-                          size="small" onClick={e => { e.stopPropagation(); abrirEditar(s); }}
-                          sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
-                        >
-                          <Pencil size={13} />
-                        </IconButton>
+                        {puedeEditar && (
+                          <IconButton
+                            size="small" onClick={e => { e.stopPropagation(); abrirEditar(s); }}
+                            sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
+                          >
+                            <Pencil size={13} />
+                          </IconButton>
+                        )}
                       </Box>
                     </Box>
 
@@ -539,6 +570,7 @@ export default function SociosPage() {
                         <TarjetaVehiculo
                           socio={s}
                           movil={movilDe(s.id_socio)}
+                          puedeEditar={puedeEditar}
                           onVehiculoCreado={nuevo => setMoviles(prev => [...prev, nuevo])}
                           onVehiculoActualizado={actualizado =>
                             setMoviles(prev => prev.map(m => (m.id_movil === actualizado.id_movil ? actualizado : m)))
