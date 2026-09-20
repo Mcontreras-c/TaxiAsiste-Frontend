@@ -1,27 +1,98 @@
 import { useEffect, useState } from 'react';
-import {
-  Box, Typography, IconButton, Alert, CircularProgress, Card, CardContent,
-  Table, TableHead, TableRow, TableCell, TableBody, LinearProgress,
-} from '@mui/material';
-import { BarChart2, RefreshCw, PhoneCall } from 'lucide-react';
-import { getSolicitudesPorEstado } from '../api/reportes';
+import { Box, Typography, IconButton, Alert, CircularProgress, Card, CardContent, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
+import { BarChart2, RefreshCw, PhoneCall, ClipboardList, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { getSolicitudes } from '../api/solicitudes';
-import type { SolicitudPorEstado, Solicitud } from '../types';
+import type { Solicitud } from '../types';
 
 const ESTADO_COLOR: Record<string, string> = {
   PENDIENTE:  '#c2410c',
   ASIGNADO:   '#3355a8',
   EN_CURSO:   '#7e22ce',
   COMPLETADO: '#2f7d5b',
-  CANCELADO:  '#a89f8f',
+  CANCELADO:  '#33415c',
 };
 
 const ESTADO_LABEL: Record<string, string> = {
   PENDIENTE: 'Pendiente', ASIGNADO: 'Asignado', EN_CURSO: 'En curso', COMPLETADO: 'Completado', CANCELADO: 'Cancelado',
 };
 
+// Orden fijo para que la leyenda y el anillo siempre salgan en el mismo orden.
+const ORDEN_ESTADOS = ['CANCELADO', 'COMPLETADO', 'PENDIENTE', 'ASIGNADO', 'EN_CURSO'];
+
+type Tone = { fg: string; bg: string; iconBg: string };
+
+const TONES: Record<string, Tone> = {
+  blue:    { fg: '#3355a8', bg: '#e1e6f8', iconBg: 'rgba(255,255,255,.65)' },
+  emerald: { fg: '#2f7d5b', bg: '#dcf1e6', iconBg: 'rgba(255,255,255,.65)' },
+  red:     { fg: '#c0392b', bg: '#fbe9e9', iconBg: 'rgba(255,255,255,.65)' },
+};
+
+function StatHero({
+  icon, tone, label, value,
+}: { icon: React.ReactNode; tone: Tone; label: string; value: React.ReactNode }) {
+  return (
+    <Card sx={{ borderRadius: 4, bgcolor: tone.bg, boxShadow: 'none' }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{
+          width: 42, height: 42, borderRadius: 3, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          bgcolor: tone.iconBg, color: tone.fg,
+        }}>
+          {icon}
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#241f16', lineHeight: 1.2 }}>
+            {value}
+          </Typography>
+          <Typography sx={{ fontSize: 12, color: tone.fg, fontWeight: 600 }}>{label}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DonutEstados({ segmentos, total }: { segmentos: { estado: string; total: number }[]; total: number }) {
+  const size = 190;
+  const r = 72;
+  const strokeWidth = 26;
+  const circunferencia = 2 * Math.PI * r;
+  const gap = total > 0 ? 4 : 0; // separacion visual entre segmentos, en px de arco
+
+  let acumulado = 0;
+  const arcos = segmentos.map(s => {
+    const largo = Math.max((s.total / total) * circunferencia - gap, 0);
+    const offset = circunferencia - acumulado;
+    acumulado += (s.total / total) * circunferencia;
+    return { ...s, largo, offset };
+  });
+
+  return (
+    <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f1efe9" strokeWidth={strokeWidth} />
+          {arcos.map(a => (
+            <circle
+              key={a.estado}
+              cx={size / 2} cy={size / 2} r={r} fill="none"
+              stroke={ESTADO_COLOR[a.estado]} strokeWidth={strokeWidth} strokeLinecap="round"
+              strokeDasharray={`${a.largo} ${circunferencia - a.largo}`}
+              strokeDashoffset={a.offset}
+            />
+          ))}
+        </g>
+      </svg>
+      <Box sx={{
+        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', letterSpacing: '.04em' }}>TOTAL</Typography>
+        <Typography sx={{ fontSize: 32, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#241f16', lineHeight: 1 }}>{total}</Typography>
+      </Box>
+    </Box>
+  );
+}
+
 export default function ReportesCentralPage() {
-  const [porEstado, setPorEstado]     = useState<SolicitudPorEstado[]>([]);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
@@ -29,9 +100,7 @@ export default function ReportesCentralPage() {
   const load = async () => {
     setLoading(true); setError(null);
     try {
-      const [e, s] = await Promise.all([getSolicitudesPorEstado(), getSolicitudes()]);
-      setPorEstado(e);
-      setSolicitudes(s);
+      setSolicitudes(await getSolicitudes());
     } catch {
       setError('No se pudieron cargar los reportes.');
     } finally { setLoading(false); }
@@ -40,9 +109,13 @@ export default function ReportesCentralPage() {
   useEffect(() => { load(); }, []);
 
   const hoy = new Date().toDateString();
-  const solicitudesHoy  = solicitudes.filter(s => new Date(s.fecha_hora).toDateString() === hoy);
-  const sinContacto     = solicitudes.filter(s => s.observaciones === 'SIN_CONTACTO');
-  const totalSolicitudes = porEstado.reduce((acc, e) => acc + e.total, 0);
+  const solicitudesHoy = solicitudes.filter(s => new Date(s.fecha_hora).toDateString() === hoy);
+  const sinContacto    = solicitudes.filter(s => s.observaciones === 'SIN_CONTACTO');
+
+  const porEstadoHoy = ORDEN_ESTADOS
+    .map(estado => ({ estado, total: solicitudesHoy.filter(s => s.estado === estado).length }))
+    .filter(e => e.total > 0);
+  const totalHoy = solicitudesHoy.length;
 
   if (loading) {
     return (
@@ -72,53 +145,47 @@ export default function ReportesCentralPage() {
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>
-        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{solicitudesHoy.length}</Typography>
-          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>Solicitudes hoy</Typography>
-        </CardContent></Card>
-        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#2f7d5b' }}>
-            {solicitudesHoy.filter(s => s.estado === 'COMPLETADO').length}
-          </Typography>
-          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>Completadas hoy</Typography>
-        </CardContent></Card>
-        <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 26, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#c2410c' }}>{sinContacto.length}</Typography>
-          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.5 }}>Sin contacto (total)</Typography>
-        </CardContent></Card>
+        <StatHero icon={<ClipboardList size={19} />} tone={TONES.blue} label="Solicitudes hoy" value={solicitudesHoy.length} />
+        <StatHero icon={<CheckCircle2 size={19} />} tone={TONES.emerald} label="Completadas hoy" value={solicitudesHoy.filter(s => s.estado === 'COMPLETADO').length} />
+        <StatHero icon={<AlertTriangle size={19} />} tone={TONES.red} label="Sin contacto (total)" value={sinContacto.length} />
       </Box>
 
       <Card sx={{ borderRadius: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
             <PhoneCall size={17} color="#6b6152" />
-            <Typography sx={{ fontSize: 15, fontWeight: 700 }}>Solicitudes por estado</Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 700 }}>Análisis de Solicitudes por Estado (Hoy)</Typography>
             <Typography sx={{ ml: 'auto', fontSize: 13, color: 'text.secondary' }}>
-              Total: <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{totalSolicitudes}</Box>
+              Total: <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{totalHoy}</Box>
             </Typography>
           </Box>
 
-          {totalSolicitudes > 0 && (
-            <Box sx={{ display: 'flex', height: 14, borderRadius: 999, overflow: 'hidden', mb: 2.5, gap: '2px' }}>
-              {porEstado.filter(e => e.total > 0).map(e => (
-                <Box key={e.estado} title={`${e.estado}: ${e.total}`} sx={{ bgcolor: ESTADO_COLOR[e.estado], width: `${(e.total / totalSolicitudes) * 100}%` }} />
-              ))}
+          {totalHoy === 0 ? (
+            <Typography sx={{ textAlign: 'center', color: 'text.secondary', py: 4, fontSize: 13 }}>
+              Aún no hay solicitudes registradas hoy.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 3, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 130 }}>
+                {porEstadoHoy.map(e => (
+                  <Box key={e.estado} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: ESTADO_COLOR[e.estado], flexShrink: 0 }} />
+                    <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{ESTADO_LABEL[e.estado]}</Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              <DonutEstados segmentos={porEstadoHoy} total={totalHoy} />
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 70, alignItems: 'flex-end' }}>
+                {porEstadoHoy.map(e => (
+                  <Typography key={e.estado} sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>
+                    {e.total} unid.
+                  </Typography>
+                ))}
+              </Box>
             </Box>
           )}
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-            {porEstado.map(e => (
-              <Box key={e.estado} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: ESTADO_COLOR[e.estado], flexShrink: 0 }} />
-                <Typography sx={{ fontSize: 13, color: 'text.secondary', width: 100 }}>{ESTADO_LABEL[e.estado]}</Typography>
-                <LinearProgress
-                  variant="determinate" value={totalSolicitudes > 0 ? (e.total / totalSolicitudes) * 100 : 0}
-                  sx={{ flex: 1, height: 8, borderRadius: 4, bgcolor: '#f1efe9', '& .MuiLinearProgress-bar': { borderRadius: 4, bgcolor: ESTADO_COLOR[e.estado] } }}
-                />
-                <Typography sx={{ fontSize: 13, fontWeight: 700, width: 28, textAlign: 'right', fontFamily: 'Roboto Mono, monospace' }}>{e.total}</Typography>
-              </Box>
-            ))}
-          </Box>
         </CardContent>
       </Card>
 
