@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, PhoneCall, BarChart2, DollarSign, Truck, ListOrdered,
+  LayoutDashboard, Users, PhoneCall, BarChart2, DollarSign, Truck, ListOrdered, UserCog,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -42,6 +42,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Tesorería',
     icon: DollarSign,
     roles: ['Administrador', 'Tesorero'],
+  },
+  {
+    to: '/usuarios',
+    label: 'Usuarios',
+    icon: UserCog,
+    roles: ['Administrador'],
   },
   {
     to: '/conductor',

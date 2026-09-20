@@ -4,12 +4,13 @@ import {
   Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
   Avatar, Typography, AppBar, Toolbar, Divider, Breadcrumbs, Link as MLink, Chip,
 } from '@mui/material';
-import { LogOut, Menu, PanelLeftClose, ChevronRight, WifiOff, User, ListOrdered, Bell } from 'lucide-react';
+import { LogOut, Menu, PanelLeftClose, ChevronRight, WifiOff, User, ListOrdered, Bell, KeyRound } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useConnectionStore } from '../store/connectionStore';
 import { NAV_ITEMS, type Rol } from '../config/permisos';
 import { colors } from '../theme';
 import { getPerfilConductor } from '../api/conductor';
+import CambiarPasswordDialog from './CambiarPasswordDialog';
 import logo from '../assets/logo.jpg';
 
 const ROL_LABEL: Record<Rol, string> = {
@@ -25,6 +26,7 @@ const DRAWER_CLOSED = 72;
 
 export default function Layout() {
   const [open, setOpen] = useState(true);
+  const [cambiarPassOpen, setCambiarPassOpen] = useState(false);
   const { usuario, logout } = useAuthStore();
   const conexionInestable = useConnectionStore((s) => s.estado === 'inestable');
   const navigate = useNavigate();
@@ -195,11 +197,16 @@ export default function Layout() {
               </Typography>
             </Box>
           )}
+          <IconButton onClick={() => setCambiarPassOpen(true)} size="small" title="Cambiar contraseña" sx={{ color: 'rgba(255,255,255,.55)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,.1)' } }}>
+            <KeyRound size={16} />
+          </IconButton>
           <IconButton onClick={handleLogout} size="small" sx={{ color: 'rgba(255,255,255,.55)', '&:hover': { color: '#ff8a8a', bgcolor: 'rgba(255,255,255,.1)' } }}>
             <LogOut size={16} />
           </IconButton>
         </Box>
       </Drawer>
+
+      <CambiarPasswordDialog open={cambiarPassOpen} onClose={() => setCambiarPassOpen(false)} />
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AppBar
