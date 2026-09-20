@@ -14,7 +14,6 @@ import { LoadingState } from './components/ui';
 import Login from './pages/Login';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Socios = lazy(() => import('./pages/Socios'));
-const SociosTesorero = lazy(() => import('./pages/SociosTesorero'));
 const Solicitudes = lazy(() => import('./pages/Solicitudes'));
 const SolicitudesCentral = lazy(() => import('./pages/SolicitudesCentral'));
 const ReportesCentral = lazy(() => import('./pages/ReportesCentral'));
@@ -22,6 +21,7 @@ const ReportesTesorero = lazy(() => import('./pages/ReportesTesorero'));
 const Tesoreria = lazy(() => import('./pages/Tesoreria'));
 const TesoreriaAdmin = lazy(() => import('./pages/TesoreriaAdmin'));
 const Conductor = lazy(() => import('./pages/Conductor'));
+const FilaVirtualConductor = lazy(() => import('./pages/FilaVirtualConductor'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -58,11 +58,7 @@ function App() {
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/dashboard"   element={<RoleRoute ruta="/dashboard">  <Dashboard />   </RoleRoute>} />
-          <Route path="/socios" element={
-            <RoleRoute ruta="/socios">
-              {usuario?.rol === 'Tesorero' ? <SociosTesorero /> : <Socios />}
-            </RoleRoute>
-          } />
+          <Route path="/socios" element={<RoleRoute ruta="/socios"><Socios /></RoleRoute>} />
           <Route path="/solicitudes" element={
             <RoleRoute ruta="/solicitudes">
               {usuario?.rol === 'Central' || usuario?.rol === 'Administrador'
@@ -81,6 +77,7 @@ function App() {
             </RoleRoute>
           } />
           <Route path="/conductor"   element={<RoleRoute ruta="/conductor">  <Conductor />   </RoleRoute>} />
+          <Route path="/fila-virtual" element={<RoleRoute ruta="/fila-virtual"><FilaVirtualConductor /></RoleRoute>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,20 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
   Avatar, Typography, AppBar, Toolbar, Divider, Breadcrumbs, Link as MLink, Chip,
 } from '@mui/material';
-import { LogOut, Menu, PanelLeftClose, ChevronRight, WifiOff } from 'lucide-react';
+import { LogOut, Menu, PanelLeftClose, ChevronRight, WifiOff, User, ListOrdered, Bell } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useConnectionStore } from '../store/connectionStore';
 import { NAV_ITEMS, type Rol } from '../config/permisos';
 import { colors } from '../theme';
+import { getPerfilConductor } from '../api/conductor';
 import logo from '../assets/logo.jpg';
 
 const ROL_LABEL: Record<Rol, string> = {
   Administrador: 'Administrador',
   Central:       'Central telefónica',
   Tesorero:      'Tesorero',
+  Secretario:    'Secretario',
   Conductor:     'Conductor',
 };
 
@@ -29,8 +31,19 @@ export default function Layout() {
   const location = useLocation();
 
   const rol = usuario?.rol as Rol | undefined;
-  const navFiltrado = NAV_ITEMS.filter(item => rol && item.roles.includes(rol));
-  const currentPage = navFiltrado.find(item => item.to === location.pathname);
+  const esConductor = rol === 'Conductor';
+  const navFiltrado = NAV_ITEMS.filter(item => rol && item.roles.includes(rol) && item.to !== '/fila-virtual');
+  const currentPage = NAV_ITEMS.find(item => item.to === location.pathname);
+
+  // Nombre/RUT del conductor para la tarjeta de perfil del sidebar -- no viene
+  // en el usuario del login, asi que se pide aparte solo para este rol.
+  const [perfilConductor, setPerfilConductor] = useState<{ nombre: string; rut: string } | null>(null);
+  useEffect(() => {
+    if (!esConductor) return;
+    getPerfilConductor()
+      .then(p => setPerfilConductor({ nombre: `${p.socio.nombre} ${p.socio.apellido}`, rut: p.socio.rut }))
+      .catch(() => {});
+  }, [esConductor]);
 
   const handleLogout = () => {
     logout();
@@ -83,43 +96,86 @@ export default function Layout() {
           </IconButton>
         </Box>
 
-        <List sx={{ flex: 1, py: 2, px: 1.25 }}>
-          {open && (
-            <Typography sx={{ px: 1.5, mb: 1, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,.45)' }}>
-              Menú
-            </Typography>
-          )}
-          {navFiltrado.map(({ to, label, icon: Icon }) => {
-            const isActive = location.pathname === to;
-            return (
+        <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          <List sx={{ py: 2, px: 1.25 }}>
+            {open && (
+              <Typography sx={{ px: 1.5, mb: 1, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,.45)' }}>
+                Menú
+              </Typography>
+            )}
+            {navFiltrado.map(({ to, label, icon: Icon }) => {
+              const isActive = location.pathname === to;
+              return (
+                <ListItemButton
+                  key={to}
+                  component={NavLink}
+                  to={to}
+                  title={!open ? label : undefined}
+                  sx={{
+                    borderRadius: 2.5,
+                    mb: 0.5,
+                    py: 1.1,
+                    color: isActive ? '#fff' : 'rgba(255,255,255,.78)',
+                    bgcolor: isActive ? 'rgba(255,255,255,.14)' : 'transparent',
+                    position: 'relative',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,.08)' },
+                    '&::before': isActive ? {
+                      content: '""', position: 'absolute', left: -10, top: 8, bottom: 8, width: 3,
+                      borderRadius: '0 4px 4px 0',
+                      background: `linear-gradient(180deg, ${colors.accent300}, ${colors.accent500})`,
+                    } : undefined,
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 0, mr: open ? 1.5 : 'auto', color: 'inherit', justifyContent: 'center' }}>
+                    <Icon size={19} />
+                  </ListItemIcon>
+                  {open && <ListItemText slotProps={{ primary: { sx: { fontSize: 14, fontWeight: 500 } } }}>{label}</ListItemText>}
+                </ListItemButton>
+              );
+            })}
+          </List>
+
+          {esConductor && open && (
+            <Box sx={{ px: 1.5, pb: 1 }}>
+              <Box sx={{
+                display: 'flex', alignItems: 'center', gap: 1.25, p: 1.5, borderRadius: 3,
+                bgcolor: 'rgba(255,255,255,.1)',
+              }}>
+                <Box sx={{
+                  width: 46, height: 46, borderRadius: '50%', flexShrink: 0, overflow: 'hidden',
+                  bgcolor: 'rgba(255,255,255,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '2px solid rgba(255,255,255,.3)',
+                }}>
+                  {/* Placeholder -- reemplazar por la foto real del socio cuando este disponible. */}
+                  <User size={22} color="#fff" />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {perfilConductor?.nombre ?? usuario?.username}
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.6)' }}>
+                    {perfilConductor ? `RUT: ${perfilConductor.rut}` : ''}
+                  </Typography>
+                </Box>
+              </Box>
+
               <ListItemButton
-                key={to}
                 component={NavLink}
-                to={to}
-                title={!open ? label : undefined}
+                to="/fila-virtual"
                 sx={{
-                  borderRadius: 2.5,
-                  mb: 0.5,
-                  py: 1.1,
-                  color: isActive ? '#fff' : 'rgba(255,255,255,.78)',
-                  bgcolor: isActive ? 'rgba(255,255,255,.14)' : 'transparent',
-                  position: 'relative',
+                  mt: 1, borderRadius: 2.5, py: 1.1,
+                  color: location.pathname === '/fila-virtual' ? '#fff' : 'rgba(255,255,255,.78)',
+                  bgcolor: location.pathname === '/fila-virtual' ? 'rgba(255,255,255,.14)' : 'transparent',
                   '&:hover': { bgcolor: 'rgba(255,255,255,.08)' },
-                  '&::before': isActive ? {
-                    content: '""', position: 'absolute', left: -10, top: 8, bottom: 8, width: 3,
-                    borderRadius: '0 4px 4px 0',
-                    background: `linear-gradient(180deg, ${colors.accent300}, ${colors.accent500})`,
-                  } : undefined,
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 0, mr: open ? 1.5 : 'auto', color: 'inherit', justifyContent: 'center' }}>
-                  <Icon size={19} />
-                </ListItemIcon>
-                {open && <ListItemText slotProps={{ primary: { sx: { fontSize: 14, fontWeight: 500 } } }}>{label}</ListItemText>}
+                <ListItemIcon sx={{ minWidth: 0, mr: 1.5, color: 'inherit' }}><ListOrdered size={18} /></ListItemIcon>
+                <ListItemText slotProps={{ primary: { sx: { fontSize: 13.5, fontWeight: 600 } } }}>Fila Virtual</ListItemText>
+                <ChevronRight size={15} />
               </ListItemButton>
-            );
-          })}
-        </List>
+            </Box>
+          )}
+        </Box>
 
         <Divider sx={{ borderColor: 'rgba(255,255,255,.14)' }} />
         <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
@@ -174,6 +230,11 @@ export default function Layout() {
                   '& .MuiChip-icon': { color: '#c2410c' },
                 }}
               />
+            )}
+            {esConductor && (
+              <IconButton size="small" sx={{ ml: conexionInestable ? 1 : 'auto', color: 'text.secondary' }} title="Notificaciones">
+                <Bell size={17} />
+              </IconButton>
             )}
           </Toolbar>
         </AppBar>

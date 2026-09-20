@@ -6,12 +6,15 @@ describe('tieneAcceso', () => {
     expect(tieneAcceso('Administrador', '/dashboard')).toBe(true);
     expect(tieneAcceso('Central', '/solicitudes')).toBe(true);
     expect(tieneAcceso('Tesorero', '/tesoreria')).toBe(true);
+    expect(tieneAcceso('Tesorero', '/dashboard')).toBe(true);
+    expect(tieneAcceso('Secretario', '/dashboard')).toBe(true);
+    expect(tieneAcceso('Secretario', '/socios')).toBe(true);
   });
 
   it('deniega el acceso cuando el rol no esta en la lista de la ruta', () => {
-    expect(tieneAcceso('Tesorero', '/dashboard')).toBe(false);
     expect(tieneAcceso('Central', '/tesoreria')).toBe(false);
     expect(tieneAcceso('Conductor', '/socios')).toBe(false);
+    expect(tieneAcceso('Secretario', '/tesoreria')).toBe(false);
   });
 
   it('deniega el acceso a una ruta que no existe en NAV_ITEMS', () => {
