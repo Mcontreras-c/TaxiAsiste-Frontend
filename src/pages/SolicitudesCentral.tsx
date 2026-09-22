@@ -14,7 +14,7 @@ import {
   cambiarEstado, buscarPasajeroPorRut, createPasajero, actualizarTelefonoPasajero, type ResumenCentral,
 } from '../api/solicitudes';
 import { getMoviles, getFilaBase } from '../api/moviles';
-import { geocodificar, obtenerRuta } from '../api/mapas';
+import { geocodificar, obtenerRuta, estimarTarifa, type TarifaEstimada } from '../api/mapas';
 import MapaDespacho from '../components/MapaDespacho';
 import type { PuntoRuta, RutaGeoJSON } from '../components/MapaDespacho';
 import { useUbicacionesMoviles } from '../hooks/useUbicacionesMoviles';
@@ -267,6 +267,11 @@ export default function SolicitudesCentralPage() {
   const [buscandoOrigen, setBuscandoOrigen] = useState(false);
   const [errorGeocodOrigen, setErrorGeocodOrigen] = useState<string | null>(null);
 
+  // Tarifa estimada (taximetro) para el origen recien geocodificado -- solo
+  // informativa, para que Central pueda responder "¿cuánto sale aprox?".
+  const [tarifaEstimada, setTarifaEstimada] = useState<TarifaEstimada | null>(null);
+  const [calculandoTarifa, setCalculandoTarifa] = useState(false);
+
   // Ruta trazada en el mapa principal para una solicitud EN_CURSO seleccionada.
   const [rutaSeleccionada, setRutaSeleccionada] = useState<{
     origenDestino: { origen: PuntoRuta; destino: PuntoRuta };
@@ -343,10 +348,20 @@ export default function SolicitudesCentralPage() {
   };
 
   const handleOrigenBlur = async () => {
-    if (!form.origen) { setGeocodOrigen(null); setErrorGeocodOrigen(null); return; }
-    setBuscandoOrigen(true); setErrorGeocodOrigen(null);
+    if (!form.origen) {
+      setGeocodOrigen(null); setErrorGeocodOrigen(null); setTarifaEstimada(null);
+      return;
+    }
+    setBuscandoOrigen(true); setErrorGeocodOrigen(null); setTarifaEstimada(null);
     try {
-      setGeocodOrigen(await geocodificar(form.origen));
+      const geocod = await geocodificar(form.origen);
+      setGeocodOrigen(geocod);
+      setCalculandoTarifa(true);
+      try {
+        setTarifaEstimada(await estimarTarifa({ lat: geocod.lat, lng: geocod.lng }));
+      } catch {
+        setTarifaEstimada(null);
+      } finally { setCalculandoTarifa(false); }
     } catch {
       setGeocodOrigen(null);
       setErrorGeocodOrigen('No se pudo ubicar esta dirección — se registrará solo como texto.');
@@ -732,7 +747,10 @@ export default function SolicitudesCentralPage() {
                 <Box>
                   <TextField fullWidth size="small" label="Dirección de recogida *" placeholder="Calle Falsa 123"
                     value={form.origen}
-                    onChange={e => { setForm(f => ({ ...f, origen: e.target.value })); setGeocodOrigen(null); setErrorGeocodOrigen(null); }}
+                    onChange={e => {
+                      setForm(f => ({ ...f, origen: e.target.value }));
+                      setGeocodOrigen(null); setErrorGeocodOrigen(null); setTarifaEstimada(null);
+                    }}
                     onBlur={handleOrigenBlur}
                     slotProps={{ input: { startAdornment: (
                       <InputAdornment position="start"><MapPin size={15} color="#a89f8f" /></InputAdornment>
@@ -760,6 +778,32 @@ export default function SolicitudesCentralPage() {
                   </Typography>
                   <MapPin size={16} color="#c0392b" style={{ flexShrink: 0 }} />
                 </Box>
+
+                {(calculandoTarifa || tarifaEstimada) && (
+                  <Box sx={{
+                    display: 'flex', alignItems: 'center', gap: 1.25, bgcolor: '#fdf1dc', borderRadius: 3, px: 1.5, py: 1.25,
+                    border: '1px solid', borderColor: '#f0d9a8',
+                  }}>
+                    <Box sx={{
+                      width: 32, height: 32, borderRadius: 2, flexShrink: 0, bgcolor: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Navigation size={15} color="#c2410c" />
+                    </Box>
+                    {calculandoTarifa ? (
+                      <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>Calculando tarifa estimada...</Typography>
+                    ) : tarifaEstimada && (
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontSize: 15, fontWeight: 800, color: '#7a4a10', fontFamily: 'Roboto Mono, monospace' }}>
+                          ${tarifaEstimada.tarifa_estimada.toLocaleString('es-CL')} <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: '#a08050' }}>estimado</Box>
+                        </Typography>
+                        <Typography sx={{ fontSize: 10.5, color: '#a08050' }}>
+                          {(tarifaEstimada.distancia_m / 1000).toFixed(1)} km aprox. — puede variar según el tráfico y la ruta real.
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
 
                 <TextField fullWidth select size="small" label="Canal de solicitud" value={form.canal_entrada}
                   onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
