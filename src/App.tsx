@@ -21,6 +21,7 @@ const ReportesTesorero = lazy(() => import('./pages/ReportesTesorero'));
 const Tesoreria = lazy(() => import('./pages/Tesoreria'));
 const TesoreriaAdmin = lazy(() => import('./pages/TesoreriaAdmin'));
 const Usuarios = lazy(() => import('./pages/Usuarios'));
+const Agenda = lazy(() => import('./pages/Agenda'));
 const Conductor = lazy(() => import('./pages/Conductor'));
 const FilaVirtualConductor = lazy(() => import('./pages/FilaVirtualConductor'));
 
@@ -78,6 +79,7 @@ function App() {
             </RoleRoute>
           } />
           <Route path="/usuarios"    element={<RoleRoute ruta="/usuarios">   <Usuarios />    </RoleRoute>} />
+          <Route path="/agenda"      element={<RoleRoute ruta="/agenda">     <Agenda />      </RoleRoute>} />
           <Route path="/conductor"   element={<RoleRoute ruta="/conductor">  <Conductor />   </RoleRoute>} />
           <Route path="/fila-virtual" element={<RoleRoute ruta="/fila-virtual"><FilaVirtualConductor /></RoleRoute>} />
         </Route>
