@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight, Landmark } from 'lucide-react';
+import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet, ChevronLeft, ChevronRight, Landmark, Download } from 'lucide-react';
 import {
   getMovimientos, getBalance, createMovimiento, registrarPagoCuota, getCuotas, getResumenMensual,
   type TesoreriaMovimiento, type Balance, type ResumenMensual,
@@ -9,6 +9,7 @@ import {
   Alert, Badge, Button, DataTable, LoadingState,
   Modal, PageHeader, StatCard, TableCell, TableRow,
 } from '../components/ui';
+import { exportarAExcel } from '../utils/exportarExcel';
 
 const TIPO_COLOR: Record<string, string> = {
   INGRESO: 'bg-emerald-50 text-emerald-700',
@@ -131,6 +132,28 @@ export default function TesoreriaPage() {
     setCuotaSeleccionada(''); setObservacion(''); setMovForm(MOV_EMPTY);
   };
 
+  const exportar = () => {
+    exportarAExcel('TaxiAsiste_Tesoreria', [{
+      nombre: 'Movimientos',
+      columnas: [
+        { header: 'Fecha', key: 'fecha', width: 14 },
+        { header: 'Tipo', key: 'tipo', width: 12 },
+        { header: 'Categoría', key: 'categoria', width: 18 },
+        { header: 'Descripción', key: 'descripcion', width: 36 },
+        { header: 'Registrado por', key: 'usuario', width: 18 },
+        { header: 'Monto', key: 'monto', width: 14 },
+      ],
+      filas: movimientos.map(m => ({
+        fecha: new Date(m.fecha).toLocaleDateString('es-CL'),
+        tipo: m.tipo,
+        categoria: CATEGORIA_LABEL[m.categoria] ?? m.categoria,
+        descripcion: m.descripcion,
+        usuario: m.usuario_nombre ?? '—',
+        monto: Number(m.monto),
+      })),
+    }]);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -138,6 +161,9 @@ export default function TesoreriaPage() {
         title="Tesorería"
         actions={
           <>
+            <Button variant="secondary" onClick={exportar}>
+              <Download className="w-4 h-4" /> Exportar
+            </Button>
             <Button onClick={() => openModal('pago_cuota')}>
               <Plus className="w-4 h-4" /> Registrar pago cuota
             </Button>

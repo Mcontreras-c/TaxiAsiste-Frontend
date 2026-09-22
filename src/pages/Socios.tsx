@@ -6,8 +6,9 @@ import {
 } from '@mui/material';
 import {
   Users, Plus, AlertTriangle, X, Search, Phone, MapPin,
-  Car, ChevronDown, ChevronRight, Lock, Unlock, Pencil, Check,
+  Car, ChevronDown, ChevronRight, Lock, Unlock, Pencil, Check, Download,
 } from 'lucide-react';
+import { exportarAExcel } from '../utils/exportarExcel';
 import { getSocios, createSocio, updateSocio, desbloquearSocio, bloquearSocio } from '../api/socios';
 import { getMoviles, createMovil, updateMovil } from '../api/moviles';
 import type { Socio, Movil } from '../types';
@@ -298,6 +299,37 @@ export default function SociosPage() {
   const morosos = socios.filter(s => (s.cuotas_vencidas ?? 0) > 0).length;
   const totalVencidas = socios.reduce((acc, s) => acc + (s.cuotas_vencidas ?? 0), 0);
 
+  const exportar = () => {
+    exportarAExcel('TaxiAsiste_Socios', [{
+      nombre: 'Socios',
+      columnas: [
+        { header: 'RUT', key: 'rut', width: 14 },
+        { header: 'Nombre', key: 'nombre', width: 24 },
+        { header: 'Teléfono', key: 'telefono', width: 14 },
+        { header: 'Dirección', key: 'direccion', width: 28 },
+        { header: 'Estado', key: 'estado', width: 12 },
+        { header: 'Ingreso', key: 'ingreso', width: 12 },
+        { header: 'Cuotas vencidas', key: 'cuotas', width: 14 },
+        { header: 'Patente', key: 'patente', width: 12 },
+        { header: 'Vehículo', key: 'vehiculo', width: 20 },
+      ],
+      filas: filtered.map(s => {
+        const m = movilDe(s.id_socio);
+        return {
+          rut: s.rut,
+          nombre: s.nombre_completo,
+          telefono: s.telefono ?? '—',
+          direccion: s.direccion ?? '—',
+          estado: s.estado_socio,
+          ingreso: new Date(s.fecha_ingreso).toLocaleDateString('es-CL'),
+          cuotas: s.cuotas_vencidas ?? 0,
+          patente: m?.patente ?? '—',
+          vehiculo: m ? [m.marca, m.modelo].filter(Boolean).join(' ') : '—',
+        };
+      }),
+    }]);
+  };
+
   const abrirCrear = () => {
     setForm(SOCIO_EMPTY);
     setVehiculoForm(VEHICULO_EMPTY);
@@ -393,12 +425,18 @@ export default function SociosPage() {
           <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Socios</Typography>
           <Chip label={socios.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
         </Box>
-        {puedeEditar && (
-          <Button variant="contained" startIcon={<Plus size={16} />} onClick={abrirCrear}
-            sx={{ ...gradientBtnSx, boxShadow: '0 4px 10px rgba(245,166,35,.25)' }}>
-            Nuevo socio
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" startIcon={<Download size={15} />} onClick={exportar}
+            sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+            Exportar
           </Button>
-        )}
+          {puedeEditar && (
+            <Button variant="contained" startIcon={<Plus size={16} />} onClick={abrirCrear}
+              sx={{ ...gradientBtnSx, boxShadow: '0 4px 10px rgba(245,166,35,.25)' }}>
+              Nuevo socio
+            </Button>
+          )}
+        </Box>
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>

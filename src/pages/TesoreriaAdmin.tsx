@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
   Box, Typography, Chip, IconButton, Alert, CircularProgress, Card, CardContent,
-  Table, TableHead, TableRow, TableCell, TableBody,
+  Table, TableHead, TableRow, TableCell, TableBody, Button,
 } from '@mui/material';
-import { DollarSign, RefreshCw, TrendingUp, TrendingDown, Wallet, Info, Landmark, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { DollarSign, RefreshCw, TrendingUp, TrendingDown, Wallet, Info, Landmark, ChevronLeft, ChevronRight, BookOpen, Download } from 'lucide-react';
 import { getMovimientos, getBalance, getResumenMensual, type TesoreriaMovimiento, type Balance, type ResumenMensual } from '../api/tesoreria';
+import { exportarAExcel } from '../utils/exportarExcel';
 
 const TIPO_STYLE = {
   INGRESO: { bg: '#e4f3ec', fg: '#2f7d5b' },
@@ -78,6 +79,28 @@ export default function TesoreriaAdmin() {
     getResumenMensual(mes).then(setResumenMes).catch(() => setResumenMes(null));
   }, [mes]);
 
+  const exportar = () => {
+    exportarAExcel('TaxiAsiste_Tesoreria', [{
+      nombre: 'Movimientos',
+      columnas: [
+        { header: 'Fecha', key: 'fecha', width: 14 },
+        { header: 'Tipo', key: 'tipo', width: 12 },
+        { header: 'Categoría', key: 'categoria', width: 18 },
+        { header: 'Descripción', key: 'descripcion', width: 36 },
+        { header: 'Registrado por', key: 'usuario', width: 18 },
+        { header: 'Monto', key: 'monto', width: 14 },
+      ],
+      filas: movimientos.map(m => ({
+        fecha: new Date(m.fecha).toLocaleDateString('es-CL'),
+        tipo: m.tipo,
+        categoria: CATEGORIA_LABEL[m.categoria] ?? m.categoria,
+        descripcion: m.descripcion,
+        usuario: m.usuario_nombre ?? '—',
+        monto: Number(m.monto),
+      })),
+    }]);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -86,7 +109,13 @@ export default function TesoreriaAdmin() {
           <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Tesorería</Typography>
           <Chip label="Solo consulta" size="small" sx={{ bgcolor: '#e8ecf9', color: '#3355a8', fontWeight: 700 }} />
         </Box>
-        <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" size="small" startIcon={<Download size={14} />} onClick={exportar}
+            sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+            Exportar
+          </Button>
+          <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+        </Box>
       </Box>
 
       <Alert severity="info" icon={<Info size={18} />}>

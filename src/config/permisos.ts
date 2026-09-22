@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Users, PhoneCall, BarChart2, DollarSign, Truck, ListOrdered, UserCog,
+  LayoutDashboard, Users, PhoneCall, BarChart2, DollarSign, Truck, ListOrdered, UserCog, CalendarClock,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -48,6 +48,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Usuarios',
     icon: UserCog,
     roles: ['Administrador'],
+  },
+  {
+    to: '/agenda',
+    label: 'Agenda',
+    icon: CalendarClock,
+    roles: ['Administrador', 'Secretario'],
   },
   {
     to: '/conductor',
