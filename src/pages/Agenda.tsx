@@ -1,16 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Box, Typography, IconButton, Alert, CircularProgress, Card, CardContent, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Chip,
 } from '@mui/material';
-import { CalendarClock, RefreshCw, Plus, X, Check, Pencil, Trash2, MapPin, Clock } from 'lucide-react';
+import {
+  CalendarClock, RefreshCw, Plus, X, Check, Pencil, Trash2, MapPin, Clock,
+  FileText, Upload, Download, File,
+} from 'lucide-react';
 import {
   getEventosAgenda, createEventoAgenda, updateEventoAgenda, deleteEventoAgenda,
-  type EventoAgenda, type EventoAgendaInput,
+  getDocumentosAgenda, subirDocumentoAgenda, deleteDocumentoAgenda,
+  type EventoAgenda, type EventoAgendaInput, type DocumentoAgenda,
 } from '../api/agenda';
 import { colors } from '../theme';
 
 const FORM_VACIO: EventoAgendaInput = { titulo: '', descripcion: '', fecha_hora: '', lugar: '' };
+
+function formatoTamano(bytes: number | null) {
+  if (!bytes) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function aDatetimeLocal(iso: string) {
   const d = new Date(iso);
@@ -30,6 +41,17 @@ export default function AgendaPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [eliminando, setEliminando] = useState<number | null>(null);
 
+  const [documentos, setDocumentos]   = useState<DocumentoAgenda[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(true);
+  const [subirOpen, setSubirOpen]     = useState(false);
+  const [nombreDoc, setNombreDoc]     = useState('');
+  const [categoriaDoc, setCategoriaDoc] = useState('');
+  const [archivo, setArchivo]         = useState<File | null>(null);
+  const [subiendo, setSubiendo]       = useState(false);
+  const [errorDoc, setErrorDoc]       = useState<string | null>(null);
+  const [eliminandoDoc, setEliminandoDoc] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const load = async () => {
     setLoading(true); setError(null);
     try { setEventos(await getEventosAgenda()); }
@@ -37,7 +59,51 @@ export default function AgendaPage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadDocumentos = async () => {
+    setLoadingDocs(true);
+    try { setDocumentos(await getDocumentosAgenda()); }
+    catch { setErrorDoc('No se pudieron cargar los documentos.'); }
+    finally { setLoadingDocs(false); }
+  };
+
+  useEffect(() => { load(); loadDocumentos(); }, []);
+
+  const abrirSubir = () => {
+    setNombreDoc(''); setCategoriaDoc(''); setArchivo(null); setErrorDoc(null);
+    setSubirOpen(true);
+  };
+  const cerrarSubir = () => setSubirOpen(false);
+
+  const handleSubir = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!nombreDoc || !archivo) {
+      setErrorDoc('Ponle un nombre y elige un archivo.');
+      return;
+    }
+    setSubiendo(true); setErrorDoc(null);
+    try {
+      await subirDocumentoAgenda(nombreDoc, archivo, categoriaDoc || undefined);
+      cerrarSubir();
+      await loadDocumentos();
+    } catch {
+      setErrorDoc('No se pudo subir el documento.');
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const handleEliminarDoc = async (d: DocumentoAgenda) => {
+    if (!confirm(`¿Eliminar "${d.nombre}"?`)) return;
+    setEliminandoDoc(d.id_documento);
+    try {
+      await deleteDocumentoAgenda(d.id_documento);
+      await loadDocumentos();
+    } catch {
+      setErrorDoc('No se pudo eliminar el documento.');
+    } finally {
+      setEliminandoDoc(null);
+    }
+  };
 
   const abrirCrear = () => { setForm(FORM_VACIO); setFormError(null); setModal('crear'); };
   const abrirEditar = (e: EventoAgenda) => {
@@ -189,6 +255,124 @@ export default function AgendaPage() {
           )}
         </Box>
       )}
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <FileText size={20} color="#3a3327" />
+          <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#2a2519' }}>Documentos</Typography>
+          <Chip label={documentos.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+        </Box>
+        <Button variant="outlined" size="small" startIcon={<Upload size={14} />} onClick={abrirSubir}
+          sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+          Subir documento
+        </Button>
+      </Box>
+
+      {errorDoc && <Alert severity="error" onClose={() => setErrorDoc(null)}>{errorDoc}</Alert>}
+
+      {loadingDocs ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6, color: 'text.secondary' }}>
+          <CircularProgress size={20} sx={{ mr: 1.5 }} /> Cargando...
+        </Box>
+      ) : documentos.length === 0 ? (
+        <Box sx={{
+          textAlign: 'center', color: 'text.secondary', py: 5,
+          bgcolor: 'background.paper', borderRadius: 4, border: '1px solid', borderColor: 'divider',
+        }}>
+          Aún no hay documentos digitalizados. Sube actas, estatutos u otros archivos importantes.
+        </Box>
+      ) : (
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {documentos.map(d => (
+              <Box
+                key={d.id_documento}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25,
+                  borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper',
+                }}
+              >
+                <Box sx={{
+                  width: 38, height: 38, borderRadius: 2.5, flexShrink: 0, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', bgcolor: '#e8ecf9', color: '#3355a8',
+                }}>
+                  <File size={18} />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {d.nombre}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap', mt: 0.25 }}>
+                    {d.categoria && <Chip label={d.categoria} size="small" sx={{ fontSize: 10, height: 18, bgcolor: '#f1efe9', color: '#6b6152' }} />}
+                    <Typography sx={{ fontSize: 11.5, color: '#a89f8f' }}>
+                      {formatoTamano(d.tamano_bytes)} · Subido por {d.usuario_subio_nombre ?? '—'} ·{' '}
+                      {new Date(d.fecha_subida).toLocaleDateString('es-CL', { dateStyle: 'medium' })}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                  <IconButton size="small" component="a" href={d.archivo} target="_blank" rel="noopener noreferrer"
+                    sx={{ border: '1px solid', borderColor: 'divider' }}>
+                    <Download size={13} />
+                  </IconButton>
+                  <IconButton
+                    size="small" onClick={() => handleEliminarDoc(d)} disabled={eliminandoDoc === d.id_documento}
+                    sx={{ border: '1px solid', borderColor: 'divider', color: '#c0392b' }}
+                  >
+                    <Trash2 size={13} />
+                  </IconButton>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      <Dialog open={subirOpen} onClose={cerrarSubir} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          Subir documento
+          <IconButton size="small" onClick={cerrarSubir}><X size={18} /></IconButton>
+        </DialogTitle>
+        <Box component="form" onSubmit={handleSubir}>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0 }}>
+            <TextField
+              fullWidth size="small" label="Nombre del documento *" value={nombreDoc}
+              placeholder="Ej: Acta reunión directiva 25-09-2026"
+              onChange={e => setNombreDoc(e.target.value)}
+              helperText="El nombre con el que aparecerá en la lista — no tiene que ser el nombre del archivo."
+            />
+            <TextField
+              fullWidth size="small" label="Categoría (opcional)" value={categoriaDoc}
+              placeholder="Ej: Acta, Estatuto, Circular..."
+              onChange={e => setCategoriaDoc(e.target.value)}
+            />
+            <Button
+              variant="outlined" component="label"
+              startIcon={<Upload size={15} />}
+              sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)', justifyContent: 'flex-start' }}
+            >
+              {archivo ? archivo.name : 'Elegir archivo...'}
+              <input
+                ref={fileInputRef} hidden type="file"
+                onChange={e => setArchivo(e.target.files?.[0] ?? null)}
+              />
+            </Button>
+            {errorDoc && <Alert severity="error">{errorDoc}</Alert>}
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 1, gap: 1 }}>
+            <Button fullWidth variant="outlined" onClick={cerrarSubir} sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+              Cancelar
+            </Button>
+            <Button
+              fullWidth type="submit" variant="contained" disabled={subiendo}
+              startIcon={subiendo ? <CircularProgress size={14} color="inherit" /> : <Upload size={15} />}
+              sx={{ color: colors.ink, bgcolor: colors.accent500, '&:hover': { bgcolor: colors.accent600 } }}
+            >
+              {subiendo ? 'Subiendo...' : 'Subir'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       <Dialog open={modal !== null} onClose={cerrarModal} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

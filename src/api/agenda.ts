@@ -29,3 +29,30 @@ export const updateEventoAgenda = (id: number, data: EventoAgendaInput) =>
 
 export const deleteEventoAgenda = (id: number) =>
   apiClient.delete(`/eventos-agenda/${id}/`);
+
+export interface DocumentoAgenda {
+  id_documento: number;
+  nombre: string;
+  archivo: string;
+  categoria: string | null;
+  usuario_subio: number | null;
+  usuario_subio_nombre: string | null;
+  fecha_subida: string;
+  tamano_bytes: number | null;
+}
+
+export const getDocumentosAgenda = () =>
+  apiClient.get<DocumentoAgenda[]>('/documentos-agenda/').then(r => r.data);
+
+export const subirDocumentoAgenda = (nombre: string, archivo: File, categoria?: string) => {
+  const form = new FormData();
+  form.append('nombre', nombre);
+  form.append('archivo', archivo);
+  if (categoria) form.append('categoria', categoria);
+  return apiClient
+    .post<DocumentoAgenda>('/documentos-agenda/', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+    .then(r => r.data);
+};
+
+export const deleteDocumentoAgenda = (id: number) =>
+  apiClient.delete(`/documentos-agenda/${id}/`);
