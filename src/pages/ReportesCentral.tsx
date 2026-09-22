@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, IconButton, Alert, CircularProgress, Card, CardContent, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
-import { BarChart2, RefreshCw, PhoneCall, ClipboardList, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Box, Typography, IconButton, Alert, CircularProgress, Card, CardContent, Table, TableHead, TableRow, TableCell, TableBody, Button } from '@mui/material';
+import { BarChart2, RefreshCw, PhoneCall, ClipboardList, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import { getSolicitudes } from '../api/solicitudes';
 import type { Solicitud } from '../types';
+import { exportarAExcel } from '../utils/exportarExcel';
 
 const ESTADO_COLOR: Record<string, string> = {
   PENDIENTE:  '#c2410c',
@@ -117,6 +118,28 @@ export default function ReportesCentralPage() {
     .filter(e => e.total > 0);
   const totalHoy = solicitudesHoy.length;
 
+  const exportar = () => {
+    exportarAExcel(`TaxiAsiste_Reporte_${new Date().toLocaleDateString('es-CL').replace(/\//g, '-')}`, [{
+      nombre: 'Solicitudes de hoy',
+      columnas: [
+        { header: 'Folio', key: 'folio', width: 14 },
+        { header: 'Origen', key: 'origen', width: 28 },
+        { header: 'Destino', key: 'destino', width: 28 },
+        { header: 'Estado', key: 'estado', width: 14 },
+        { header: 'Canal', key: 'canal', width: 12 },
+        { header: 'Hora', key: 'hora', width: 10 },
+      ],
+      filas: solicitudesHoy.map(s => ({
+        folio: s.folio,
+        origen: s.origen,
+        destino: s.destino,
+        estado: ESTADO_LABEL[s.estado] ?? s.estado,
+        canal: s.canal_entrada,
+        hora: new Date(s.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+      })),
+    }]);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 10, color: 'text.secondary' }}>
@@ -141,7 +164,13 @@ export default function ReportesCentralPage() {
             </Typography>
           </Box>
         </Box>
-        <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" size="small" startIcon={<Download size={14} />} onClick={exportar}
+            sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+            Exportar
+          </Button>
+          <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
+        </Box>
       </Box>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>
