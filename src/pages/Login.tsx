@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { HOME_POR_ROL, type Rol } from '../config/permisos';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Box, Typography, TextField, Button, Alert, InputAdornment } from '@mui/material';
+import { Box, Typography, TextField, Button, Alert, InputAdornment, Link } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import LoginIcon from '@mui/icons-material/Login';
@@ -133,6 +133,11 @@ export default function Login() {
           >
             {isLoading ? 'Ingresando...' : 'Ingresar'}
           </Button>
+          <Link component={RouterLink} to="/olvide-password" sx={{
+            alignSelf: 'center', fontSize: 13, color: 'rgba(255,255,255,.75)', textDecoration: 'none',
+          }}>
+            ¿Olvidaste tu contraseña?
+          </Link>
         </Box>
 
         <Typography sx={{ textAlign: 'center', fontSize: 11.5, color: 'rgba(255,255,255,.65)' }}>

@@ -12,6 +12,7 @@ import { LoadingState } from './components/ui';
 // pantalla que ve cualquiera sin sesion, separarla solo agregaria un
 // round-trip extra sin beneficio.
 import Login from './pages/Login';
+import OlvidePassword from './pages/OlvidePassword';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Socios = lazy(() => import('./pages/Socios'));
 const Solicitudes = lazy(() => import('./pages/Solicitudes'));
@@ -56,6 +57,7 @@ function App() {
       <Suspense fallback={<LoadingState label="Cargando..." className="py-24" />}>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/olvide-password" element={<OlvidePassword />} />
 
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/" element={<HomeRedirect />} />
