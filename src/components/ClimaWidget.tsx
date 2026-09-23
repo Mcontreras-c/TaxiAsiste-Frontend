@@ -16,7 +16,7 @@ function IconoClima({ codigo, size = 26 }: { codigo: number; size?: number }) {
   return <Cloud size={size} color="#8a94a6" />;
 }
 
-export default function ClimaWidget() {
+export default function ClimaWidget({ oscuro = false }: { oscuro?: boolean }) {
   const [clima, setClima] = useState<ClimaSantiago | null>(null);
   const [error, setError] = useState(false);
 
@@ -34,30 +34,36 @@ export default function ClimaWidget() {
     return () => { vivo = false; clearInterval(id); };
   }, []);
 
+  const colorTexto = oscuro ? 'rgba(255,255,255,.6)' : 'text.secondary';
+  const colorValor = oscuro ? '#fff' : '#241f16';
+
   return (
-    <Card sx={{ borderRadius: 4 }}>
+    <Card sx={oscuro ? {
+      borderRadius: 4, bgcolor: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)',
+      backdropFilter: 'blur(14px)', boxShadow: 'none',
+    } : { borderRadius: 4 }}>
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: colorTexto }}>
           <MapPin size={13} />
           <Typography sx={{ fontSize: 12, fontWeight: 600 }}>Santiago, CL</Typography>
         </Box>
 
         {error ? (
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Clima no disponible</Typography>
+          <Typography sx={{ fontSize: 12, color: colorTexto }}>Clima no disponible</Typography>
         ) : !clima ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
-            <CircularProgress size={15} />
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Cargando clima...</Typography>
+            <CircularProgress size={15} sx={{ color: oscuro ? '#fff' : undefined }} />
+            <Typography sx={{ fontSize: 12, color: colorTexto }}>Cargando clima...</Typography>
           </Box>
         ) : (
           <>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <IconoClima codigo={clima.codigo} />
               <Box>
-                <Typography sx={{ fontSize: 26, fontWeight: 800, lineHeight: 1, color: '#241f16' }}>
+                <Typography sx={{ fontSize: 26, fontWeight: 800, lineHeight: 1, color: colorValor }}>
                   {clima.temperatura}°C
                 </Typography>
-                <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
+                <Typography sx={{ fontSize: 11.5, color: colorTexto }}>
                   {descripcionClima(clima.codigo)}
                 </Typography>
               </Box>
@@ -66,13 +72,13 @@ export default function ClimaWidget() {
             {clima.proximasHoras.length > 0 && (
               <Box sx={{
                 display: 'flex', justifyContent: 'space-between', pt: 1.25,
-                borderTop: '1px solid', borderColor: 'divider',
+                borderTop: '1px solid', borderColor: oscuro ? 'rgba(255,255,255,.12)' : 'divider',
               }}>
                 {clima.proximasHoras.map(h => (
                   <Box key={h.hora} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.4 }}>
-                    <Typography sx={{ fontSize: 10.5, color: 'text.secondary' }}>{h.hora}</Typography>
+                    <Typography sx={{ fontSize: 10.5, color: colorTexto }}>{h.hora}</Typography>
                     <IconoClima codigo={h.codigo} size={16} />
-                    <Typography sx={{ fontSize: 11, fontWeight: 700 }}>{h.temperatura}°</Typography>
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, color: colorValor }}>{h.temperatura}°</Typography>
                   </Box>
                 ))}
               </Box>

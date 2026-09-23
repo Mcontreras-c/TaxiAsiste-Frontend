@@ -7,10 +7,10 @@ import {
 import {
   UserCog, RefreshCw, KeyRound, X, Check, User, Shield, PhoneCall, DollarSign,
   ClipboardList, Truck, Flag, Mail, Clock, Search, Plus, Lock, Car, Briefcase,
-  ArrowLeft, Eye, EyeOff, Send,
+  ArrowLeft, Eye, EyeOff, Send, Pencil,
 } from 'lucide-react';
 import {
-  getUsuarios, getRoles, crearUsuario, resetearPassword,
+  getUsuarios, getRoles, crearUsuario, resetearPassword, updateUsuario,
   type UsuarioCuenta, type RolCuenta,
 } from '../api/usuarios';
 import { getSocios } from '../api/socios';
@@ -127,6 +127,81 @@ function ModalResetear({ usuario, onClose }: { usuario: UsuarioCuenta; onClose: 
               </Button>
             </>
           )}
+        </DialogActions>
+      </Box>
+    </Dialog>
+  );
+}
+
+// ---------- Editar usuario (username/email/nombre/apellido) ----------
+function ModalEditarUsuario({ usuario, onClose, onGuardado }: { usuario: UsuarioCuenta; onClose: () => void; onGuardado: () => void }) {
+  const esConductor = usuario.rol.nombre_rol === 'Conductor';
+  const [username, setUsername] = useState(usuario.username);
+  const [email, setEmail]       = useState(usuario.email ?? '');
+  const [nombre, setNombre]     = useState(usuario.nombre ?? '');
+  const [apellido, setApellido] = useState(usuario.apellido ?? '');
+  const [error, setError]       = useState<string | null>(null);
+  const [saving, setSaving]     = useState(false);
+
+  const guardar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!username.trim()) { setError('El usuario es requerido.'); return; }
+    setSaving(true);
+    try {
+      await updateUsuario(usuario.id_usuario, {
+        username: username.trim(),
+        email: email.trim(),
+        ...(esConductor ? {} : { nombre: nombre.trim(), apellido: apellido.trim() }),
+      });
+      onGuardado();
+    } catch (err: any) {
+      const detail = err?.response?.data;
+      const primerError = detail && typeof detail === 'object'
+        ? Object.values(detail).flat()[0]
+        : null;
+      setError((primerError as string) ?? detail?.detail ?? 'No se pudo guardar los cambios.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Pencil size={18} />
+          <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Editar usuario</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
+      </DialogTitle>
+      <Box component="form" onSubmit={guardar}>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0 }}>
+          {esConductor && (
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              Rol Conductor: el nombre que se muestra es el del socio vinculado — para
+              cambiarlo, edítalo desde Socios.
+            </Typography>
+          )}
+          {!esConductor && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField fullWidth size="small" label="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
+              <TextField fullWidth size="small" label="Apellido" value={apellido} onChange={e => setApellido(e.target.value)} />
+            </Box>
+          )}
+          <TextField fullWidth size="small" label="Usuario *" value={username} onChange={e => setUsername(e.target.value)} />
+          <TextField fullWidth size="small" label="Email" value={email} onChange={e => setEmail(e.target.value)} />
+          {error && <Alert severity="error">{error}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 1, gap: 1 }}>
+          <Button fullWidth variant="outlined" onClick={onClose} sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+            Cancelar
+          </Button>
+          <Button fullWidth type="submit" variant="contained" disabled={saving}
+            startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <Check size={14} />}
+            sx={{ color: colors.ink, bgcolor: colors.accent500, '&:hover': { bgcolor: colors.accent600 } }}>
+            {saving ? 'Guardando...' : 'Guardar'}
+          </Button>
         </DialogActions>
       </Box>
     </Dialog>
@@ -530,6 +605,7 @@ export default function UsuariosPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [modalReset, setModalReset] = useState<UsuarioCuenta | null>(null);
+  const [modalEditar, setModalEditar] = useState<UsuarioCuenta | null>(null);
   const [modalCrear, setModalCrear] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('Todos');
@@ -681,12 +757,20 @@ export default function UsuariosPage() {
                       </Box>
                     </Box>
 
-                    <Button
-                      size="small" onClick={() => setModalReset(u)} startIcon={<KeyRound size={13} />}
-                      sx={{ mt: 0.5, fontSize: 12, fontWeight: 700, color: colors.ink, alignSelf: 'flex-start', px: 0 }}
-                    >
-                      Resetear clave
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5 }}>
+                      <Button
+                        size="small" onClick={() => setModalEditar(u)} startIcon={<Pencil size={12} />}
+                        sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', px: 0 }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        size="small" onClick={() => setModalReset(u)} startIcon={<KeyRound size={13} />}
+                        sx={{ fontSize: 12, fontWeight: 700, color: colors.ink, px: 0 }}
+                      >
+                        Resetear clave
+                      </Button>
+                    </Box>
                   </CardContent>
                 </Card>
               );
@@ -708,6 +792,13 @@ export default function UsuariosPage() {
       )}
 
       {modalReset && <ModalResetear usuario={modalReset} onClose={() => { setModalReset(null); load(); }} />}
+      {modalEditar && (
+        <ModalEditarUsuario
+          usuario={modalEditar}
+          onClose={() => setModalEditar(null)}
+          onGuardado={() => { setModalEditar(null); load(); }}
+        />
+      )}
       {modalCrear && (
         <ModalCrearUsuario
           roles={roles}
