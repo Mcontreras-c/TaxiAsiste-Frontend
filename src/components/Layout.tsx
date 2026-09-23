@@ -246,7 +246,7 @@ export default function Layout() {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, lg: 4 } }}>
+        <Box sx={{ flex: 1, overflowY: 'auto', p: location.pathname === '/solicitudes' ? 0 : { xs: 3, lg: 4 } }}>
           <Outlet />
         </Box>
       </Box>

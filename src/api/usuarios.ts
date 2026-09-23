@@ -41,6 +41,16 @@ export const getUsuarios = () =>
 export const crearUsuario = (data: NuevoUsuarioPayload) =>
   apiClient.post<UsuarioCuenta>('/usuarios/', data).then(r => r.data);
 
+export interface EditarUsuarioPayload {
+  username?: string;
+  email?: string;
+  nombre?: string;
+  apellido?: string;
+}
+
+export const updateUsuario = (id: number, data: EditarUsuarioPayload) =>
+  apiClient.patch<UsuarioCuenta>(`/usuarios/${id}/`, data).then(r => r.data);
+
 export const olvidePassword = (email: string) =>
   apiClient.post<{ detail: string }>('/usuarios/olvide_password/', { email }).then(r => r.data);
 
