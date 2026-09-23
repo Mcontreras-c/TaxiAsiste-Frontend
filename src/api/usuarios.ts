@@ -68,3 +68,7 @@ export const resetearPassword = (idUsuario: number, passwordNueva: string) =>
       password_nueva: passwordNueva,
     })
     .then(r => r.data);
+
+// Genera una clave nueva y se la manda por correo al usuario (nunca vuelve en la respuesta).
+export const reenviarCredenciales = (idUsuario: number) =>
+  apiClient.post<{ detail: string }>(`/usuarios/${idUsuario}/reenviar_credenciales/`).then(r => r.data);
