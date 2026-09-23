@@ -4,7 +4,7 @@ import type { Rol } from '../config/permisos';
 export interface RolCuenta {
   id_rol: number;
   nombre_rol: Rol | 'Paletero';
-  descripcion: string;
+  descripcion: string | null;
   activo: number;
 }
 
@@ -24,8 +24,8 @@ export interface UsuarioCuenta {
 export interface NuevoUsuarioPayload {
   id_rol: number;
   username: string;
-  password: string;
-  email?: string;
+  /** Obligatorio: es el único canal por el que se entrega la contraseña (generada por el servidor). */
+  email: string;
   nombre?: string;
   apellido?: string;
   /** Solo para rol Conductor: vincula el usuario a un socio sin usuario todavía. */
@@ -40,6 +40,19 @@ export const getUsuarios = () =>
 
 export const crearUsuario = (data: NuevoUsuarioPayload) =>
   apiClient.post<UsuarioCuenta>('/usuarios/', data).then(r => r.data);
+
+export interface EditarUsuarioPayload {
+  username?: string;
+  email?: string;
+  nombre?: string;
+  apellido?: string;
+}
+
+export const updateUsuario = (id: number, data: EditarUsuarioPayload) =>
+  apiClient.patch<UsuarioCuenta>(`/usuarios/${id}/`, data).then(r => r.data);
+
+export const olvidePassword = (email: string) =>
+  apiClient.post<{ detail: string }>('/usuarios/olvide_password/', { email }).then(r => r.data);
 
 export const cambiarPassword = (passwordActual: string, passwordNueva: string) =>
   apiClient

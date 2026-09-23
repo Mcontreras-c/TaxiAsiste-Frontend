@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Box, Typography, Chip, IconButton, Button, Alert, CircularProgress,
   Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, MenuItem, InputAdornment, Avatar,
 } from '@mui/material';
 import {
-  PhoneCall, Plus, RefreshCw, X, ChevronRight,
-  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Navigation,
-  User, MessageSquare, Cross, Users,
+  PhoneCall, Plus, RefreshCw, X, ChevronRight, ChevronLeft,
+  Clock, Car, XCircle, History, PhoneMissed, MapPin, Navigation,
+  User, MessageSquare, Cross, Users, Calculator,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
@@ -23,6 +23,8 @@ import type { Solicitud, EstadoSolicitud, Movil, Pasajero, FilaBase } from '../t
 import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
 import ClimaWidget from '../components/ClimaWidget';
+import CotizadorTarifa, { type EstadoCotizacion } from '../components/CotizadorTarifa';
+import type { Cotizacion } from '../api/mapas';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
@@ -42,35 +44,35 @@ const TONES: Record<string, Tone> = {
   orange: { fg: '#c2410c', bg: '#fdece2', grad: 'linear-gradient(135deg,#f5a06b,#c2410c)' },
 };
 
+// Vidrio oscuro flotante sobre el mapa -- usado por HeroStat y los paneles
+// de fila virtual / actividad reciente dentro del panel "centro de comando".
+const glassSx = {
+  bgcolor: 'rgba(15,23,42,.72)',
+  border: '1px solid rgba(255,255,255,.1)',
+  backdropFilter: 'blur(14px)',
+  boxShadow: '0 8px 24px rgba(0,0,0,.35)',
+};
+
 function HeroStat({ title, value, icon, tone }: { title: string; value: number; icon: React.ReactNode; tone: Tone }) {
   return (
-    <Card sx={{ borderRadius: 4, position: 'relative', overflow: 'hidden', flex: '1 1 220px' }}>
-      <Box sx={{ position: 'absolute', inset: 0, opacity: 0.06, background: tone.grad }} />
-      <CardContent sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+    <Card sx={{ ...glassSx, borderRadius: 3, position: 'relative', overflow: 'hidden', flex: '0 0 auto', pointerEvents: 'auto' }}>
+      <CardContent sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 1.25, p: '10px 14px !important' }}>
         <Box sx={{
-          width: 40, height: 40, borderRadius: 3, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 30, height: 30, borderRadius: 2.5, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: tone.grad, color: '#fff', boxShadow: `0 4px 12px ${tone.fg}40`,
         }}>
           {icon}
         </Box>
-        <Box>
-          <Typography sx={{ fontSize: 28, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', lineHeight: 1, color: '#2a2519' }}>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, minWidth: 0 }}>
+          <Typography sx={{ fontSize: 19, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', lineHeight: 1, color: '#fff' }}>
             {value}
           </Typography>
-          <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mt: 0.3 }}>{title}</Typography>
+          <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Typography>
         </Box>
       </CardContent>
     </Card>
   );
 }
-
-const ESTADO_OPERATIVO_STYLE: Record<string, { dot: string; label: string; bg: string; fg: string }> = {
-  DISPONIBLE:  { dot: '#2f9e5e', label: 'Disponible', bg: '#e4f3ec', fg: '#2f7d5b' },
-  EN_SERVICIO: { dot: '#3355a8', label: 'En servicio', bg: '#e8ecf9', fg: '#3355a8' },
-  EN_VIAJE:    { dot: '#7e22ce', label: 'En viaje',    bg: '#f3e8fd', fg: '#7e22ce' },
-  BLOQUEADO:   { dot: '#c0392b', label: 'Bloqueado',   bg: '#fdecec', fg: '#c0392b' },
-  INACTIVO:    { dot: '#a89f8f', label: 'Inactivo',    bg: '#f1efe9', fg: '#6b6152' },
-};
 
 // TaxiAsiste solo hace traslados a este hospital -- el backend fuerza este
 // mismo valor en Solicitud.save() sin importar lo que se envie, asi que el
@@ -109,16 +111,16 @@ function EstadoChip({ estado }: { estado: string }) {
   );
 }
 
-function ColumnHeader({ icon, bg = '#f1efe9', title, count }: { icon: React.ReactNode; bg?: string; title: string; count: React.ReactNode }) {
+function ColumnHeader({ icon, bg = 'rgba(255,255,255,.1)', title, count }: { icon: React.ReactNode; bg?: string; title: string; count: React.ReactNode }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1.5 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
       <Box sx={{
-        width: 28, height: 28, borderRadius: 2, flexShrink: 0, bgcolor: bg,
+        width: 24, height: 24, borderRadius: 1.75, flexShrink: 0, bgcolor: bg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {icon}
       </Box>
-      <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>{title}</Typography>
+      <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#fff' }}>{title}</Typography>
       <Box sx={{ ml: 'auto' }}>{count}</Box>
     </Box>
   );
@@ -126,43 +128,9 @@ function ColumnHeader({ icon, bg = '#f1efe9', title, count }: { icon: React.Reac
 
 function EmptyHint({ text }: { text: string }) {
   return (
-    <Typography sx={{ fontSize: 12, color: 'text.secondary', textAlign: 'center', py: 3 }}>
+    <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.55)', textAlign: 'center', py: 2 }}>
       {text}
     </Typography>
-  );
-}
-
-function tiempoRelativo(fechaISO: string): string {
-  const diffMin = Math.max(0, Math.round((Date.now() - new Date(fechaISO).getTime()) / 60000));
-  if (diffMin < 1) return 'ahora';
-  if (diffMin < 60) return `hace ${diffMin} min`;
-  const diffH = Math.round(diffMin / 60);
-  if (diffH < 24) return `hace ${diffH} h`;
-  return `hace ${Math.round(diffH / 24)} d`;
-}
-
-function ActividadRow({ sol }: { sol: Solicitud }) {
-  const completada = sol.estado === 'COMPLETADO';
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, py: 1 }}>
-      <Box sx={{
-        width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        bgcolor: completada ? '#e4f3ec' : '#fbe9e9', color: completada ? '#2f7d5b' : '#c0392b',
-      }}>
-        {completada ? <CheckCircle size={14} /> : <XCircle size={14} />}
-      </Box>
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography sx={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {sol.movil_patente ?? sol.folio}
-        </Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-          {completada ? 'Completada' : 'Cancelada'}
-        </Typography>
-      </Box>
-      <Typography sx={{ fontSize: 10.5, color: '#a89f8f', whiteSpace: 'nowrap', flexShrink: 0 }}>
-        {tiempoRelativo(sol.fecha_termino ?? sol.fecha_hora)}
-      </Typography>
-    </Box>
   );
 }
 
@@ -175,46 +143,46 @@ function SolicitudCard({
   cargandoRuta?: boolean;
 }) {
   return (
-    <Card sx={{ borderRadius: 3 }}>
-      <CardContent sx={{ p: '12px !important', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+    <Card sx={{ ...glassSx, borderRadius: 3, flex: '0 0 220px', scrollSnapAlign: 'start' }}>
+      <CardContent sx={{ p: '9px 11px !important', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 11, color: 'text.secondary' }}>
+          <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 10.5, color: 'rgba(255,255,255,.5)' }}>
             {sol.folio}
           </Typography>
           <EstadoChip estado={sol.estado} />
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <MapPin size={13} color="#a89f8f" style={{ flexShrink: 0 }} />
-          <Box sx={{ fontWeight: 600, color: 'text.primary', fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <MapPin size={12} color="rgba(255,255,255,.45)" style={{ flexShrink: 0 }} />
+          <Box sx={{ fontWeight: 600, color: '#fff', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {sol.origen}
           </Box>
         </Box>
         <Box sx={{
           display: 'inline-flex', alignItems: 'center', gap: 0.5, alignSelf: 'flex-start',
-          bgcolor: '#fdecec', color: '#c0392b', borderRadius: 10, px: 1, py: 0.25,
+          bgcolor: 'rgba(192,57,43,.22)', color: '#f5a3a3', borderRadius: 10, px: 1, py: 0.2,
         }}>
-          <Cross size={11} />
-          <Typography sx={{ fontSize: 11, fontWeight: 700 }}>Hospital Félix Bulnes</Typography>
+          <Cross size={10} />
+          <Typography sx={{ fontSize: 10.5, fontWeight: 700 }}>Hospital Félix Bulnes</Typography>
         </Box>
         {sol.movil_patente && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Car size={12} color="#a89f8f" />
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+            <Car size={11} color="rgba(255,255,255,.45)" />
+            <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)' }}>
               Móvil: <strong>{sol.movil_patente}</strong>
             </Typography>
           </Box>
         )}
         {sol.pasajero_nombre && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
-            <InitialsAvatar nombre={sol.pasajero_nombre} size={22} />
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{sol.pasajero_nombre}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.15 }}>
+            <InitialsAvatar nombre={sol.pasajero_nombre} size={19} />
+            <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)' }}>{sol.pasajero_nombre}</Typography>
           </Box>
         )}
-        <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>
+        <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,.4)' }}>
           {new Date(sol.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
         </Typography>
         {sol.estado !== 'COMPLETADO' && sol.estado !== 'CANCELADO' && (
-          <Box sx={{ display: 'flex', gap: 0.5, pt: 0.5 }}>
+          <Box sx={{ display: 'flex', gap: 0.5, pt: 0.25 }}>
             <Button
               size="small"
               onClick={() => onAccion({ solicitud: sol, tipo: 'cambiar' })}
@@ -241,6 +209,61 @@ function SolicitudCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// Franja con scroll horizontal + flechas -- las flechas solo se muestran si
+// realmente hay contenido oculto a ese lado (se recalcula en cada scroll y
+// cuando cambia la cantidad de tarjetas).
+function FilaHorizontal({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [puedeIzq, setPuedeIzq] = useState(false);
+  const [puedeDer, setPuedeDer] = useState(false);
+
+  const actualizar = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    setPuedeIzq(el.scrollLeft > 4);
+    setPuedeDer(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    actualizar();
+    const el = ref.current;
+    if (!el) return;
+    const obs = new ResizeObserver(actualizar);
+    obs.observe(el);
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children]);
+
+  const desplazar = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * 260, behavior: 'smooth' });
+
+  return (
+    <Box sx={{ position: 'relative' }}>
+      {puedeIzq && (
+        <IconButton
+          size="small" onClick={() => desplazar(-1)}
+          sx={{ position: 'absolute', left: 2, top: '50%', transform: 'translateY(-50%)', zIndex: 3, ...glassSx, color: '#fff', width: 26, height: 26 }}
+        >
+          <ChevronLeft size={15} />
+        </IconButton>
+      )}
+      <Box
+        ref={ref} onScroll={actualizar}
+        sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, scrollSnapType: 'x proximity' }}
+      >
+        {children}
+      </Box>
+      {puedeDer && (
+        <IconButton
+          size="small" onClick={() => desplazar(1)}
+          sx={{ position: 'absolute', right: 2, top: '50%', transform: 'translateY(-50%)', zIndex: 3, ...glassSx, color: '#fff', width: 26, height: 26 }}
+        >
+          <ChevronRight size={15} />
+        </IconButton>
+      )}
+    </Box>
   );
 }
 
@@ -447,28 +470,90 @@ export default function SolicitudesCentralPage() {
     PENDIENTE: 'ASIGNADO', ASIGNADO: 'EN_CURSO', EN_CURSO: 'COMPLETADO',
   };
 
+  // Cotizador de tarifa (panel flotante sobre el mapa).
+  const [cotizadorAbierto, setCotizadorAbierto] = useState(false);
+  const [cotizacion, setCotizacion] = useState<Cotizacion | null>(null);
+  const [rutaCotizada, setRutaCotizada] = useState(0);
+  const alCambiarCotizacion = (e: EstadoCotizacion | null) => {
+    setCotizacion(e?.cotizacion ?? null);
+    setRutaCotizada(e?.activa ?? 0);
+  };
+
   const countPill = (n: number, bg: string, fg: string) => (
     <Chip label={n} size="small" sx={{ bgcolor: bg, color: fg, fontWeight: 700, height: 20, fontSize: 11 }} />
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <PhoneCall size={22} color="#3a3327" />
-          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Solicitudes</Typography>
-          {resumen && countPill(resumen.pendientes.length + resumen.en_curso.length, '#f1efe9', '#6b6152')}
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'calc(100vh - 56px)' }}>
+      {error && <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}>
+          <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
+        </Box>
+      ) : resumen && (
+        <>
+        <Box sx={{
+          position: 'relative', overflow: 'hidden',
+          flex: 1, minHeight: 480, bgcolor: '#0b1220',
+        }}>
+          <Box sx={{ position: 'absolute', inset: 0 }}>
+            <MapaDespacho
+              oscuro
+              altura="100%"
+              moviles={moviles
+                .filter(m => ubicacionesEnVivo[m.id_movil])
+                .map(m => {
+                  const u = ubicacionesEnVivo[m.id_movil];
+                  return { ...m, lat: u.lat, lng: u.lng, heading: u.heading };
+                })}
+              origenDestino={cotizacion
+                ? {
+                    origen: { lat: cotizacion.origen.lat, lng: cotizacion.origen.lng, label: cotizacion.origen.direccion ?? 'Origen' },
+                    destino: { lat: cotizacion.destino.lat, lng: cotizacion.destino.lng, label: cotizacion.destino.direccion ?? 'Destino' },
+                  }
+                : rutaSeleccionada?.origenDestino ?? null}
+              ruta={cotizacion ? null : rutaSeleccionada?.ruta ?? null}
+              rutasAlternativas={cotizacion?.rutas.map(r => r.geometry)}
+              rutaActiva={rutaCotizada}
+              onSeleccionarRuta={setRutaCotizada}
+            />
+          </Box>
+
+          {/* Degradado sutil en los bordes -- ayuda a que las tarjetas
+              flotantes se lean bien encima del mapa sin tapar todo. */}
+          <Box sx={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'linear-gradient(180deg, rgba(0,0,0,.4) 0%, transparent 22%, transparent 68%, rgba(0,0,0,.5) 100%)',
+          }} />
+
+          {/* Cabecera flotante: titulo + acciones dentro del mapa (sin marco claro). */}
+          <Box sx={{
+            position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 3,
+            display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 0.75, ...glassSx, borderRadius: 10,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <PhoneCall size={22} color="#fff" />
+          <Typography variant="h1" sx={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Solicitudes</Typography>
+          {resumen && countPill(resumen.pendientes.length + resumen.en_curso.length, 'rgba(255,255,255,.14)', '#fff')}
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton onClick={load} sx={{ color: 'text.secondary' }}>
+          <IconButton onClick={load} sx={{ color: '#fff' }}>
             <RefreshCw size={16} />
           </IconButton>
           <Button
             variant="outlined"
+            startIcon={<Calculator size={15} />}
+            onClick={() => setCotizadorAbierto(v => !v)}
+            sx={{ color: '#fff', borderColor: cotizadorAbierto ? colors.accent500 : 'rgba(255,255,255,.3)' }}
+          >
+            Cotizar tarifa
+          </Button>
+          <Button
+            variant="outlined"
             startIcon={<History size={15} />}
             onClick={() => loadHistorial()}
-            sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}
+            sx={{ color: '#fff', borderColor: 'rgba(255,255,255,.3)' }}
           >
             Historial
           </Button>
@@ -489,102 +574,44 @@ export default function SolicitudesCentralPage() {
             Nueva solicitud
           </Button>
         </Box>
-      </Box>
-
-      {error && <Alert severity="error">{error}</Alert>}
-
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}>
-          <CircularProgress size={22} sx={{ mr: 1.5 }} /> Cargando...
-        </Box>
-      ) : resumen && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '230px 1fr 280px' }, gap: 2.5, alignItems: 'start' }}>
-          {/* Rail izquierdo: metricas clave */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <HeroStat title="Móviles en línea" value={Object.keys(ubicacionesEnVivo).length} icon={<Car size={19} />} tone={TONES.blue} />
-            <HeroStat title="Solicitudes en curso" value={resumen.en_curso.length} icon={<Navigation size={19} />} tone={TONES.violet} />
-            <HeroStat title="Solicitudes pendientes" value={resumen.pendientes.length} icon={<Clock size={19} />} tone={TONES.orange} />
           </Box>
 
-          {/* Centro: mapa + pendientes/en curso lado a lado */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, minWidth: 0 }}>
-            <Box>
-              <ColumnHeader
-                icon={<MapPin size={15} color="#6b6152" />}
-                bg="#f1efe9"
-                title="Mapa de flota"
-                count={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                    {Object.entries(ESTADO_OPERATIVO_STYLE).map(([k, s]) => (
-                      <Box key={k} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: s.dot, flexShrink: 0 }} />
-                        <Typography sx={{ fontSize: 10.5, color: 'text.secondary' }}>{s.label}</Typography>
-                      </Box>
-                    ))}
-                    <Typography sx={{ fontSize: 10.5, color: 'text.secondary', ml: 0.5 }}>
-                      {Object.keys(ubicacionesEnVivo).length > 0 ? '· GPS en vivo (4s)' : '· Sin reportes GPS aun'}
-                    </Typography>
-                  </Box>
-                }
-              />
-              <MapaDespacho
-                moviles={moviles
-                  .filter(m => ubicacionesEnVivo[m.id_movil])
-                  .map(m => {
-                    const u = ubicacionesEnVivo[m.id_movil];
-                    return { ...m, lat: u.lat, lng: u.lng, heading: u.heading };
-                  })}
-                origenDestino={rutaSeleccionada?.origenDestino ?? null}
-                ruta={rutaSeleccionada?.ruta ?? null}
-              />
-              {rutaSeleccionada && (
-                <Button size="small" onClick={() => setRutaSeleccionada(null)} sx={{ fontSize: 11, mt: 0.5, color: 'text.secondary' }}>
-                  Ocultar ruta
-                </Button>
-              )}
-            </Box>
+          {rutaSeleccionada && (
+            <Button
+              size="small" onClick={() => setRutaSeleccionada(null)}
+              sx={{ position: 'absolute', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 3, fontSize: 11, ...glassSx, color: '#fff' }}
+            >
+              Ocultar ruta
+            </Button>
+          )}
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-              {/* Pendientes */}
-              <Box>
-                <ColumnHeader
-                  icon={<Clock size={15} color="#c2410c" />}
-                  bg="#fdece2"
-                  title="Solicitudes pendientes"
-                  count={countPill(resumen.pendientes.length, '#fdece2', '#c2410c')}
-                />
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {resumen.pendientes.length === 0
-                    ? <EmptyHint text="Sin pendientes" />
-                    : resumen.pendientes.map(s => (
-                        <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
-                      ))
-                  }
-                </Box>
-              </Box>
-
-              {/* En curso */}
-              <Box>
-                <ColumnHeader
-                  icon={<Car size={15} color="#3355a8" />}
-                  bg="#e8ecf9"
-                  title="Solicitudes en curso"
-                  count={countPill(resumen.en_curso.length, '#e8ecf9', '#3355a8')}
-                />
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {resumen.en_curso.length === 0
-                    ? <EmptyHint text="Sin viajes en curso" />
-                    : resumen.en_curso.map(s => (
-                        <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} onVerRuta={handleVerRuta} cargandoRuta={cargandoRuta} />
-                      ))
-                  }
-                </Box>
-              </Box>
+          {/* Arriba a la izquierda: estadisticas rapidas.
+              pointerEvents 'none' en el contenedor + 'auto' en cada tarjeta:
+              asi el espacio vacio entre/alrededor de las tarjetas deja pasar
+              el clic/scroll al mapa (drag para mover, rueda para zoom) en
+              vez de que la caja invisible del contenedor se lo trague. */}
+          {cotizadorAbierto && (
+            <Box sx={{ position: 'absolute', top: 72, left: 16, bottom: 16, zIndex: 4, pointerEvents: 'none' }}>
+              <CotizadorTarifa
+                cotizacion={cotizacion} activa={rutaCotizada} onActiva={setRutaCotizada}
+                onCambio={alCambiarCotizacion}
+                onCerrar={() => setCotizadorAbierto(false)}
+              />
             </Box>
+          )}
+
+          <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 2, display: cotizadorAbierto ? 'none' : 'flex', gap: 1, flexWrap: 'wrap', maxWidth: 260, pointerEvents: 'none' }}>
+            <HeroStat title="Móviles en línea" value={Object.keys(ubicacionesEnVivo).length} icon={<Car size={17} />} tone={TONES.blue} />
+            <HeroStat title="En curso" value={resumen.en_curso.length} icon={<Navigation size={17} />} tone={TONES.violet} />
+            <HeroStat title="Pendientes" value={resumen.pendientes.length} icon={<Clock size={17} />} tone={TONES.orange} />
           </Box>
 
-          {/* Rail derecho: conductores disponibles (fila virtual) + actividad reciente */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Arriba a la derecha: fila virtual + actividad reciente + clima */}
+          <Box sx={{
+            position: 'absolute', top: 16, right: 16, bottom: 16, zIndex: 2, width: 272,
+            display: 'flex', flexDirection: 'column', gap: 1.25, overflowY: 'auto', pr: 0.5,
+            pointerEvents: 'none',
+          }}>
             {/* Fila virtual — la membresia sale SIEMPRE de filaBase (backend
                 filtra a EN_ESPERA por defecto: ver FilaBaseViewSet.get_queryset),
                 nunca de si el movil reporta GPS. Antes esto se armaba filtrando
@@ -593,12 +620,12 @@ export default function SolicitudesCentralPage() {
                 celular siguiera mandando ubicacion -- la fila y el GPS son
                 cosas independientes. El GPS ahora solo decora la fila (punto
                 verde = en linea), no decide quien aparece. */}
-            <Card sx={{ borderRadius: 4 }}>
+            <Card sx={{ ...glassSx, borderRadius: 4, flexShrink: 0, pointerEvents: 'auto' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                  <Users size={15} color="#6b6152" />
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'text.secondary' }}>
-                    Conductores disponibles (fila virtual)
+                  <Users size={15} color="rgba(255,255,255,.7)" />
+                  <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'rgba(255,255,255,.7)' }}>
+                    Fila virtual
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -615,10 +642,10 @@ export default function SolicitudesCentralPage() {
                               {f.posicion}
                             </Avatar>
                             <Box sx={{ minWidth: 0, flex: 1 }}>
-                              <Typography sx={{ fontWeight: 700, fontSize: 12.5, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: 12.5, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#fff' }}>
                                 {f.patente}
                               </Typography>
-                              <Typography sx={{ fontSize: 11, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {f.socio_nombre}
                               </Typography>
                             </Box>
@@ -627,8 +654,8 @@ export default function SolicitudesCentralPage() {
                               size="small"
                               sx={{
                                 flexShrink: 0, fontSize: 9.5, fontWeight: 700,
-                                bgcolor: enLinea ? '#e4f3ec' : '#f1efe9',
-                                color: enLinea ? '#2f7d5b' : '#a89f8f',
+                                bgcolor: enLinea ? 'rgba(47,158,94,.22)' : 'rgba(255,255,255,.08)',
+                                color: enLinea ? '#4ade80' : 'rgba(255,255,255,.5)',
                               }}
                             />
                           </Box>
@@ -639,35 +666,48 @@ export default function SolicitudesCentralPage() {
               </CardContent>
             </Card>
 
-            {/* Actividad reciente (Completadas / Canceladas) */}
-            <Card sx={{ borderRadius: 4 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CheckCircle size={15} color="#2f7d5b" />
-                    <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'text.secondary' }}>
-                      Actividad reciente
-                    </Typography>
-                  </Box>
-                  <Button size="small" onClick={() => loadHistorial()} sx={{ fontSize: 11, color: '#3355a8', minWidth: 0, p: 0 }}>
-                    ver todo
-                  </Button>
-                </Box>
-                <Box sx={{
-                  display: 'flex', flexDirection: 'column',
-                  '& > *:not(:last-child)': { borderBottom: '1px solid', borderColor: 'divider' },
-                }}>
-                  {resumen.finalizadas.length === 0
-                    ? <EmptyHint text="Sin finalizadas" />
-                    : resumen.finalizadas.map(s => <ActividadRow key={s.id_solicitud} sol={s} />)
-                  }
-                </Box>
-              </CardContent>
-            </Card>
-
-            <ClimaWidget />
+            <Box sx={{ pointerEvents: 'auto', flexShrink: 0 }}><ClimaWidget oscuro /></Box>
           </Box>
         </Box>
+
+          {/* Solicitudes pendientes y en curso: fuera del mapa, en su propia
+              franja oscura debajo, para que no tapen el mapa ni sus controles. */}
+          <Box sx={{ bgcolor: '#0b1220', p: 2, display: 'flex', flexDirection: 'column', gap: 1.75, flexShrink: 0 }}>
+            <Box>
+              <ColumnHeader
+                icon={<Clock size={13} color="#f5a06b" />}
+                bg="rgba(194,65,12,.28)"
+                title="Solicitudes pendientes"
+                count={countPill(resumen.pendientes.length, 'rgba(194,65,12,.28)', '#f5a06b')}
+              />
+              <FilaHorizontal>
+                {resumen.pendientes.length === 0
+                  ? <EmptyHint text="Sin pendientes" />
+                  : resumen.pendientes.map(s => (
+                      <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} />
+                    ))
+                }
+              </FilaHorizontal>
+            </Box>
+
+            <Box>
+              <ColumnHeader
+                icon={<Car size={13} color="#7d95d8" />}
+                bg="rgba(51,85,168,.28)"
+                title="Solicitudes en curso"
+                count={countPill(resumen.en_curso.length, 'rgba(51,85,168,.28)', '#7d95d8')}
+              />
+              <FilaHorizontal>
+                {resumen.en_curso.length === 0
+                  ? <EmptyHint text="Sin viajes en curso" />
+                  : resumen.en_curso.map(s => (
+                      <SolicitudCard key={s.id_solicitud} sol={s} onAccion={setAccion} onVerRuta={handleVerRuta} cargandoRuta={cargandoRuta} />
+                    ))
+                }
+              </FilaHorizontal>
+            </Box>
+          </Box>
+        </>
       )}
 
       {/* Modal nueva solicitud */}

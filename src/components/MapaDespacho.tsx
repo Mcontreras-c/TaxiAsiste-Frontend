@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GoogleMap, MarkerF, InfoWindowF, PolylineF, useJsApiLoader } from '@react-google-maps/api';
 import type { Movil } from '../types';
 
@@ -80,6 +80,25 @@ function iconoPuntoUrl(color: string) {
 // Centro por defecto: Santiago de Chile. Ajustar a la comuna real del sindicato.
 const CENTRO_DEFECTO = { lat: -33.4489, lng: -70.6693 };
 
+// Estilo "night mode" -- oculta POIs/labels secundarios (compiten con los
+// marcadores) y pinta el resto en tonos azul-grisaceo oscuro, para el panel
+// tipo "centro de comando" de Solicitudes.
+const ESTILO_MAPA_OSCURO: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry', stylers: [{ color: '#0f1729' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0f1729' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#7c8aa5' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#1c2b45' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#22314f' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#5c6c8a' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2c3e63' }] },
+  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#26375a' }] },
+  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#141e33' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0a1220' }] },
+];
+
 const LIBRARIES: ('places')[] = [];
 
 interface MovilConUbicacion extends Movil {
@@ -95,9 +114,15 @@ interface MapaDespachoProps {
   origenDestino?: { origen: PuntoRuta; destino: PuntoRuta } | null;
   /** Ruta (GeoJSON LineString, coordenadas [lng, lat]) entre origen y destino. */
   ruta?: RutaGeoJSON | null;
+  /** Estilo "night mode" + oculta el legend interno (la pagina renderiza el suyo). */
+  oscuro?: boolean;
+  /** Rutas alternativas del cotizador: la activa se pinta fuerte, las demas tenues (clic para elegir). */
+  rutasAlternativas?: RutaGeoJSON[];
+  rutaActiva?: number;
+  onSeleccionarRuta?: (indice: number) => void;
 }
 
-export default function MapaDespacho({ moviles, altura = '500px', origenDestino, ruta }: MapaDespachoProps) {
+export default function MapaDespacho({ moviles, altura = '500px', origenDestino, ruta, oscuro = false, rutasAlternativas, rutaActiva = 0, onSeleccionarRuta }: MapaDespachoProps) {
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-taxiasiste',
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '',
@@ -105,6 +130,15 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
   });
 
   const [activo, setActivo] = useState<number | 'origen' | 'destino' | null>(null);
+  const mapaRef = useRef<google.maps.Map | null>(null);
+
+  // Al cotizar, encuadra el mapa para que se vean todas las rutas.
+  useEffect(() => {
+    if (!rutasAlternativas?.length || !mapaRef.current) return;
+    const limites = new google.maps.LatLngBounds();
+    rutasAlternativas.forEach(r => r.coordinates.forEach(([lng, lat]) => limites.extend({ lat, lng })));
+    mapaRef.current.fitBounds(limites, 80);
+  }, [rutasAlternativas]);
 
   // Google Maps usa [lat, lng]; GeoJSON/Directions entrega [lng, lat] — hay que invertir.
   const posicionesRuta = ruta
@@ -128,17 +162,23 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
   }
 
   return (
-    <div className="relative isolate rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+    <div
+      className={oscuro ? 'relative isolate overflow-hidden' : 'relative isolate rounded-xl overflow-hidden border border-gray-200 shadow-sm'}
+      style={{ height: '100%' }}
+    >
       <GoogleMap
         mapContainerStyle={{ width: '100%', height: altura }}
         center={CENTRO_DEFECTO}
         zoom={13}
+        onLoad={(m) => { mapaRef.current = m; }}
+        onUnmount={() => { mapaRef.current = null; }}
         options={{
           zoomControl: true,
           zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
+          cameraControl: false,          styles: oscuro ? ESTILO_MAPA_OSCURO : undefined,
         }}
       >
         {moviles.map((m) => (
@@ -173,6 +213,21 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
           <PolylineF path={posicionesRuta} options={{ strokeColor: '#7e22ce', strokeWeight: 4, strokeOpacity: 0.75 }} />
         )}
 
+        {rutasAlternativas?.map((r, i) => i === rutaActiva ? null : (
+          <PolylineF
+            key={`alt-${i}`}
+            path={r.coordinates.map(([lng, lat]) => ({ lat, lng }))}
+            options={{ strokeColor: '#94a3b8', strokeWeight: 5, strokeOpacity: 0.7, clickable: true }}
+            onClick={() => onSeleccionarRuta?.(i)}
+          />
+        ))}
+        {rutasAlternativas?.[rutaActiva] && (
+          <PolylineF
+            path={rutasAlternativas[rutaActiva].coordinates.map(([lng, lat]) => ({ lat, lng }))}
+            options={{ strokeColor: '#facc15', strokeWeight: 6, strokeOpacity: 0.95, zIndex: 5 }}
+          />
+        )}
+
         {origenDestino && (
           <>
             <MarkerF
@@ -201,18 +256,21 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
         )}
       </GoogleMap>
 
-      {/* Leyenda */}
-      <div className="absolute bottom-3 left-3 z-[500] bg-white/95 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-1">
-        {Object.entries(ETIQUETA_ESTADO).map(([estado, etiqueta]) => (
-          <div key={estado} className="flex items-center gap-1.5">
-            <span
-              className="w-2.5 h-2.5 rounded-full inline-block"
-              style={{ backgroundColor: COLOR_ESTADO[estado] }}
-            />
-            <span className="text-gray-600">{etiqueta}</span>
-          </div>
-        ))}
-      </div>
+      {/* Leyenda -- en modo oscuro la pagina renderiza su propia leyenda flotante
+          (esta se superpondria con la fila de solicitudes que tambien va abajo). */}
+      {!oscuro && (
+        <div className="absolute bottom-3 left-3 z-[500] bg-white/95 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-1">
+          {Object.entries(ETIQUETA_ESTADO).map(([estado, etiqueta]) => (
+            <div key={estado} className="flex items-center gap-1.5">
+              <span
+                className="w-2.5 h-2.5 rounded-full inline-block"
+                style={{ backgroundColor: COLOR_ESTADO[estado] }}
+              />
+              <span className="text-gray-600">{etiqueta}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

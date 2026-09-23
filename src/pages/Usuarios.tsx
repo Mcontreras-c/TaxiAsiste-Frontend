@@ -7,10 +7,10 @@ import {
 import {
   UserCog, RefreshCw, KeyRound, X, Check, User, Shield, PhoneCall, DollarSign,
   ClipboardList, Truck, Flag, Mail, Clock, Search, Plus, Lock, Car, Briefcase,
-  ArrowLeft, Eye, EyeOff,
+  ArrowLeft, Eye, EyeOff, Send, Pencil,
 } from 'lucide-react';
 import {
-  getUsuarios, getRoles, crearUsuario, resetearPassword,
+  getUsuarios, getRoles, crearUsuario, resetearPassword, updateUsuario,
   type UsuarioCuenta, type RolCuenta,
 } from '../api/usuarios';
 import { getSocios } from '../api/socios';
@@ -133,6 +133,81 @@ function ModalResetear({ usuario, onClose }: { usuario: UsuarioCuenta; onClose: 
   );
 }
 
+// ---------- Editar usuario (username/email/nombre/apellido) ----------
+function ModalEditarUsuario({ usuario, onClose, onGuardado }: { usuario: UsuarioCuenta; onClose: () => void; onGuardado: () => void }) {
+  const esConductor = usuario.rol.nombre_rol === 'Conductor';
+  const [username, setUsername] = useState(usuario.username);
+  const [email, setEmail]       = useState(usuario.email ?? '');
+  const [nombre, setNombre]     = useState(usuario.nombre ?? '');
+  const [apellido, setApellido] = useState(usuario.apellido ?? '');
+  const [error, setError]       = useState<string | null>(null);
+  const [saving, setSaving]     = useState(false);
+
+  const guardar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!username.trim()) { setError('El usuario es requerido.'); return; }
+    setSaving(true);
+    try {
+      await updateUsuario(usuario.id_usuario, {
+        username: username.trim(),
+        email: email.trim(),
+        ...(esConductor ? {} : { nombre: nombre.trim(), apellido: apellido.trim() }),
+      });
+      onGuardado();
+    } catch (err: any) {
+      const detail = err?.response?.data;
+      const primerError = detail && typeof detail === 'object'
+        ? Object.values(detail).flat()[0]
+        : null;
+      setError((primerError as string) ?? detail?.detail ?? 'No se pudo guardar los cambios.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Pencil size={18} />
+          <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Editar usuario</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
+      </DialogTitle>
+      <Box component="form" onSubmit={guardar}>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 0 }}>
+          {esConductor && (
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              Rol Conductor: el nombre que se muestra es el del socio vinculado — para
+              cambiarlo, edítalo desde Socios.
+            </Typography>
+          )}
+          {!esConductor && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField fullWidth size="small" label="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
+              <TextField fullWidth size="small" label="Apellido" value={apellido} onChange={e => setApellido(e.target.value)} />
+            </Box>
+          )}
+          <TextField fullWidth size="small" label="Usuario *" value={username} onChange={e => setUsername(e.target.value)} />
+          <TextField fullWidth size="small" label="Email" value={email} onChange={e => setEmail(e.target.value)} />
+          {error && <Alert severity="error">{error}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 1, gap: 1 }}>
+          <Button fullWidth variant="outlined" onClick={onClose} sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+            Cancelar
+          </Button>
+          <Button fullWidth type="submit" variant="contained" disabled={saving}
+            startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <Check size={14} />}
+            sx={{ color: colors.ink, bgcolor: colors.accent500, '&:hover': { bgcolor: colors.accent600 } }}>
+            {saving ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
+  );
+}
+
 // ---------- Crear usuario (2 pasos: tipo -> datos) ----------
 type TipoUsuario = 'socio' | 'personal';
 
@@ -195,11 +270,9 @@ function ModalCrearUsuario({ roles, onClose, onCreado }: {
   const [usernameTocado, setUsernameTocado] = useState(false);
   const [email, setEmail] = useState('');
   const [emailTocado, setEmailTocado] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmar, setConfirmar] = useState('');
-  const [verPassword, setVerPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
+  const [creado, setCreado] = useState(false);
 
   useEffect(() => {
     if (tipo !== 'socio' || socios !== null) return;
@@ -254,20 +327,18 @@ function ModalCrearUsuario({ roles, onClose, onCreado }: {
     if (tipo === 'personal' && !rolId) { setError('Elegí un rol.'); return; }
     if (tipo === 'personal' && (!nombre.trim() || !apellido.trim())) { setError('Nombre y apellido son requeridos.'); return; }
     if (!username.trim()) { setError('El usuario es requerido.'); return; }
-    if (password.length < PASSWORD_MIN_LEN) { setError(`La contraseña debe tener al menos ${PASSWORD_MIN_LEN} caracteres.`); return; }
-    if (password !== confirmar) { setError('Las contraseñas no coinciden.'); return; }
+    if (!email.trim()) { setError('El correo es obligatorio — es el único medio para enviar la contraseña.'); return; }
 
     setCreando(true);
     try {
       await crearUsuario({
         id_rol: tipo === 'socio' ? Number(rolConductor!.id_rol) : Number(rolId),
         username: username.trim(),
-        email: email.trim() || undefined,
-        password,
+        email: email.trim(),
         ...(tipo === 'personal' ? { nombre: nombre.trim(), apellido: apellido.trim() } : {}),
         ...(tipo === 'socio' ? { id_socio: socioId! } : {}),
       });
-      onCreado();
+      setCreado(true);
     } catch (err: any) {
       const detail = err?.response?.data;
       const primerError = detail && typeof detail === 'object'
@@ -277,6 +348,26 @@ function ModalCrearUsuario({ roles, onClose, onCreado }: {
     } finally {
       setCreando(false);
     }
+  }
+
+  if (creado) {
+    return (
+      <Dialog open onClose={onCreado} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Send size={20} />
+          <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Cuenta creada</Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="success" icon={<Check size={18} />}>
+            Se enviaron las credenciales de acceso a <strong>{email}</strong>. La contraseña no se
+            muestra en pantalla — solo llega por ese correo.
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button fullWidth variant="contained" onClick={onCreado}>Listo</Button>
+        </DialogActions>
+      </Dialog>
+    );
   }
 
   return (
@@ -422,27 +513,13 @@ function ModalCrearUsuario({ roles, onClose, onCreado }: {
                         helperText={usuarioSugerido ? `Sugerido: ${usuarioSugerido} · Puedes editarlo` : undefined}
                       />
                       <TextField
-                        fullWidth size="small" label="Email" value={email}
+                        fullWidth size="small" label="Email *" value={email}
                         onChange={e => { setEmail(e.target.value); setEmailTocado(true); }}
-                        helperText={emailSugerido ? `Sugerido: ${emailSugerido} · Puedes editarlo` : undefined}
-                      />
-                      <TextField
-                        fullWidth size="small" label="Contraseña" type={verPassword ? 'text' : 'password'}
-                        value={password} onChange={e => setPassword(e.target.value)}
-                        slotProps={{ input: { endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton size="small" onClick={() => setVerPassword(v => !v)} edge="end">
-                              {verPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </IconButton>
-                          </InputAdornment>
-                        ) } }}
-                      />
-                      <TextField
-                        fullWidth size="small" label="Confirmar contraseña" type={verPassword ? 'text' : 'password'}
-                        value={confirmar} onChange={e => setConfirmar(e.target.value)}
+                        helperText={emailSugerido ? `Sugerido: ${emailSugerido} · Verifica que sea el correo real de la persona` : 'Obligatorio: ahí llega la contraseña'}
                       />
                       <Alert severity="info" sx={{ fontSize: 12.5 }}>
-                        Comunica las credenciales directamente al socio. No se envían correos automáticos.
+                        Las credenciales de acceso se enviarán por correo a esa dirección — la contraseña
+                        no se muestra en pantalla.
                       </Alert>
                     </Box>
                   ) : (
@@ -487,30 +564,14 @@ function ModalCrearUsuario({ roles, onClose, onCreado }: {
                         helperText={usuarioSugerido ? `Sugerido: ${usuarioSugerido} · Puedes editarlo` : undefined}
                       />
                       <TextField
-                        fullWidth size="small" label="Email" value={email}
+                        fullWidth size="small" label="Email *" value={email}
                         onChange={e => { setEmail(e.target.value); setEmailTocado(true); }}
-                        helperText={emailSugerido ? `Sugerido: ${emailSugerido} · Puedes editarlo` : undefined}
-                      />
-                    </Box>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                      <TextField
-                        fullWidth size="small" label="Contraseña" type={verPassword ? 'text' : 'password'}
-                        value={password} onChange={e => setPassword(e.target.value)}
-                        slotProps={{ input: { endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton size="small" onClick={() => setVerPassword(v => !v)} edge="end">
-                              {verPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </IconButton>
-                          </InputAdornment>
-                        ) } }}
-                      />
-                      <TextField
-                        fullWidth size="small" label="Confirmar contraseña" type={verPassword ? 'text' : 'password'}
-                        value={confirmar} onChange={e => setConfirmar(e.target.value)}
+                        helperText={emailSugerido ? `Sugerido: ${emailSugerido} · Verifica que sea el correo real` : 'Obligatorio: ahí llega la contraseña'}
                       />
                     </Box>
                     <Alert severity="info" sx={{ fontSize: 12.5 }}>
-                      Comunica las credenciales directamente a la persona. No se envían correos automáticos.
+                      Las credenciales de acceso se enviarán por correo a esa dirección — la contraseña
+                      no se muestra en pantalla.
                     </Alert>
                   </Box>
                 </Box>
@@ -544,6 +605,7 @@ export default function UsuariosPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [modalReset, setModalReset] = useState<UsuarioCuenta | null>(null);
+  const [modalEditar, setModalEditar] = useState<UsuarioCuenta | null>(null);
   const [modalCrear, setModalCrear] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('Todos');
@@ -612,7 +674,8 @@ export default function UsuariosPage() {
       </Box>
 
       <Alert severity="info">
-        ¿Olvidó su contraseña? Restablece la clave y comunícala directamente. No se envían correos automáticos.
+        ¿Olvidó su contraseña? Restablece la clave y comunícala directamente. Al crear una cuenta
+        nueva, en cambio, la contraseña se genera sola y solo se envía por correo.
       </Alert>
 
       {error && <Alert severity="error" onClose={load}>{error}</Alert>}
@@ -694,12 +757,20 @@ export default function UsuariosPage() {
                       </Box>
                     </Box>
 
-                    <Button
-                      size="small" onClick={() => setModalReset(u)} startIcon={<KeyRound size={13} />}
-                      sx={{ mt: 0.5, fontSize: 12, fontWeight: 700, color: colors.ink, alignSelf: 'flex-start', px: 0 }}
-                    >
-                      Resetear clave
-                    </Button>
+                    <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5 }}>
+                      <Button
+                        size="small" onClick={() => setModalEditar(u)} startIcon={<Pencil size={12} />}
+                        sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', px: 0 }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        size="small" onClick={() => setModalReset(u)} startIcon={<KeyRound size={13} />}
+                        sx={{ fontSize: 12, fontWeight: 700, color: colors.ink, px: 0 }}
+                      >
+                        Resetear clave
+                      </Button>
+                    </Box>
                   </CardContent>
                 </Card>
               );
@@ -721,6 +792,13 @@ export default function UsuariosPage() {
       )}
 
       {modalReset && <ModalResetear usuario={modalReset} onClose={() => { setModalReset(null); load(); }} />}
+      {modalEditar && (
+        <ModalEditarUsuario
+          usuario={modalEditar}
+          onClose={() => setModalEditar(null)}
+          onGuardado={() => { setModalEditar(null); load(); }}
+        />
+      )}
       {modalCrear && (
         <ModalCrearUsuario
           roles={roles}
