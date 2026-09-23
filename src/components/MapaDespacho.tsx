@@ -178,7 +178,7 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
-          styles: oscuro ? ESTILO_MAPA_OSCURO : undefined,
+          cameraControl: false,          styles: oscuro ? ESTILO_MAPA_OSCURO : undefined,
         }}
       >
         {moviles.map((m) => (
