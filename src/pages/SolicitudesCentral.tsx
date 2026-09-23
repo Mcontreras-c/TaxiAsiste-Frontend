@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight, ChevronLeft,
-  Clock, Car, CheckCircle, XCircle, History, PhoneMissed, MapPin, Navigation,
+  Clock, Car, XCircle, History, PhoneMissed, MapPin, Navigation,
   User, MessageSquare, Cross, Users, Calculator,
 } from 'lucide-react';
 import {
@@ -131,40 +131,6 @@ function EmptyHint({ text }: { text: string }) {
     <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.55)', textAlign: 'center', py: 2 }}>
       {text}
     </Typography>
-  );
-}
-
-function tiempoRelativo(fechaISO: string): string {
-  const diffMin = Math.max(0, Math.round((Date.now() - new Date(fechaISO).getTime()) / 60000));
-  if (diffMin < 1) return 'ahora';
-  if (diffMin < 60) return `hace ${diffMin} min`;
-  const diffH = Math.round(diffMin / 60);
-  if (diffH < 24) return `hace ${diffH} h`;
-  return `hace ${Math.round(diffH / 24)} d`;
-}
-
-function ActividadRow({ sol }: { sol: Solicitud }) {
-  const completada = sol.estado === 'COMPLETADO';
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, py: 1 }}>
-      <Box sx={{
-        width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        bgcolor: completada ? 'rgba(47,158,94,.18)' : 'rgba(192,57,43,.18)', color: completada ? '#4ade80' : '#f87171',
-      }}>
-        {completada ? <CheckCircle size={14} /> : <XCircle size={14} />}
-      </Box>
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography sx={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#fff' }}>
-          {sol.movil_patente ?? sol.folio}
-        </Typography>
-        <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>
-          {completada ? 'Completada' : 'Cancelada'}
-        </Typography>
-      </Box>
-      <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,.4)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-        {tiempoRelativo(sol.fecha_termino ?? sol.fecha_hora)}
-      </Typography>
-    </Box>
   );
 }
 
@@ -695,32 +661,6 @@ export default function SolicitudesCentralPage() {
                           </Box>
                         );
                       })
-                  }
-                </Box>
-              </CardContent>
-            </Card>
-
-            {/* Actividad reciente (Completadas / Canceladas) */}
-            <Card sx={{ ...glassSx, borderRadius: 4, flexShrink: 0, pointerEvents: 'auto' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CheckCircle size={15} color="rgba(255,255,255,.7)" />
-                    <Typography sx={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'rgba(255,255,255,.7)' }}>
-                      Actividad reciente
-                    </Typography>
-                  </Box>
-                  <Button size="small" onClick={() => loadHistorial()} sx={{ fontSize: 11, color: '#7fb0ff', minWidth: 0, p: 0 }}>
-                    ver todo
-                  </Button>
-                </Box>
-                <Box sx={{
-                  display: 'flex', flexDirection: 'column',
-                  '& > *:not(:last-child)': { borderBottom: '1px solid', borderColor: 'rgba(255,255,255,.1)' },
-                }}>
-                  {resumen.finalizadas.length === 0
-                    ? <EmptyHint text="Sin finalizadas" />
-                    : resumen.finalizadas.map(s => <ActividadRow key={s.id_solicitud} sol={s} />)
                   }
                 </Box>
               </CardContent>

@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { Box, Typography, Button, IconButton, TextField, CircularProgress, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { X, Calculator, LocateFixed, Route } from 'lucide-react';
-import { cotizarTarifa, type Cotizacion, type OrigenCotizacion } from '../api/mapas';
+import { Box, Typography, Button, IconButton, TextField, CircularProgress } from '@mui/material';
+import { X, Calculator, Route } from 'lucide-react';
+import { cotizarTarifa, type Cotizacion } from '../api/mapas';
 import { colors } from '../theme';
-
-type ModoOrigen = 'hospital' | 'gps' | 'texto';
 
 export interface EstadoCotizacion {
   cotizacion: Cotizacion;
@@ -31,38 +29,22 @@ const formatoKm = (m: number) => `${(m / 1000).toFixed(1)} km`;
 const formatoPeso = (n: number) => `$${n.toLocaleString('es-CL')}`;
 
 /**
- * Cotizador de tarifa aproximada: origen por defecto el hospital (o "estoy
- * aqui" con el GPS del navegador, o una direccion), destino escrito. Muestra
+ * Cotizador de tarifa aproximada: la salida es siempre el hospital (la app
+ * mobile ofrece ademas "estoy aqui" y otra direccion), destino escrito. Muestra
  * cada ruta posible con su valor -- el monto depende del camino -- y el mapa
  * (fuera de este componente) dibuja la seleccionada.
  */
 export default function CotizadorTarifa({ onCambio, activa, onActiva, cotizacion, onCerrar }: Props) {
-  const [modo, setModo] = useState<ModoOrigen>('hospital');
-  const [origenTexto, setOrigenTexto] = useState('');
   const [destino, setDestino] = useState('');
   const [calculando, setCalculando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const obtenerOrigen = (): Promise<OrigenCotizacion> => {
-    if (modo === 'hospital') return Promise.resolve({ tipo: 'hospital' });
-    if (modo === 'texto') return Promise.resolve({ tipo: 'texto', texto: origenTexto.trim() });
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) return reject(new Error('Este navegador no permite obtener la ubicación.'));
-      navigator.geolocation.getCurrentPosition(
-        p => resolve({ tipo: 'gps', lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => reject(new Error('No se pudo obtener tu ubicación. Revisa el permiso del navegador.')),
-        { enableHighAccuracy: true, timeout: 8000 },
-      );
-    });
-  };
-
   const calcular = async () => {
     if (!destino.trim()) { setError('Escribe la dirección de destino.'); return; }
-    if (modo === 'texto' && !origenTexto.trim()) { setError('Escribe la dirección de origen.'); return; }
     setCalculando(true); setError(null);
     try {
-      const origen = await obtenerOrigen();
-      const resultado = await cotizarTarifa(origen, destino.trim());
+      // Central siempre cotiza desde el hospital (la salida de los pasajeros).
+      const resultado = await cotizarTarifa({ tipo: 'hospital' }, destino.trim());
       onActiva(0);
       onCambio({ cotizacion: resultado, activa: 0 });
     } catch (e: unknown) {
@@ -95,27 +77,7 @@ export default function CotizadorTarifa({ onCambio, activa, onActiva, cotizacion
         <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.55)', mb: 0.5, textTransform: 'uppercase' }}>
           Salida desde
         </Typography>
-        <ToggleButtonGroup
-          exclusive fullWidth size="small" value={modo}
-          onChange={(_, v: ModoOrigen | null) => { if (v) { setModo(v); limpiar(); } }}
-          sx={{
-            '& .MuiToggleButton-root': { color: 'rgba(255,255,255,.7)', borderColor: 'rgba(255,255,255,.18)', fontSize: 11.5, textTransform: 'none', py: 0.5 },
-            '& .Mui-selected': { bgcolor: `${colors.accent500} !important`, color: `${colors.ink} !important`, fontWeight: 700 },
-          }}
-        >
-          <ToggleButton value="hospital">Hospital</ToggleButton>
-          <ToggleButton value="gps"><LocateFixed size={12} style={{ marginRight: 4 }} />Estoy aquí</ToggleButton>
-          <ToggleButton value="texto">Otra</ToggleButton>
-        </ToggleButtonGroup>
-        {modo === 'hospital' && (
-          <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.55)', mt: 0.75 }}>Hospital Félix Bulnes, Cerro Navia</Typography>
-        )}
-        {modo === 'texto' && (
-          <TextField
-            fullWidth size="small" placeholder="Calle y número de origen" value={origenTexto}
-            onChange={e => setOrigenTexto(e.target.value)} sx={{ ...campoSx, mt: 0.75 }}
-          />
-        )}
+        <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,.85)' }}>Hospital Félix Bulnes, Cerro Navia</Typography>
       </Box>
 
       <TextField
