@@ -10,7 +10,7 @@ import {
   ArrowLeft, Eye, EyeOff, Send, Pencil,
 } from 'lucide-react';
 import {
-  getUsuarios, getRoles, crearUsuario, resetearPassword, updateUsuario,
+  getUsuarios, getRoles, crearUsuario, resetearPassword, updateUsuario, reenviarCredenciales,
   type UsuarioCuenta, type RolCuenta,
 } from '../api/usuarios';
 import { getSocios } from '../api/socios';
@@ -598,6 +598,64 @@ function ModalCrearUsuario({ roles, onClose, onCreado }: {
   );
 }
 
+// ---------- Reenviar credenciales ----------
+// Genera una clave nueva y la manda por correo (link de la app o del panel segun
+// el rol). La clave nunca se muestra aca: solo llega al correo de la persona.
+function ModalReenviar({ usuario, onClose }: { usuario: UsuarioCuenta; onClose: () => void }) {
+  const [enviando, setEnviando] = useState(false);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const enviar = async () => {
+    setEnviando(true); setError(null);
+    try {
+      const r = await reenviarCredenciales(usuario.id_usuario);
+      setMensaje(r.detail);
+    } catch (e: unknown) {
+      const detalle = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detalle ?? 'No se pudo enviar. Intenta de nuevo.');
+    } finally { setEnviando(false); }
+  };
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Send size={20} />
+          <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Reenviar credenciales</Typography>
+        </Box>
+        <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0 }}>
+        <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>
+          Usuario: <strong>{usuario.nombre_completo}</strong> (@{usuario.username} · {usuario.rol.nombre_rol})
+        </Typography>
+        {mensaje ? (
+          <Alert severity="success" icon={<Check size={18} />}>{mensaje}</Alert>
+        ) : (
+          <>
+            <Typography sx={{ fontSize: 13.5 }}>
+              Se generará una clave nueva y se enviará a <strong>{usuario.email}</strong>. La clave actual dejará de funcionar.
+            </Typography>
+            {error && <Alert severity="error">{error}</Alert>}
+          </>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2.5 }}>
+        <Button onClick={onClose} sx={{ color: 'text.secondary' }}>{mensaje ? 'Cerrar' : 'Cancelar'}</Button>
+        {!mensaje && (
+          <Button
+            variant="contained" onClick={enviar} disabled={enviando}
+            sx={{ color: colors.ink, background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})` }}
+          >
+            {enviando ? 'Enviando...' : 'Enviar'}
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 // ---------- Pantalla principal ----------
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioCuenta[]>([]);
@@ -606,6 +664,7 @@ export default function UsuariosPage() {
   const [error, setError]       = useState<string | null>(null);
   const [modalReset, setModalReset] = useState<UsuarioCuenta | null>(null);
   const [modalEditar, setModalEditar] = useState<UsuarioCuenta | null>(null);
+  const [modalReenviar, setModalReenviar] = useState<UsuarioCuenta | null>(null);
   const [modalCrear, setModalCrear] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('Todos');
@@ -757,7 +816,7 @@ export default function UsuariosPage() {
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1.5, mt: 0.5 }}>
                       <Button
                         size="small" onClick={() => setModalEditar(u)} startIcon={<Pencil size={12} />}
                         sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', px: 0 }}
@@ -769,6 +828,13 @@ export default function UsuariosPage() {
                         sx={{ fontSize: 12, fontWeight: 700, color: colors.ink, px: 0 }}
                       >
                         Resetear clave
+                      </Button>
+                      <Button
+                        size="small" onClick={() => setModalReenviar(u)} startIcon={<Send size={12} />}
+                        disabled={!u.email} title={u.email ? 'Generar clave nueva y enviarla por correo' : 'Este usuario no tiene correo'}
+                        sx={{ fontSize: 12, fontWeight: 700, color: '#2f7d5b', px: 0 }}
+                      >
+                        Reenviar credenciales
                       </Button>
                     </Box>
                   </CardContent>
@@ -791,6 +857,7 @@ export default function UsuariosPage() {
         </>
       )}
 
+      {modalReenviar && <ModalReenviar usuario={modalReenviar} onClose={() => setModalReenviar(null)} />}
       {modalReset && <ModalResetear usuario={modalReset} onClose={() => { setModalReset(null); load(); }} />}
       {modalEditar && (
         <ModalEditarUsuario
