@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button,
-  IconButton, Alert, CircularProgress, Box, Typography,
+  IconButton, Alert, CircularProgress, Box, Typography, InputAdornment,
 } from '@mui/material';
-import { KeyRound, X, Check } from 'lucide-react';
+import { KeyRound, X, Check, Eye, EyeOff } from 'lucide-react';
 import { cambiarPassword } from '../api/usuarios';
 
 export default function CambiarPasswordDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -13,9 +13,21 @@ export default function CambiarPasswordDialog({ open, onClose }: { open: boolean
   const [error, setError]     = useState<string | null>(null);
   const [ok, setOk]           = useState(false);
   const [saving, setSaving]   = useState(false);
+  const [ver, setVer]         = useState(false);
+
+  // Un solo ojito por campo, pero los tres comparten el estado (mostrar/ocultar juntos).
+  const ojito = {
+    input: { endAdornment: (
+      <InputAdornment position="end">
+        <IconButton size="small" edge="end" onClick={() => setVer(v => !v)} aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
+          {ver ? <EyeOff size={16} /> : <Eye size={16} />}
+        </IconButton>
+      </InputAdornment>
+    ) },
+  };
 
   const limpiarYCerrar = () => {
-    setActual(''); setNueva(''); setRepetir(''); setError(null); setOk(false);
+    setActual(''); setNueva(''); setRepetir(''); setError(null); setOk(false); setVer(false);
     onClose();
   };
 
@@ -60,17 +72,20 @@ export default function CambiarPasswordDialog({ open, onClose }: { open: boolean
           ) : (
             <>
               <TextField
-                fullWidth size="small" type="password" label="Contraseña actual" autoFocus
+                fullWidth size="small" type={ver ? 'text' : 'password'} label="Contraseña actual" autoFocus
                 value={actual} onChange={e => setActual(e.target.value)}
+                slotProps={ojito}
               />
               <TextField
-                fullWidth size="small" type="password" label="Nueva contraseña"
+                fullWidth size="small" type={ver ? 'text' : 'password'} label="Nueva contraseña"
                 value={nueva} onChange={e => setNueva(e.target.value)}
                 helperText="Mínimo 6 caracteres."
+                slotProps={ojito}
               />
               <TextField
-                fullWidth size="small" type="password" label="Repetir nueva contraseña"
+                fullWidth size="small" type={ver ? 'text' : 'password'} label="Repetir nueva contraseña"
                 value={repetir} onChange={e => setRepetir(e.target.value)}
+                slotProps={ojito}
               />
               {error && <Alert severity="error">{error}</Alert>}
             </>

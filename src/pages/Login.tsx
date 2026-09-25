@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { HOME_POR_ROL, type Rol } from '../config/permisos';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Box, Typography, TextField, Button, Alert, InputAdornment, Link } from '@mui/material';
+import { Box, Typography, TextField, Button, Alert, InputAdornment, IconButton, Link } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import LoginIcon from '@mui/icons-material/Login';
 import logo from '../assets/logo.jpg';
 import taxiHero from '../assets/taxiasiste.webp';
@@ -22,6 +24,7 @@ type FormData = z.infer<typeof schema>;
 export default function Login() {
   const navigate = useNavigate();
   const { login, isLoading, error, isAuthenticated, usuario } = useAuthStore();
+  const [verPassword, setVerPassword] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -104,13 +107,24 @@ export default function Login() {
           />
           <TextField
             {...register('password')}
-            label="Contraseña" placeholder="••••••••" type="password" fullWidth
+            label="Contraseña" placeholder="••••••••" type={verPassword ? 'text' : 'password'} fullWidth
             error={!!errors.password} helperText={errors.password?.message}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
                     <LockIcon fontSize="small" sx={{ color: 'rgba(255,255,255,.7)' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setVerPassword(v => !v)} edge="end" size="small"
+                      aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      sx={{ color: 'rgba(255,255,255,.75)' }}
+                    >
+                      {verPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                    </IconButton>
                   </InputAdornment>
                 ),
                 sx: { color: '#fff' },
