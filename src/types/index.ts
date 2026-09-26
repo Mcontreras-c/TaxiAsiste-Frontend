@@ -114,6 +114,8 @@ export interface Pasajero {
   direccion_frecuente: string | null;
   fecha_registro: string;
   activo: number;
+  incumplimientos: number;
+  bloqueado_domicilio: number; // 1 = no puede pedir moviles a domicilio
 }
 
 // ── Solicitudes ───────────────────────────────────────────────────────────────

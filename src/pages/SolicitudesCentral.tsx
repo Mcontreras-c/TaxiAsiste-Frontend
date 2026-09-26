@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Box, Typography, Chip, IconButton, Button, Alert, CircularProgress,
   Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, MenuItem, InputAdornment, Avatar, ToggleButton, ToggleButtonGroup,
+  TextField, MenuItem, InputAdornment, Avatar, ToggleButton, ToggleButtonGroup, Checkbox, FormControlLabel,
 } from '@mui/material';
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight, ChevronLeft,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
-  cambiarEstado, buscarPasajeroPorRut, createPasajero, actualizarTelefonoPasajero, type ResumenCentral,
+  cambiarEstado, buscarPasajeroPorRut, createPasajero, actualizarTelefonoPasajero, levantarBloqueoPasajero, type ResumenCentral,
 } from '../api/solicitudes';
 import { getMoviles, getFilaBase } from '../api/moviles';
 import { geocodificar, obtenerRuta, estimarTarifa, type TarifaEstimada } from '../api/mapas';
@@ -25,7 +25,8 @@ import { InitialsAvatar } from '../components/InitialsAvatar';
 import ClimaWidget from '../components/ClimaWidget';
 import CotizadorTarifa, { type EstadoCotizacion } from '../components/CotizadorTarifa';
 import type { Cotizacion } from '../api/mapas';
-import { getReservas, crearReserva, cancelarReserva, type Reserva } from '../api/reservas';
+import { getReservas, crearReserva, cancelarReserva, liberarReserva, type Reserva } from '../api/reservas';
+import { useAuthStore } from '../store/authStore';
 
 import { formatoHora, formatoFechaHora } from '../utils/formatoFecha';
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -229,15 +230,20 @@ function SolicitudCard({
   );
 }
 
-function ReservaCard({ reserva, onCancelar }: { reserva: Reserva; onCancelar: (r: Reserva) => void }) {
+function ReservaCard({ reserva, onCancelar, onLiberar }: {
+  reserva: Reserva; onCancelar: (r: Reserva) => void; onLiberar: (r: Reserva) => void;
+}) {
   const sinConductor = reserva.estado === 'PROGRAMADA';
   const recogida = new Date(reserva.fecha_hora_recogida);
   const hoy = aFechaLocal(new Date()) === aFechaLocal(recogida);
-  // Sin conductor y a menos de una hora: se marca en rojo para que Central actue.
-  const urgente = sinConductor && recogida.getTime() - Date.now() < 60 * 60 * 1000;
-  const chip = sinConductor
-    ? { label: 'SIN CONDUCTOR', bg: urgente ? '#fbe9e9' : '#fdece2', fg: urgente ? '#c0392b' : '#c2410c' }
-    : { label: reserva.estado === 'EN_CAMINO' ? 'EN CAMINO' : 'ASIGNADA', bg: '#e8ecf9', fg: '#3355a8' };
+  // La alerta la calcula el servidor: en rojo para que Central actue (asignarla por
+  // telefono si nadie la tomo, o llamar al conductor que no salio).
+  const urgente = reserva.alerta !== null;
+  const chip = reserva.alerta === 'NO_CONFIRMADA'
+    ? { label: 'NO CONFIRMÓ SALIDA', bg: '#fbe9e9', fg: '#c0392b' }
+    : sinConductor
+      ? { label: 'SIN CONDUCTOR', bg: urgente ? '#fbe9e9' : '#fdece2', fg: urgente ? '#c0392b' : '#c2410c' }
+      : { label: reserva.estado === 'EN_CAMINO' ? 'EN CAMINO' : 'ASIGNADA', bg: '#e8ecf9', fg: '#3355a8' };
 
   return (
     <Card sx={{ ...glassSx, borderRadius: 3, flex: '0 0 220px', scrollSnapAlign: 'start', ...(urgente ? { borderColor: '#c0392b' } : {}) }}>
@@ -279,13 +285,18 @@ function ReservaCard({ reserva, onCancelar }: { reserva: Reserva; onCancelar: (r
         <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,.4)' }}>
           ~${reserva.tarifa_estimada.toLocaleString('es-CL')} · sale de la base a las {formatoHora(reserva.salida_base_maxima)}
         </Typography>
-        {reserva.estado !== 'EN_CAMINO' && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 0.25 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 0.5, pt: 0.25 }}>
+          {reserva.movil_patente && (
+            <Button size="small" onClick={() => onLiberar(reserva)} sx={{ fontSize: 11, color: '#f5a06b', minWidth: 0, px: 1 }}>
+              Quitar conductor
+            </Button>
+          )}
+          {reserva.estado !== 'EN_CAMINO' && (
             <IconButton size="small" title="Cancelar reserva" onClick={() => onCancelar(reserva)} sx={{ color: '#c0392b' }}>
               <XCircle size={16} />
             </IconButton>
-          </Box>
-        )}
+          )}
+        </Box>
       </CardContent>
     </Card>
   );
@@ -370,6 +381,10 @@ export default function SolicitudesCentralPage() {
   const [reservaFecha, setReservaFecha] = useState(reservaInicial().fecha);
   const [reservaHora, setReservaHora]   = useState(reservaInicial().hora);
   const [reservaMin, setReservaMin]     = useState(reservaInicial().min);
+  const [liberando, setLiberando]       = useState<Reserva | null>(null);
+  const [liberarIncumplio, setLiberarIncumplio] = useState(false);
+  const [liberarMotivo, setLiberarMotivo] = useState('');
+  const esAdmin = useAuthStore(s => s.usuario?.rol) === 'Administrador';
 
   // Geocoding en vivo del origen en el formulario de nueva solicitud (el
   // destino ya no se geocodifica aca: siempre es el mismo hospital).
@@ -557,6 +572,28 @@ export default function SolicitudesCentralPage() {
       await load();
     } catch (err: any) {
       alert(err?.response?.data?.detail ?? 'No se pudo cancelar la reserva.');
+    }
+  };
+
+  const handleLiberar = async () => {
+    if (!liberando) return;
+    setSaving(true);
+    try {
+      await liberarReserva(liberando.id_reserva, liberarIncumplio, liberarMotivo.trim() || undefined);
+      setLiberando(null); setLiberarIncumplio(false); setLiberarMotivo('');
+      await load();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail ?? 'No se pudo quitar el conductor de la reserva.');
+    } finally { setSaving(false); }
+  };
+
+  const handleLevantarBloqueo = async () => {
+    if (!pasajeroEncontrado) return;
+    try {
+      const p = await levantarBloqueoPasajero(pasajeroEncontrado.id_pasajero);
+      setPasajeroEncontrado(p);
+    } catch (err: any) {
+      setFormError(err?.response?.data?.detail ?? 'No se pudo levantar el bloqueo.');
     }
   };
 
@@ -830,13 +867,15 @@ export default function SolicitudesCentralPage() {
                 icon={<CalendarClock size={13} color="#6fd0b0" />}
                 bg="rgba(47,158,120,.28)"
                 title="Reservas programadas"
-                count={countPill(reservas.length, 'rgba(47,158,120,.28)', '#6fd0b0')}
+                count={reservas.some(r => r.alerta)
+                  ? countPill(reservas.filter(r => r.alerta).length, 'rgba(192,57,43,.35)', '#ff8a8a')
+                  : countPill(reservas.length, 'rgba(47,158,120,.28)', '#6fd0b0')}
               />
               <FilaHorizontal>
                 {reservas.length === 0
                   ? <EmptyHint text="Sin reservas programadas" />
                   : reservas.map(r => (
-                      <ReservaCard key={r.id_reserva} reserva={r} onCancelar={handleCancelarReserva} />
+                      <ReservaCard key={r.id_reserva} reserva={r} onCancelar={handleCancelarReserva} onLiberar={setLiberando} />
                     ))
                 }
               </FilaHorizontal>
@@ -844,6 +883,32 @@ export default function SolicitudesCentralPage() {
           </Box>
         </>
       )}
+
+      {/* Modal quitar conductor de una reserva */}
+      <Dialog open={!!liberando} onClose={() => setLiberando(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: 17 }}>Quitar conductor</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {liberando && (
+            <Typography sx={{ fontSize: 13.5 }}>
+              La reserva {liberando.folio} de las {formatoHora(liberando.fecha_hora_recogida)} volverá a quedar disponible
+              para que otro conductor la tome. Conductor actual: <strong>{liberando.movil_patente}</strong> ({liberando.conductor_nombre}).
+            </Typography>
+          )}
+          <FormControlLabel
+            control={<Checkbox checked={liberarIncumplio} onChange={e => setLiberarIncumplio(e.target.checked)} />}
+            label="Registrar como incumplimiento del conductor (no llegó o no confirmó)"
+            slotProps={{ typography: { sx: { fontSize: 13 } } }}
+          />
+          <TextField size="small" fullWidth label="Motivo (opcional)" value={liberarMotivo} onChange={e => setLiberarMotivo(e.target.value)} />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setLiberando(null)} sx={{ color: 'text.secondary' }}>Cancelar</Button>
+          <Button variant="contained" onClick={handleLiberar} disabled={saving}
+            sx={{ color: colors.ink, background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})` }}>
+            {saving ? 'Guardando...' : 'Quitar conductor'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Modal nueva solicitud */}
       <Dialog open={showForm} onClose={() => setShowForm(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
@@ -918,6 +983,15 @@ export default function SolicitudesCentralPage() {
                 <Typography sx={{ fontSize: 11, color: '#2f7d5b', fontWeight: 600, mt: 0.5 }}>
                   ✓ Pasajero registrado — {pasajeroEncontrado.telefono ?? 'sin teléfono'}
                 </Typography>
+              )}
+              {pasajeroEncontrado?.bloqueado_domicilio === 1 && (
+                <Alert
+                  severity="warning" sx={{ mt: 1, fontSize: 12 }}
+                  action={esAdmin ? <Button color="inherit" size="small" onClick={handleLevantarBloqueo}>Levantar</Button> : undefined}
+                >
+                  Bloqueado por {pasajeroEncontrado.incumplimientos} incumplimientos: no puede pedir móviles a domicilio
+                  {modoReserva ? '' : ' (solo puede tomar uno en el hospital)'}.
+                </Alert>
               )}
               {!buscandoRut && form.rut && !pasajeroEncontrado && (
                 <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>
