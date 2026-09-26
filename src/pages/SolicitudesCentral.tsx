@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Box, Typography, Chip, IconButton, Button, Alert, CircularProgress,
   Card, CardContent, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, MenuItem, InputAdornment, Avatar,
+  TextField, MenuItem, InputAdornment, Avatar, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight, ChevronLeft,
   Clock, Car, XCircle, History, PhoneMissed, MapPin, Navigation,
-  User, MessageSquare, Cross, Users, Calculator,
+  User, MessageSquare, Cross, Users, Calculator, CalendarClock,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
@@ -25,6 +25,7 @@ import { InitialsAvatar } from '../components/InitialsAvatar';
 import ClimaWidget from '../components/ClimaWidget';
 import CotizadorTarifa, { type EstadoCotizacion } from '../components/CotizadorTarifa';
 import type { Cotizacion } from '../api/mapas';
+import { getReservas, crearReserva, cancelarReserva, type Reserva } from '../api/reservas';
 
 import { formatoHora, formatoFechaHora } from '../utils/formatoFecha';
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -95,6 +96,21 @@ const EMPTY_FORM: FormData = {
   rut: '', nombre: '', apellido: '', telefono: '', origen: '', canal_entrada: 'TELEFONO',
   observaciones: '', pasajero_id: null,
 };
+
+// Reserva: fecha + hora en 24 h con selectores propios (un <input type="datetime-local">
+// mostraria am/pm segun el idioma del navegador).
+const HORAS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTOS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+
+const aFechaLocal = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// Propuesta inicial: dentro de 2 horas, redondeada a los 5 minutos.
+function reservaInicial() {
+  const d = new Date(Date.now() + 2 * 60 * 60 * 1000);
+  d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+  return { fecha: aFechaLocal(d), hora: String(d.getHours()).padStart(2, '0'), min: String(d.getMinutes()).padStart(2, '0') };
+}
 
 interface AccionModal {
   solicitud: Solicitud;
@@ -213,6 +229,68 @@ function SolicitudCard({
   );
 }
 
+function ReservaCard({ reserva, onCancelar }: { reserva: Reserva; onCancelar: (r: Reserva) => void }) {
+  const sinConductor = reserva.estado === 'PROGRAMADA';
+  const recogida = new Date(reserva.fecha_hora_recogida);
+  const hoy = aFechaLocal(new Date()) === aFechaLocal(recogida);
+  // Sin conductor y a menos de una hora: se marca en rojo para que Central actue.
+  const urgente = sinConductor && recogida.getTime() - Date.now() < 60 * 60 * 1000;
+  const chip = sinConductor
+    ? { label: 'SIN CONDUCTOR', bg: urgente ? '#fbe9e9' : '#fdece2', fg: urgente ? '#c0392b' : '#c2410c' }
+    : { label: reserva.estado === 'EN_CAMINO' ? 'EN CAMINO' : 'ASIGNADA', bg: '#e8ecf9', fg: '#3355a8' };
+
+  return (
+    <Card sx={{ ...glassSx, borderRadius: 3, flex: '0 0 220px', scrollSnapAlign: 'start', ...(urgente ? { borderColor: '#c0392b' } : {}) }}>
+      <CardContent sx={{ p: '9px 11px !important', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 10.5, color: 'rgba(255,255,255,.5)' }}>
+            {reserva.folio}
+          </Typography>
+          <Chip label={chip.label} size="small" sx={{ bgcolor: chip.bg, color: chip.fg, fontWeight: 700, fontSize: 10.5 }} />
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'Roboto Mono, monospace', lineHeight: 1.1 }}>
+            {formatoHora(reserva.fecha_hora_recogida)}
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>
+            {hoy ? 'hoy' : 'mañana'}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <MapPin size={12} color="rgba(255,255,255,.45)" style={{ flexShrink: 0 }} />
+          <Box sx={{ fontWeight: 600, color: '#fff', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {reserva.origen}
+          </Box>
+        </Box>
+        {reserva.movil_patente && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Car size={11} color="rgba(255,255,255,.45)" />
+            <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)' }}>
+              <strong>{reserva.movil_patente}</strong> · {reserva.conductor_nombre}
+            </Typography>
+          </Box>
+        )}
+        {reserva.pasajero_nombre && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <InitialsAvatar nombre={reserva.pasajero_nombre} size={19} />
+            <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.6)' }}>{reserva.pasajero_nombre}</Typography>
+          </Box>
+        )}
+        <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,.4)' }}>
+          ~${reserva.tarifa_estimada.toLocaleString('es-CL')} · sale de la base a las {formatoHora(reserva.salida_base_maxima)}
+        </Typography>
+        {reserva.estado !== 'EN_CAMINO' && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 0.25 }}>
+            <IconButton size="small" title="Cancelar reserva" onClick={() => onCancelar(reserva)} sx={{ color: '#c0392b' }}>
+              <XCircle size={16} />
+            </IconButton>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // Franja con scroll horizontal + flechas -- las flechas solo se muestran si
 // realmente hay contenido oculto a ese lado (se recalcula en cada scroll y
 // cuando cambia la cantidad de tarjetas).
@@ -285,6 +363,14 @@ export default function SolicitudesCentralPage() {
   const [buscandoRut, setBuscandoRut] = useState(false);
   const [pasajeroEncontrado, setPasajeroEncontrado] = useState<Pasajero | null>(null);
 
+  // Reservas (viajes programados): se cargan junto con el resto; si el backend
+  // aun no las tiene, la pantalla sigue funcionando sin ellas.
+  const [reservas, setReservas]   = useState<Reserva[]>([]);
+  const [modoReserva, setModoReserva] = useState(false);
+  const [reservaFecha, setReservaFecha] = useState(reservaInicial().fecha);
+  const [reservaHora, setReservaHora]   = useState(reservaInicial().hora);
+  const [reservaMin, setReservaMin]     = useState(reservaInicial().min);
+
   // Geocoding en vivo del origen en el formulario de nueva solicitud (el
   // destino ya no se geocodifica aca: siempre es el mismo hospital).
   const [geocodOrigen, setGeocodOrigen] = useState<{ lat: number; lng: number; direccion_formateada: string } | null>(null);
@@ -315,7 +401,10 @@ export default function SolicitudesCentralPage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const [r, m, f] = await Promise.all([getResumenCentral(), getMoviles(), getFilaBase()]);
+      const [r, m, f, rv] = await Promise.all([
+        getResumenCentral(), getMoviles(), getFilaBase(), getReservas().catch(() => [] as Reserva[]),
+      ]);
+      setReservas(rv);
       setResumen(r);
       setMoviles(m);
       setFilaBase(f.sort((a, b) => a.posicion - b.posicion));
@@ -334,7 +423,10 @@ export default function SolicitudesCentralPage() {
   useEffect(() => {
     const id = setInterval(async () => {
       try {
-        const [r, m, f] = await Promise.all([getResumenCentral(), getMoviles(), getFilaBase()]);
+        const [r, m, f, rv] = await Promise.all([
+        getResumenCentral(), getMoviles(), getFilaBase(), getReservas().catch(() => [] as Reserva[]),
+      ]);
+      setReservas(rv);
         setResumen(r);
         setMoviles(m);
         setFilaBase(f.sort((a, b) => a.posicion - b.posicion));
@@ -429,20 +521,43 @@ export default function SolicitudesCentralPage() {
         // El pasajero ya existia pero no tenia telefono registrado -- lo completamos.
         await actualizarTelefonoPasajero(pasajeroId, form.telefono);
       }
-      await createSolicitud({
-        origen: form.origen,
-        canal_entrada: form.canal_entrada as any,
-        observaciones: form.observaciones || null,
-        pasajero: pasajeroId ?? null,
-      });
+      if (modoReserva) {
+        // La hora se elige en hora local; el servidor la recibe en UTC.
+        const recogida = new Date(`${reservaFecha}T${reservaHora}:${reservaMin}:00`);
+        if (Number.isNaN(recogida.getTime())) { setFormError('Indica la fecha y la hora de recogida.'); setSaving(false); return; }
+        await crearReserva({
+          origen: form.origen,
+          fecha_hora_recogida: recogida.toISOString(),
+          pasajero: pasajeroId ?? null,
+          observaciones: form.observaciones || null,
+        });
+      } else {
+        await createSolicitud({
+          origen: form.origen,
+          canal_entrada: form.canal_entrada as any,
+          observaciones: form.observaciones || null,
+          pasajero: pasajeroId ?? null,
+        });
+      }
       setForm(EMPTY_FORM); setPasajeroEncontrado(null);
       setGeocodOrigen(null);
       setErrorGeocodOrigen(null);
       setShowForm(false);
       await load();
     } catch (err: any) {
-      setFormError(err?.response?.data?.detail ?? 'Error al crear la solicitud.');
+      setFormError(err?.response?.data?.detail ?? (modoReserva ? 'Error al crear la reserva.' : 'Error al crear la solicitud.'));
     } finally { setSaving(false); }
+  };
+
+  const handleCancelarReserva = async (r: Reserva) => {
+    const conductor = r.movil_patente ? ` El conductor ${r.movil_patente} será liberado.` : '';
+    if (!window.confirm(`¿Cancelar la reserva ${r.folio} de las ${formatoHora(r.fecha_hora_recogida)}?${conductor}`)) return;
+    try {
+      await cancelarReserva(r.id_reserva);
+      await load();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail ?? 'No se pudo cancelar la reserva.');
+    }
   };
 
   const handleAccion = async () => {
@@ -563,6 +678,8 @@ export default function SolicitudesCentralPage() {
             startIcon={<Plus size={16} />}
             onClick={() => {
               setShowForm(true); setForm(EMPTY_FORM); setPasajeroEncontrado(null); setFormError(null);
+              setModoReserva(false);
+              { const ini = reservaInicial(); setReservaFecha(ini.fecha); setReservaHora(ini.hora); setReservaMin(ini.min); }
               setGeocodOrigen(null); setErrorGeocodOrigen(null);
             }}
             sx={{
@@ -707,6 +824,23 @@ export default function SolicitudesCentralPage() {
                 }
               </FilaHorizontal>
             </Box>
+
+            <Box>
+              <ColumnHeader
+                icon={<CalendarClock size={13} color="#6fd0b0" />}
+                bg="rgba(47,158,120,.28)"
+                title="Reservas programadas"
+                count={countPill(reservas.length, 'rgba(47,158,120,.28)', '#6fd0b0')}
+              />
+              <FilaHorizontal>
+                {reservas.length === 0
+                  ? <EmptyHint text="Sin reservas programadas" />
+                  : reservas.map(r => (
+                      <ReservaCard key={r.id_reserva} reserva={r} onCancelar={handleCancelarReserva} />
+                    ))
+                }
+              </FilaHorizontal>
+            </Box>
           </Box>
         </>
       )}
@@ -723,7 +857,7 @@ export default function SolicitudesCentralPage() {
               <Plus size={18} color={colors.ink} />
             </Box>
             <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2 }}>Nueva solicitud</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2 }}>{modoReserva ? 'Nueva reserva' : 'Nueva solicitud'}</Typography>
               <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>Traslado a Hospital Félix Bulnes</Typography>
             </Box>
           </Box>
@@ -731,6 +865,18 @@ export default function SolicitudesCentralPage() {
         </DialogTitle>
         <Box component="form" onSubmit={handleCreate}>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.25, pt: 0 }}>
+            <ToggleButtonGroup
+              exclusive fullWidth size="small" value={modoReserva ? 'reserva' : 'ahora'}
+              onChange={(_, v: 'ahora' | 'reserva' | null) => { if (v) setModoReserva(v === 'reserva'); }}
+              sx={{
+                '& .MuiToggleButton-root': { textTransform: 'none', fontWeight: 600, py: 0.6 },
+                '& .Mui-selected': { bgcolor: `${colors.accent500} !important`, color: `${colors.ink} !important`, fontWeight: 700 },
+              }}
+            >
+              <ToggleButton value="ahora">Ahora</ToggleButton>
+              <ToggleButton value="reserva"><CalendarClock size={14} style={{ marginRight: 6 }} />Reservar para más tarde</ToggleButton>
+            </ToggleButtonGroup>
+
             <Box>
               <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', mb: 1 }}>
                 Datos del pasajero
@@ -846,6 +992,34 @@ export default function SolicitudesCentralPage() {
                   </Box>
                 )}
 
+                {modoReserva && (
+                  <Box>
+                    <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary', mb: 1 }}>
+                      Hora de recogida (24 h)
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <TextField
+                        size="small" type="date" label="Día" sx={{ flex: 1.6 }}
+                        value={reservaFecha} onChange={e => setReservaFecha(e.target.value)}
+                        slotProps={{
+                          inputLabel: { shrink: true },
+                          htmlInput: { min: aFechaLocal(new Date()), max: aFechaLocal(new Date(Date.now() + 24 * 60 * 60 * 1000)) },
+                        }}
+                      />
+                      <TextField select size="small" label="Hora" sx={{ flex: 1 }} value={reservaHora} onChange={e => setReservaHora(e.target.value)}>
+                        {HORAS.map(h => <MenuItem key={h} value={h}>{h}</MenuItem>)}
+                      </TextField>
+                      <TextField select size="small" label="Min" sx={{ flex: 1 }} value={reservaMin} onChange={e => setReservaMin(e.target.value)}>
+                        {MINUTOS.map(m => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+                      </TextField>
+                    </Box>
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>
+                      Con al menos 30 minutos de anticipación y hasta 24 horas adelante.
+                    </Typography>
+                  </Box>
+                )}
+
+                {!modoReserva && (
                 <TextField fullWidth select size="small" label="Canal de solicitud" value={form.canal_entrada}
                   onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
                   slotProps={{ input: { startAdornment: (
@@ -853,6 +1027,7 @@ export default function SolicitudesCentralPage() {
                   ) } }}>
                   {CANALES.map(c => <MenuItem key={c} value={c}>{c === 'TELEFONO' ? 'Teléfono' : 'Presencial (en la central)'}</MenuItem>)}
                 </TextField>
+                )}
 
                 <TextField fullWidth multiline rows={2} size="small" label="Observaciones (opcional)"
                   value={form.observaciones} onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
@@ -874,7 +1049,7 @@ export default function SolicitudesCentralPage() {
                 background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
                 '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
               }}>
-              {saving ? 'Guardando...' : 'Registrar Solicitud'}
+              {saving ? 'Guardando...' : (modoReserva ? 'Registrar reserva' : 'Registrar Solicitud')}
             </Button>
           </DialogActions>
         </Box>
