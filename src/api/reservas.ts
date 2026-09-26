@@ -52,3 +52,16 @@ export const cancelarReserva = (id: number, motivo?: string) =>
 // incumplio=true la registra como incumplimiento del conductor (no llego / no confirmo).
 export const liberarReserva = (id: number, incumplio: boolean, motivo?: string) =>
   apiClient.post<Reserva>(`/reservas/${id}/liberar/`, { incumplio, motivo }).then(r => r.data);
+
+// Registro por movil: cuantas veces no llego (lo registra Central al quitarle la
+// reserva) y cuantas soltó una reserva con menos de 2 h de anticipacion.
+export interface IncumplimientoConductor {
+  movil: number;
+  patente: string;
+  conductor: string;
+  no_llego: number;
+  soltadas_tarde: number;
+}
+
+export const getRegistroConductores = () =>
+  apiClient.get<IncumplimientoConductor[]>('/reservas/registro_conductores/').then(r => r.data);

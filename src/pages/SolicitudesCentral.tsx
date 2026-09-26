@@ -7,7 +7,7 @@ import {
 import {
   PhoneCall, Plus, RefreshCw, X, ChevronRight, ChevronLeft,
   Clock, Car, XCircle, History, PhoneMissed, MapPin, Navigation,
-  User, MessageSquare, Cross, Users, Calculator, CalendarClock,
+  User, MessageSquare, Cross, Users, Calculator, CalendarClock, ShieldAlert,
 } from 'lucide-react';
 import {
   getResumenCentral, getSolicitudes, createSolicitud,
@@ -24,6 +24,7 @@ import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
 import ClimaWidget from '../components/ClimaWidget';
 import CotizadorTarifa, { type EstadoCotizacion } from '../components/CotizadorTarifa';
+import RegistroIncumplimientos from '../components/RegistroIncumplimientos';
 import type { Cotizacion } from '../api/mapas';
 import { getReservas, crearReserva, cancelarReserva, liberarReserva, type Reserva } from '../api/reservas';
 import { useAuthStore } from '../store/authStore';
@@ -382,6 +383,7 @@ export default function SolicitudesCentralPage() {
   const [reservaHora, setReservaHora]   = useState(reservaInicial().hora);
   const [reservaMin, setReservaMin]     = useState(reservaInicial().min);
   const [liberando, setLiberando]       = useState<Reserva | null>(null);
+  const [verIncumplimientos, setVerIncumplimientos] = useState(false);
   const [liberarIncumplio, setLiberarIncumplio] = useState(false);
   const [liberarMotivo, setLiberarMotivo] = useState('');
   const esAdmin = useAuthStore(s => s.usuario?.rol) === 'Administrador';
@@ -691,8 +693,11 @@ export default function SolicitudesCentralPage() {
           {resumen && countPill(resumen.pendientes.length + resumen.en_curso.length, 'rgba(255,255,255,.14)', '#fff')}
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton onClick={load} sx={{ color: '#fff' }}>
+          <IconButton onClick={load} sx={{ color: '#fff' }} title="Actualizar">
             <RefreshCw size={16} />
+          </IconButton>
+          <IconButton onClick={() => setVerIncumplimientos(true)} sx={{ color: '#fff' }} title="Registro de incumplimientos">
+            <ShieldAlert size={16} />
           </IconButton>
           <Button
             variant="outlined"
@@ -883,6 +888,8 @@ export default function SolicitudesCentralPage() {
           </Box>
         </>
       )}
+
+      <RegistroIncumplimientos open={verIncumplimientos} onClose={() => setVerIncumplimientos(false)} />
 
       {/* Modal quitar conductor de una reserva */}
       <Dialog open={!!liberando} onClose={() => setLiberando(null)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
