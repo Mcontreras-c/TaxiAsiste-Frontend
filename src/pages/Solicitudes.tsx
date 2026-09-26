@@ -8,6 +8,7 @@ import {
   Modal, PageHeader, SearchInput, TableCell, TableRow,
 } from '../components/ui';
 
+import { formatoFechaHora } from '../utils/formatoFecha';
 const ESTADO_COLOR: Record<string, string> = {
   PENDIENTE:  'bg-orange-50 text-orange-700',
   ASIGNADO:   'bg-blue-50 text-blue-700',
@@ -169,7 +170,7 @@ export default function SolicitudesPage() {
                 <Badge className={ESTADO_COLOR[s.estado]}>{s.estado}</Badge>
               </TableCell>
               <TableCell className="text-slate-400 text-xs">
-                {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
+                {formatoFechaHora(s.fecha_hora)}
               </TableCell>
               <TableCell>
                 {TRANSICIONES[s.estado].length > 0 && (

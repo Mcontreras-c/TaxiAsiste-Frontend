@@ -18,6 +18,7 @@ import type { Socio } from '../types';
 import { sugerirEmail, sugerirUsername } from '../utils/sugerirCredenciales';
 import { colors } from '../theme';
 
+import { formatoFechaHora } from '../utils/formatoFecha';
 const POR_PAGINA = 6;
 const PASSWORD_MIN_LEN = 6;
 
@@ -49,7 +50,7 @@ const ROL_ICON: Record<string, React.ReactNode> = {
 
 function formatoUltimoAcceso(fecha: string | null) {
   return fecha
-    ? new Date(fecha).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })
+    ? formatoFechaHora(fecha)
     : 'Nunca ha ingresado';
 }
 

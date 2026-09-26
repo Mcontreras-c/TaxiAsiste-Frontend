@@ -14,6 +14,7 @@ import {
 } from '../api/agenda';
 import { colors } from '../theme';
 
+import { formatoFechaHora } from '../utils/formatoFecha';
 const FORM_VACIO: EventoAgendaInput = { titulo: '', descripcion: '', fecha_hora: '', lugar: '' };
 
 function formatoTamano(bytes: number | null) {
@@ -209,7 +210,7 @@ export default function AgendaPage() {
                   <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: '#a89f8f' }}>
                       <Clock size={13} />
-                      {new Date(e.fecha_hora).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })}
+                      {formatoFechaHora(e.fecha_hora, 'medium')}
                     </Box>
                     {e.lugar && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: '#a89f8f' }}>
