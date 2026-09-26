@@ -12,6 +12,7 @@ import { colors } from '../theme';
 import { getPerfilConductor } from '../api/conductor';
 import { getLinkDescargaApp } from '../api/app';
 import CambiarPasswordDialog from './CambiarPasswordDialog';
+import PerfilDialog from './PerfilDialog';
 import logo from '../assets/logo.jpg';
 
 const ROL_LABEL: Record<Rol, string> = {
@@ -28,6 +29,7 @@ const DRAWER_CLOSED = 72;
 export default function Layout() {
   const [open, setOpen] = useState(true);
   const [cambiarPassOpen, setCambiarPassOpen] = useState(false);
+  const [perfilOpen, setPerfilOpen] = useState(false);
   const { usuario, logout } = useAuthStore();
   const conexionInestable = useConnectionStore((s) => s.estado === 'inestable');
   const navigate = useNavigate();
@@ -210,14 +212,19 @@ export default function Layout() {
 
         <Divider sx={{ borderColor: 'rgba(255,255,255,.14)' }} />
         <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Avatar sx={{
-            width: 34, height: 34, fontSize: 13, fontWeight: 700, color: colors.ink,
-            background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
-          }}>
+          <Avatar
+            onClick={() => setPerfilOpen(true)} title="Mi perfil"
+            sx={{
+              width: 34, height: 34, fontSize: 13, fontWeight: 700, color: colors.ink, cursor: 'pointer',
+              background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
+            }}>
             {initials}
           </Avatar>
           {open && (
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box
+              onClick={() => setPerfilOpen(true)} title="Mi perfil"
+              sx={{ flex: 1, minWidth: 0, cursor: 'pointer', '&:hover p:first-of-type': { textDecoration: 'underline' } }}
+            >
               <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {usuario?.username}
               </Typography>
@@ -236,6 +243,7 @@ export default function Layout() {
       </Drawer>
 
       <CambiarPasswordDialog open={cambiarPassOpen} onClose={() => setCambiarPassOpen(false)} />
+      <PerfilDialog open={perfilOpen} onClose={() => setPerfilOpen(false)} onCambiarClave={() => setCambiarPassOpen(true)} />
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AppBar
