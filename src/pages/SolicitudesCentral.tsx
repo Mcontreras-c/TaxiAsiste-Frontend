@@ -26,6 +26,7 @@ import ClimaWidget from '../components/ClimaWidget';
 import CotizadorTarifa, { type EstadoCotizacion } from '../components/CotizadorTarifa';
 import type { Cotizacion } from '../api/mapas';
 
+import { formatoHora, formatoFechaHora } from '../utils/formatoFecha';
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
   ASIGNADO:   { bg: '#e8ecf9', fg: '#3355a8' },
@@ -179,7 +180,7 @@ function SolicitudCard({
           </Box>
         )}
         <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,.4)' }}>
-          {new Date(sol.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+          {formatoHora(sol.fecha_hora)}
         </Typography>
         {sol.estado !== 'COMPLETADO' && sol.estado !== 'CANCELADO' && (
           <Box sx={{ display: 'flex', gap: 0.5, pt: 0.25 }}>
@@ -1013,7 +1014,7 @@ export default function SolicitudesCentralPage() {
                     {s.observaciones ?? '—'}
                   </Typography>
                   <Typography sx={{ fontSize: 11, color: '#a89f8f', textAlign: { sm: 'right' } }}>
-                    {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
+                    {formatoFechaHora(s.fecha_hora)}
                   </Typography>
                 </Box>
               ))}

@@ -5,6 +5,7 @@ import { getSolicitudes } from '../api/solicitudes';
 import type { Solicitud } from '../types';
 import { exportarAExcel } from '../utils/exportarExcel';
 
+import { formatoHora, formatoFechaHora } from '../utils/formatoFecha';
 const ESTADO_COLOR: Record<string, string> = {
   PENDIENTE:  '#c2410c',
   ASIGNADO:   '#3355a8',
@@ -135,7 +136,7 @@ export default function ReportesCentralPage() {
         destino: s.destino,
         estado: ESTADO_LABEL[s.estado] ?? s.estado,
         canal: s.canal_entrada,
-        hora: new Date(s.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+        hora: formatoHora(s.fecha_hora),
       })),
     }]);
   };
@@ -237,7 +238,7 @@ export default function ReportesCentralPage() {
                       <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 12, color: 'text.secondary' }}>{s.folio}</TableCell>
                       <TableCell sx={{ fontSize: 13 }}>{s.origen} → {s.destino}</TableCell>
                       <TableCell sx={{ fontSize: 12, color: '#a89f8f' }}>
-                        {new Date(s.fecha_hora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}
+                        {formatoFechaHora(s.fecha_hora)}
                       </TableCell>
                     </TableRow>
                   ))}

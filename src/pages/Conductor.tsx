@@ -7,6 +7,7 @@ import { Car, RefreshCw, CheckCircle, XCircle, Clock, PhoneCall, BarChart3, MapP
 import { getPerfilConductor, type PerfilConductor } from '../api/conductor';
 import { colors } from '../theme';
 
+import { formatoHora } from '../utils/formatoFecha';
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
   PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
   ASIGNADO:   { bg: '#e8ecf9', fg: '#3355a8' },
@@ -186,7 +187,7 @@ export default function ConductorPage() {
                       <Chip label={s.estado} size="small" sx={{ bgcolor: ESTADO_STYLE[s.estado]?.bg, color: ESTADO_STYLE[s.estado]?.fg, fontWeight: 700, fontSize: 10.5 }} />
                     </TableCell>
                     <TableCell sx={{ fontSize: 12, color: '#a89f8f' }}>
-                      {new Date(s.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                      {formatoHora(s.fecha_hora)}
                     </TableCell>
                   </TableRow>
                 ))}
