@@ -72,3 +72,10 @@ export const resetearPassword = (idUsuario: number, passwordNueva: string) =>
 // Genera una clave nueva y se la manda por correo al usuario (nunca vuelve en la respuesta).
 export const reenviarCredenciales = (idUsuario: number) =>
   apiClient.post<{ detail: string }>(`/usuarios/${idUsuario}/reenviar_credenciales/`).then(r => r.data);
+
+// Baja = INACTIVO (nunca se borra, para conservar el historial). Solo Administrador.
+export const darDeBajaUsuario = (idUsuario: number) =>
+  apiClient.post<UsuarioCuenta>(`/usuarios/${idUsuario}/dar_de_baja/`).then(r => r.data);
+
+export const reactivarUsuario = (idUsuario: number) =>
+  apiClient.post<UsuarioCuenta>(`/usuarios/${idUsuario}/reactivar/`).then(r => r.data);

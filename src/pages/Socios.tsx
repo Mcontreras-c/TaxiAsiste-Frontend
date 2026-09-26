@@ -6,14 +6,17 @@ import {
 } from '@mui/material';
 import {
   Users, Plus, AlertTriangle, X, Search, Phone, MapPin,
-  Car, ChevronDown, ChevronRight, Lock, Unlock, Pencil, Check, Download,
+  Car, ChevronDown, ChevronRight, Lock, Unlock, Pencil, Check, Download, UserX, UserCheck,
 } from 'lucide-react';
 import { exportarAExcel } from '../utils/exportarExcel';
-import { getSocios, createSocio, updateSocio, desbloquearSocio, bloquearSocio } from '../api/socios';
+import {
+  getSocios, createSocio, updateSocio, desbloquearSocio, bloquearSocio, darDeBajaSocio, reactivarSocio,
+} from '../api/socios';
 import { getMoviles, createMovil, updateMovil } from '../api/moviles';
 import type { Socio, Movil } from '../types';
 import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
+import ConfirmarBajaDialog from '../components/ConfirmarBajaDialog';
 import { useAuthStore } from '../store/authStore';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -273,6 +276,12 @@ export default function SociosPage() {
   const [formError, setFormError]   = useState<string | null>(null);
   const [desbloqueando, setDesbloqueando] = useState<number | null>(null);
   const [bloqueando, setBloqueando] = useState<number | null>(null);
+  // Los inactivos (dados de baja) quedan ocultos salvo que se pida verlos.
+  const [verInactivos, setVerInactivos] = useState(false);
+  const [socioBaja, setSocioBaja] = useState<Socio | null>(null);
+  const [bajando, setBajando] = useState(false);
+  const [errorBaja, setErrorBaja] = useState<string | null>(null);
+  const [reactivando, setReactivando] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -290,14 +299,43 @@ export default function SociosPage() {
 
   useEffect(() => { load(); }, []);
 
-  const filtered = socios.filter(s =>
+  const totalInactivos = socios.filter(s => s.estado_socio === 'INACTIVO').length;
+  const activos = socios.filter(s => s.estado_socio !== 'INACTIVO');
+
+  const filtered = (verInactivos ? socios : activos).filter(s =>
     `${s.nombre} ${s.apellido} ${s.rut}`.toLowerCase().includes(search.toLowerCase())
   );
 
+  const confirmarBaja = async () => {
+    if (!socioBaja) return;
+    setBajando(true); setErrorBaja(null);
+    try {
+      await darDeBajaSocio(socioBaja.id_socio);
+      setSocioBaja(null);
+      await load();
+    } catch (err: any) {
+      setErrorBaja(err?.response?.data?.detail ?? 'No se pudo dar de baja al socio.');
+    } finally {
+      setBajando(false);
+    }
+  };
+
+  const reactivar = async (s: Socio) => {
+    setReactivando(s.id_socio); setError(null);
+    try {
+      await reactivarSocio(s.id_socio);
+      await load();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? 'No se pudo reactivar al socio.');
+    } finally {
+      setReactivando(null);
+    }
+  };
+
   const movilDe = (idSocio: number) => moviles.find(m => m.socio === idSocio);
 
-  const morosos = socios.filter(s => (s.cuotas_vencidas ?? 0) > 0).length;
-  const totalVencidas = socios.reduce((acc, s) => acc + (s.cuotas_vencidas ?? 0), 0);
+  const morosos = activos.filter(s => (s.cuotas_vencidas ?? 0) > 0).length;
+  const totalVencidas = activos.reduce((acc, s) => acc + (s.cuotas_vencidas ?? 0), 0);
 
   const exportar = () => {
     exportarAExcel('TaxiAsiste_Socios', [{
@@ -423,7 +461,7 @@ export default function SociosPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Users size={22} color="#3a3327" />
           <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Socios</Typography>
-          <Chip label={socios.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+          <Chip label={activos.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button variant="outlined" startIcon={<Download size={15} />} onClick={exportar}
@@ -441,7 +479,7 @@ export default function SociosPage() {
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>
         <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{socios.length}</Typography>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{activos.length}</Typography>
           <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5 }}>Total socios</Typography>
         </CardContent></Card>
         <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
@@ -454,12 +492,27 @@ export default function SociosPage() {
         </CardContent></Card>
       </Box>
 
-      <TextField
-        size="small" placeholder="Buscar por nombre o RUT..." value={search}
-        onChange={e => setSearch(e.target.value)}
-        sx={{ maxWidth: 360, bgcolor: 'background.paper', borderRadius: 2 }}
-        slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={16} color="#a89f8f" /></InputAdornment> } }}
-      />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+        <TextField
+          size="small" placeholder="Buscar por nombre o RUT..." value={search}
+          onChange={e => setSearch(e.target.value)}
+          sx={{ flex: 1, minWidth: 220, maxWidth: 360, bgcolor: 'background.paper', borderRadius: 2 }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={16} color="#a89f8f" /></InputAdornment> } }}
+        />
+        {(totalInactivos > 0 || verInactivos) && (
+          <Chip
+            icon={<UserX size={13} />}
+            label={`Ver inactivos (${totalInactivos})`}
+            onClick={() => setVerInactivos(v => !v)}
+            sx={{
+              fontWeight: 600,
+              bgcolor: verInactivos ? colors.ink : '#f1efe9',
+              color: verInactivos ? '#fff' : 'text.secondary',
+              '& .MuiChip-icon': { color: verInactivos ? '#fff' : '#6b6152' },
+            }}
+          />
+        )}
+      </Box>
 
       {error && <Alert severity="error">{error}</Alert>}
 
@@ -480,7 +533,7 @@ export default function SociosPage() {
             <>
               <Box sx={{
                 display: { xs: 'none', md: 'grid' },
-                gridTemplateColumns: '28px 2fr 1.3fr 1.6fr 110px 100px 170px 180px',
+                gridTemplateColumns: '28px 2fr 1.3fr 1.6fr 110px 100px 170px 220px',
                 gap: 1.5, px: 2.5, pb: 0.5,
               }}>
                 {['', 'Socio', 'Teléfono', 'Dirección', 'Estado', 'Ingreso', 'Cuotas', ''].map((h, i) => (
@@ -498,7 +551,7 @@ export default function SociosPage() {
                       onClick={() => setExpandido(abierto ? null : s.id_socio)}
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: { xs: '28px 1fr 40px', md: '28px 2fr 1.3fr 1.6fr 110px 100px 170px 180px' },
+                        gridTemplateColumns: { xs: '28px 1fr 40px', md: '28px 2fr 1.3fr 1.6fr 110px 100px 170px 220px' },
                         alignItems: 'center', gap: 1.5,
                         bgcolor: 'background.paper',
                         border: '1px solid', borderColor: abierto ? colors.accent500 : 'divider',
@@ -568,7 +621,19 @@ export default function SociosPage() {
                       </Box>
 
                       <Box sx={{ display: 'flex', gap: 0.75 }}>
-                        {s.estado_socio === 'BLOQUEADO' ? (
+                        {s.estado_socio === 'INACTIVO' ? (
+                          puedeEditar && (
+                            <Button
+                              size="small" variant="outlined" color="success"
+                              disabled={reactivando === s.id_socio}
+                              onClick={e => { e.stopPropagation(); reactivar(s); }}
+                              startIcon={<UserCheck size={13} />}
+                              sx={{ fontSize: 11, whiteSpace: 'nowrap' }}
+                            >
+                              Reactivar
+                            </Button>
+                          )
+                        ) : s.estado_socio === 'BLOQUEADO' ? (
                           <Button
                             size="small" variant="outlined" color="success"
                             disabled={desbloqueando === s.id_socio}
@@ -595,6 +660,15 @@ export default function SociosPage() {
                             sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
                           >
                             <Pencil size={13} />
+                          </IconButton>
+                        )}
+                        {puedeEditar && s.estado_socio !== 'INACTIVO' && (
+                          <IconButton
+                            size="small" title="Dar de baja"
+                            onClick={e => { e.stopPropagation(); setErrorBaja(null); setSocioBaja(s); }}
+                            sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', color: '#c0392b' }}
+                          >
+                            <UserX size={13} />
                           </IconButton>
                         )}
                       </Box>
@@ -669,6 +743,21 @@ export default function SociosPage() {
           </DialogActions>
         </Box>
       </Dialog>
+
+      <ConfirmarBajaDialog
+        open={!!socioBaja}
+        titulo={socioBaja ? `¿Dar de baja a ${socioBaja.nombre_completo}?` : ''}
+        detalles={[
+          'Queda inactivo con fecha de egreso de hoy.',
+          'Su cuenta de acceso y su móvil quedan inactivos, y sale de la fila virtual.',
+          'No se borra nada: se conserva el historial de viajes, cuotas y pagos.',
+          'Puedes reactivarlo cuando quieras.',
+        ]}
+        loading={bajando}
+        error={errorBaja}
+        onConfirmar={confirmarBaja}
+        onClose={() => setSocioBaja(null)}
+      />
     </Box>
   );
 }

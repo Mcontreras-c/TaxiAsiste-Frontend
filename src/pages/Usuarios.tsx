@@ -7,12 +7,15 @@ import {
 import {
   UserCog, RefreshCw, KeyRound, X, Check, User, Shield, PhoneCall, DollarSign,
   ClipboardList, Truck, Flag, Mail, Clock, Search, Plus, Lock, Car, Briefcase,
-  ArrowLeft, Eye, EyeOff, Send, Pencil,
+  ArrowLeft, Eye, EyeOff, Send, Pencil, UserX, UserCheck,
 } from 'lucide-react';
 import {
   getUsuarios, getRoles, crearUsuario, resetearPassword, updateUsuario, reenviarCredenciales,
+  darDeBajaUsuario, reactivarUsuario,
   type UsuarioCuenta, type RolCuenta,
 } from '../api/usuarios';
+import ConfirmarBajaDialog from '../components/ConfirmarBajaDialog';
+import { useAuthStore } from '../store/authStore';
 import { getSocios } from '../api/socios';
 import type { Socio } from '../types';
 import { sugerirEmail, sugerirUsername } from '../utils/sugerirCredenciales';
@@ -670,6 +673,13 @@ export default function UsuariosPage() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('Todos');
   const [pagina, setPagina] = useState(1);
+  const { usuario: yo } = useAuthStore();
+  // Los inactivos (dados de baja) quedan ocultos salvo que se pida verlos.
+  const [verInactivos, setVerInactivos] = useState(false);
+  const [modalBaja, setModalBaja] = useState<UsuarioCuenta | null>(null);
+  const [bajando, setBajando] = useState(false);
+  const [errorBaja, setErrorBaja] = useState<string | null>(null);
+  const [reactivando, setReactivando] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true); setError(null);
@@ -683,19 +693,51 @@ export default function UsuariosPage() {
 
   useEffect(() => { load(); }, []);
 
+  const totalInactivos = useMemo(() => usuarios.filter(u => u.estado === 'INACTIVO').length, [usuarios]);
+  const listados = useMemo(
+    () => (verInactivos ? usuarios : usuarios.filter(u => u.estado !== 'INACTIVO')),
+    [usuarios, verInactivos]
+  );
+
   const rolesPresentes = useMemo(
-    () => Array.from(new Set(usuarios.map(u => u.rol.nombre_rol))),
-    [usuarios]
+    () => Array.from(new Set(listados.map(u => u.rol.nombre_rol))),
+    [listados]
   );
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    return usuarios.filter(u => {
+    return listados.filter(u => {
       if (filtroRol !== 'Todos' && u.rol.nombre_rol !== filtroRol) return false;
       if (!q) return true;
       return u.nombre_completo.toLowerCase().includes(q) || u.username.toLowerCase().includes(q);
     });
-  }, [usuarios, busqueda, filtroRol]);
+  }, [listados, busqueda, filtroRol]);
+
+  const confirmarBaja = async () => {
+    if (!modalBaja) return;
+    setBajando(true); setErrorBaja(null);
+    try {
+      await darDeBajaUsuario(modalBaja.id_usuario);
+      setModalBaja(null);
+      await load();
+    } catch (err: any) {
+      setErrorBaja(err?.response?.data?.detail ?? 'No se pudo dar de baja al usuario.');
+    } finally {
+      setBajando(false);
+    }
+  };
+
+  const reactivar = async (u: UsuarioCuenta) => {
+    setReactivando(u.id_usuario); setError(null);
+    try {
+      await reactivarUsuario(u.id_usuario);
+      await load();
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? 'No se pudo reactivar al usuario.');
+    } finally {
+      setReactivando(null);
+    }
+  };
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
   const paginaSegura = Math.min(pagina, totalPaginas);
@@ -710,7 +752,7 @@ export default function UsuariosPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
             <UserCog size={22} color="#3a3327" />
             <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Usuarios y accesos</Typography>
-            <Chip label={usuarios.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+            <Chip label={usuarios.length - totalInactivos} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
             <Chip
               icon={<Lock size={12} />} label="Solo Administrador" size="small"
               sx={{ bgcolor: '#fdf1dc', color: colors.accent700, fontWeight: 700, fontSize: 11 }}
@@ -750,7 +792,7 @@ export default function UsuariosPage() {
           ) } }}
         />
         <Chip
-          label={`Todos ${usuarios.length}`} onClick={() => setFiltroRol('Todos')}
+          label={`Todos ${listados.length}`} onClick={() => setFiltroRol('Todos')}
           sx={{
             fontWeight: 700, bgcolor: filtroRol === 'Todos' ? colors.ink : '#f1efe9',
             color: filtroRol === 'Todos' ? '#fff' : 'text.secondary',
@@ -765,6 +807,19 @@ export default function UsuariosPage() {
             }}
           />
         ))}
+        {(totalInactivos > 0 || verInactivos) && (
+          <Chip
+            icon={<UserX size={13} />}
+            label={`Ver inactivos (${totalInactivos})`}
+            onClick={() => { setVerInactivos(v => !v); setFiltroRol('Todos'); }}
+            sx={{
+              ml: 'auto', fontWeight: 600,
+              bgcolor: verInactivos ? colors.ink : '#f1efe9',
+              color: verInactivos ? '#fff' : 'text.secondary',
+              '& .MuiChip-icon': { color: verInactivos ? '#fff' : '#6b6152' },
+            }}
+          />
+        )}
       </Box>
 
       {loading ? (
@@ -779,7 +834,7 @@ export default function UsuariosPage() {
             {visibles.map(u => {
               const tint = ROL_TINT[u.rol.nombre_rol] ?? { bg: '#f1efe9', fg: '#6b6152' };
               return (
-                <Card key={u.id_usuario} sx={{ borderRadius: 4 }}>
+                <Card key={u.id_usuario} sx={{ borderRadius: 4, opacity: u.estado === 'INACTIVO' ? 0.72 : 1 }}>
                   <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <Box sx={{
@@ -818,25 +873,45 @@ export default function UsuariosPage() {
                     </Box>
 
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1.5, mt: 0.5 }}>
-                      <Button
-                        size="small" onClick={() => setModalEditar(u)} startIcon={<Pencil size={12} />}
-                        sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', px: 0 }}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        size="small" onClick={() => setModalReset(u)} startIcon={<KeyRound size={13} />}
-                        sx={{ fontSize: 12, fontWeight: 700, color: colors.ink, px: 0 }}
-                      >
-                        Resetear clave
-                      </Button>
-                      <Button
-                        size="small" onClick={() => setModalReenviar(u)} startIcon={<Send size={12} />}
-                        disabled={!u.email} title={u.email ? 'Generar clave nueva y enviarla por correo' : 'Este usuario no tiene correo'}
-                        sx={{ fontSize: 12, fontWeight: 700, color: '#2f7d5b', px: 0 }}
-                      >
-                        Reenviar credenciales
-                      </Button>
+                      {u.estado === 'INACTIVO' ? (
+                        <Button
+                          size="small" onClick={() => reactivar(u)} disabled={reactivando === u.id_usuario}
+                          startIcon={<UserCheck size={13} />}
+                          sx={{ fontSize: 12, fontWeight: 700, color: '#2f7d5b', px: 0 }}
+                        >
+                          Reactivar
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            size="small" onClick={() => setModalEditar(u)} startIcon={<Pencil size={12} />}
+                            sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', px: 0 }}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            size="small" onClick={() => setModalReset(u)} startIcon={<KeyRound size={13} />}
+                            sx={{ fontSize: 12, fontWeight: 700, color: colors.ink, px: 0 }}
+                          >
+                            Resetear clave
+                          </Button>
+                          <Button
+                            size="small" onClick={() => setModalReenviar(u)} startIcon={<Send size={12} />}
+                            disabled={!u.email} title={u.email ? 'Generar clave nueva y enviarla por correo' : 'Este usuario no tiene correo'}
+                            sx={{ fontSize: 12, fontWeight: 700, color: '#2f7d5b', px: 0 }}
+                          >
+                            Reenviar credenciales
+                          </Button>
+                          {u.id_usuario !== yo?.id_usuario && (
+                            <Button
+                              size="small" onClick={() => { setErrorBaja(null); setModalBaja(u); }} startIcon={<UserX size={13} />}
+                              sx={{ fontSize: 12, fontWeight: 700, color: '#c0392b', px: 0 }}
+                            >
+                              Dar de baja
+                            </Button>
+                          )}
+                        </>
+                      )}
                     </Box>
                   </CardContent>
                 </Card>
@@ -858,6 +933,22 @@ export default function UsuariosPage() {
         </>
       )}
 
+      <ConfirmarBajaDialog
+        open={!!modalBaja}
+        titulo={modalBaja ? `¿Dar de baja a ${modalBaja.nombre_completo}?` : ''}
+        detalles={[
+          'No podrá iniciar sesión y su sesión actual se cierra de inmediato.',
+          'La cuenta no se borra: se conserva todo su historial de viajes y pagos.',
+          ...(modalBaja?.rol.nombre_rol === 'Conductor'
+            ? ['Como es conductor, también quedan inactivos su socio y su móvil, y sale de la fila virtual.']
+            : []),
+          'Puedes reactivarla cuando quieras.',
+        ]}
+        loading={bajando}
+        error={errorBaja}
+        onConfirmar={confirmarBaja}
+        onClose={() => setModalBaja(null)}
+      />
       {modalReenviar && <ModalReenviar usuario={modalReenviar} onClose={() => setModalReenviar(null)} />}
       {modalReset && <ModalResetear usuario={modalReset} onClose={() => { setModalReset(null); load(); }} />}
       {modalEditar && (
