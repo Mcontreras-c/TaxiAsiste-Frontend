@@ -79,3 +79,24 @@ export const darDeBajaUsuario = (idUsuario: number) =>
 
 export const reactivarUsuario = (idUsuario: number) =>
   apiClient.post<UsuarioCuenta>(`/usuarios/${idUsuario}/reactivar/`).then(r => r.data);
+
+// Perfil de la propia cuenta (GET/PATCH /usuarios/mi_perfil/). El servidor solo
+// deja cambiar correo (con la clave actual) y telefono.
+export interface PerfilUsuario {
+  id_usuario: number;
+  username: string;
+  rol: string;
+  nombre: string | null;
+  apellido: string | null;
+  nombre_completo: string;
+  rut: string | null;
+  email: string | null;
+  telefono: string | null;
+  es_socio: boolean;
+}
+
+export const getMiPerfil = () =>
+  apiClient.get<PerfilUsuario>('/usuarios/mi_perfil/').then(r => r.data);
+
+export const actualizarMiPerfil = (data: { email?: string; telefono?: string | null; password_actual?: string }) =>
+  apiClient.patch<PerfilUsuario>('/usuarios/mi_perfil/', data).then(r => r.data);

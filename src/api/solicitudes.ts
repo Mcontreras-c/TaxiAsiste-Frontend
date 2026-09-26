@@ -30,3 +30,11 @@ export const createPasajero = (data: { rut: string; nombre: string; apellido: st
 
 export const actualizarTelefonoPasajero = (id: number, telefono: string) =>
   apiClient.patch<Pasajero>(`/pasajeros/${id}/`, { telefono }).then(r => r.data);
+
+// Solo un Administrador: reinicia los incumplimientos y permite pedir moviles a domicilio otra vez.
+export const levantarBloqueoPasajero = (id: number) =>
+  apiClient.post<Pasajero>(`/pasajeros/${id}/levantar_bloqueo/`).then(r => r.data);
+
+// Pasajeros que no se presentaron a alguna reserva (bloqueados primero).
+export const getPasajerosConIncumplimientos = () =>
+  apiClient.get<Pasajero[]>('/pasajeros/con_incumplimientos/').then(r => r.data);

@@ -4,13 +4,15 @@ import {
   Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
   Avatar, Typography, AppBar, Toolbar, Divider, Breadcrumbs, Link as MLink, Chip,
 } from '@mui/material';
-import { LogOut, Menu, PanelLeftClose, ChevronRight, WifiOff, User, ListOrdered, Bell, KeyRound } from 'lucide-react';
+import { LogOut, Menu, PanelLeftClose, ChevronRight, WifiOff, User, ListOrdered, Bell, KeyRound, Smartphone } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useConnectionStore } from '../store/connectionStore';
 import { NAV_ITEMS, type Rol } from '../config/permisos';
 import { colors } from '../theme';
 import { getPerfilConductor } from '../api/conductor';
+import { getLinkDescargaApp } from '../api/app';
 import CambiarPasswordDialog from './CambiarPasswordDialog';
+import PerfilDialog from './PerfilDialog';
 import logo from '../assets/logo.jpg';
 
 const ROL_LABEL: Record<Rol, string> = {
@@ -27,6 +29,7 @@ const DRAWER_CLOSED = 72;
 export default function Layout() {
   const [open, setOpen] = useState(true);
   const [cambiarPassOpen, setCambiarPassOpen] = useState(false);
+  const [perfilOpen, setPerfilOpen] = useState(false);
   const { usuario, logout } = useAuthStore();
   const conexionInestable = useConnectionStore((s) => s.estado === 'inestable');
   const navigate = useNavigate();
@@ -46,6 +49,12 @@ export default function Layout() {
       .then(p => setPerfilConductor({ nombre: `${p.socio.nombre} ${p.socio.apellido}`, rut: p.socio.rut }))
       .catch(() => {});
   }, [esConductor]);
+
+  // Link del APK (lo define el servidor). Si no hay uno publicado, no se muestra el boton.
+  const [linkApp, setLinkApp] = useState<string | null>(null);
+  useEffect(() => {
+    getLinkDescargaApp().then(setLinkApp).catch(() => setLinkApp(null));
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -179,16 +188,43 @@ export default function Layout() {
           )}
         </Box>
 
+        {linkApp && (
+          <Box sx={{ px: 1.25, pb: 1 }}>
+            <ListItemButton
+              component="a"
+              href={linkApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={!open ? 'Descargar app' : undefined}
+              sx={{
+                borderRadius: 2.5, py: 1.1, color: 'rgba(255,255,255,.78)',
+                bgcolor: 'rgba(255,255,255,.08)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,.16)', color: '#fff' },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 0, mr: open ? 1.5 : 'auto', color: 'inherit', justifyContent: 'center' }}>
+                <Smartphone size={19} />
+              </ListItemIcon>
+              {open && <ListItemText slotProps={{ primary: { sx: { fontSize: 14, fontWeight: 500 } } }}>Descargar app</ListItemText>}
+            </ListItemButton>
+          </Box>
+        )}
+
         <Divider sx={{ borderColor: 'rgba(255,255,255,.14)' }} />
         <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Avatar sx={{
-            width: 34, height: 34, fontSize: 13, fontWeight: 700, color: colors.ink,
-            background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
-          }}>
+          <Avatar
+            onClick={() => setPerfilOpen(true)} title="Mi perfil"
+            sx={{
+              width: 34, height: 34, fontSize: 13, fontWeight: 700, color: colors.ink, cursor: 'pointer',
+              background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`,
+            }}>
             {initials}
           </Avatar>
           {open && (
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box
+              onClick={() => setPerfilOpen(true)} title="Mi perfil"
+              sx={{ flex: 1, minWidth: 0, cursor: 'pointer', '&:hover p:first-of-type': { textDecoration: 'underline' } }}
+            >
               <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {usuario?.username}
               </Typography>
@@ -207,6 +243,7 @@ export default function Layout() {
       </Drawer>
 
       <CambiarPasswordDialog open={cambiarPassOpen} onClose={() => setCambiarPassOpen(false)} />
+      <PerfilDialog open={perfilOpen} onClose={() => setPerfilOpen(false)} onCambiarClave={() => setCambiarPassOpen(true)} />
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AppBar
