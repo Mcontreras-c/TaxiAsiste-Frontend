@@ -73,6 +73,13 @@ export const resetearPassword = (idUsuario: number, passwordNueva: string) =>
 export const reenviarCredenciales = (idUsuario: number) =>
   apiClient.post<{ detail: string }>(`/usuarios/${idUsuario}/reenviar_credenciales/`).then(r => r.data);
 
+// Baja = INACTIVO (nunca se borra, para conservar el historial). Solo Administrador.
+export const darDeBajaUsuario = (idUsuario: number) =>
+  apiClient.post<UsuarioCuenta>(`/usuarios/${idUsuario}/dar_de_baja/`).then(r => r.data);
+
+export const reactivarUsuario = (idUsuario: number) =>
+  apiClient.post<UsuarioCuenta>(`/usuarios/${idUsuario}/reactivar/`).then(r => r.data);
+
 // Perfil de la propia cuenta (GET/PATCH /usuarios/mi_perfil/). El servidor solo
 // deja cambiar correo (con la clave actual) y telefono.
 export interface PerfilUsuario {

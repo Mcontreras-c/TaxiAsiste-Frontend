@@ -20,3 +20,10 @@ export const bloquearSocio = (idSocio: number, motivo: string, tipoBloqueo?: str
   apiClient.post<{ message: string; estado_socio: string }>(
     `/socios/${idSocio}/bloquear/`, { motivo, tipo_bloqueo: tipoBloqueo },
   ).then(r => r.data);
+
+// Baja = socio, cuenta y movil INACTIVOS y fuera de la fila (nunca se borra). Solo Administrador.
+export const darDeBajaSocio = (idSocio: number) =>
+  apiClient.post<Socio>(`/socios/${idSocio}/dar_de_baja/`).then(r => r.data);
+
+export const reactivarSocio = (idSocio: number) =>
+  apiClient.post<Socio>(`/socios/${idSocio}/reactivar/`).then(r => r.data);
