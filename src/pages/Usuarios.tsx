@@ -7,7 +7,7 @@ import {
 import {
   UserCog, RefreshCw, KeyRound, X, Check, User, Shield, PhoneCall, DollarSign,
   ClipboardList, Truck, Flag, Mail, Clock, Search, Plus, Lock,
-  Eye, EyeOff, Send, Pencil, UserX, UserCheck,
+  Eye, EyeOff, Send, Pencil, UserX, UserCheck, History,
 } from 'lucide-react';
 import {
   getUsuarios, getRoles, resetearPassword, updateUsuario, reenviarCredenciales,
@@ -16,6 +16,7 @@ import {
 } from '../api/usuarios';
 import ConfirmarBajaDialog from '../components/ConfirmarBajaDialog';
 import NuevaPersonaDialog from '../components/NuevaPersonaDialog';
+import HistorialDialog from '../components/HistorialDialog';
 import { useAuthStore } from '../store/authStore';
 import { colors } from '../theme';
 
@@ -278,6 +279,7 @@ export default function UsuariosPage() {
   const [modalEditar, setModalEditar] = useState<UsuarioCuenta | null>(null);
   const [modalReenviar, setModalReenviar] = useState<UsuarioCuenta | null>(null);
   const [modalCrear, setModalCrear] = useState(false);
+  const [historial, setHistorial] = useState<{ usuarioId?: number; titulo: string } | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroRol, setFiltroRol] = useState<string>('Todos');
   const [pestana, setPestana] = useState<'conductores' | 'personal'>('conductores');
@@ -381,6 +383,13 @@ export default function UsuariosPage() {
             sx={{ color: colors.ink, bgcolor: colors.accent500, '&:hover': { bgcolor: colors.accent600 }, fontWeight: 700 }}
           >
             Nueva persona
+          </Button>
+          <Button
+            variant="outlined" startIcon={<History size={15} />}
+            onClick={() => setHistorial({ titulo: 'Registro de actividad' })}
+            sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}
+          >
+            Actividad
           </Button>
           <IconButton onClick={load} sx={{ color: 'text.secondary', border: '1px solid', borderColor: 'divider' }}>
             <RefreshCw size={16} />
@@ -524,6 +533,13 @@ export default function UsuariosPage() {
                           >
                             Reenviar credenciales
                           </Button>
+                          <Button
+                            size="small" onClick={() => setHistorial({ usuarioId: u.id_usuario, titulo: `Historial de ${u.nombre_completo}` })}
+                            startIcon={<History size={12} />}
+                            sx={{ fontSize: 12, fontWeight: 700, color: 'text.secondary', px: 0 }}
+                          >
+                            Historial
+                          </Button>
                           {u.id_usuario !== yo?.id_usuario && (
                             <Button
                               size="small" onClick={() => { setErrorBaja(null); setModalBaja(u); }} startIcon={<UserX size={13} />}
@@ -570,6 +586,10 @@ export default function UsuariosPage() {
         error={errorBaja}
         onConfirmar={confirmarBaja}
         onClose={() => setModalBaja(null)}
+      />
+      <HistorialDialog
+        open={!!historial} onClose={() => setHistorial(null)}
+        usuarioId={historial?.usuarioId} titulo={historial?.titulo}
       />
       {modalReenviar && <ModalReenviar usuario={modalReenviar} onClose={() => setModalReenviar(null)} />}
       {modalReset && <ModalResetear usuario={modalReset} onClose={() => { setModalReset(null); load(); }} />}
