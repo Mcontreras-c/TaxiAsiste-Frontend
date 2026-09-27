@@ -115,3 +115,24 @@ export interface NuevoConductorPayload {
 
 export const crearConductor = (data: NuevoConductorPayload) =>
   apiClient.post<{ usuario: UsuarioCuenta; correo_enviado: boolean }>('/usuarios/crear_conductor/', data).then(r => r.data);
+
+// Quién hizo qué (solo Administrador). Lo registra el servidor; nunca incluye claves.
+export interface EventoHistorial {
+  id_evento: number;
+  usuario: number | null;
+  usuario_nombre: string | null;
+  entidad_tipo: string;
+  entidad_id: number;
+  evento: string;
+  estado_anterior: string | null;
+  estado_nuevo: string | null;
+  detalle: string | null;
+  ip_origen: string | null;
+  fecha_hora: string;
+}
+
+export const getHistorial = () =>
+  apiClient.get<EventoHistorial[]>('/historial/').then(r => r.data);
+
+export const getHistorialPersona = (idUsuario: number) =>
+  apiClient.get<EventoHistorial[]>(`/usuarios/${idUsuario}/historial/`).then(r => r.data);
