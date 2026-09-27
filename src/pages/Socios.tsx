@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Chip, Button, Alert, CircularProgress, Collapse, Divider,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton,
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react';
 import { exportarAExcel } from '../utils/exportarExcel';
 import {
-  getSocios, createSocio, updateSocio, desbloquearSocio, bloquearSocio, darDeBajaSocio, reactivarSocio,
+  getSocios, updateSocio, desbloquearSocio, bloquearSocio, darDeBajaSocio, reactivarSocio,
 } from '../api/socios';
 import { getMoviles, createMovil, updateMovil } from '../api/moviles';
 import type { Socio, Movil } from '../types';
@@ -257,6 +258,7 @@ function TarjetaVehiculo({
 }
 
 export default function SociosPage() {
+  const navigate = useNavigate();
   const { usuario } = useAuthStore();
   const puedeEditar = usuario?.rol === 'Administrador';
 
@@ -267,11 +269,10 @@ export default function SociosPage() {
   const [search, setSearch]       = useState('');
   const [expandido, setExpandido] = useState<number | null>(null);
 
-  // Modal crear/editar socio (comparten formulario)
-  const [modal, setModal]           = useState<'crear' | 'editar' | null>(null);
+  // Modal editar socio (el alta de conductores se hace en Personas)
+  const [modal, setModal]           = useState<'editar' | null>(null);
   const [socioEditando, setSocioEditando] = useState<Socio | null>(null);
   const [form, setForm]             = useState<SocioFormData>(SOCIO_EMPTY);
-  const [vehiculoForm, setVehiculoForm] = useState<VehiculoFormData>(VEHICULO_EMPTY);
   const [saving, setSaving]         = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
   const [desbloqueando, setDesbloqueando] = useState<number | null>(null);
@@ -368,13 +369,6 @@ export default function SociosPage() {
     }]);
   };
 
-  const abrirCrear = () => {
-    setForm(SOCIO_EMPTY);
-    setVehiculoForm(VEHICULO_EMPTY);
-    setFormError(null);
-    setModal('crear');
-  };
-
   const abrirEditar = (s: Socio) => {
     setSocioEditando(s);
     setForm({
@@ -423,28 +417,11 @@ export default function SociosPage() {
     setSaving(true);
     setFormError(null);
     try {
-      if (modal === 'editar' && socioEditando) {
+      if (socioEditando) {
         await updateSocio(socioEditando.id_socio, {
           rut: form.rut, nombre: form.nombre, apellido: form.apellido,
           telefono: form.telefono || null, direccion: form.direccion || null,
         });
-      } else {
-        const nuevoSocio = await createSocio({
-          rut: form.rut, nombre: form.nombre, apellido: form.apellido,
-          telefono: form.telefono || null, direccion: form.direccion || null,
-          estado_socio: 'ACTIVO',
-        });
-        if (vehiculoForm.patente) {
-          await createMovil({
-            socio: nuevoSocio.id_socio,
-            patente: vehiculoForm.patente.toUpperCase(),
-            marca: vehiculoForm.marca || null,
-            modelo: vehiculoForm.modelo || null,
-            anio: vehiculoForm.anio ? Number(vehiculoForm.anio) : null,
-            color: vehiculoForm.color || null,
-            estado_operativo: 'DISPONIBLE',
-          });
-        }
       }
       cerrarModal();
       await load();
@@ -469,9 +446,10 @@ export default function SociosPage() {
             Exportar
           </Button>
           {puedeEditar && (
-            <Button variant="contained" startIcon={<Plus size={16} />} onClick={abrirCrear}
-              sx={{ ...gradientBtnSx, boxShadow: '0 4px 10px rgba(245,166,35,.25)' }}>
-              Nuevo socio
+            <Button variant="outlined" startIcon={<Plus size={16} />} onClick={() => navigate('/usuarios')}
+              title="El alta de conductores y personal se hace en Personas"
+              sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
+              Alta en Personas
             </Button>
           )}
         </Box>
@@ -700,7 +678,7 @@ export default function SociosPage() {
 
       <Dialog open={modal !== null} onClose={cerrarModal} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700 }}>
-          {modal === 'editar' ? 'Editar socio' : 'Nuevo socio'}
+          Editar socio
           <IconButton size="small" onClick={cerrarModal}><X size={18} /></IconButton>
         </DialogTitle>
         <Box component="form" onSubmit={handleSubmit}>
@@ -711,25 +689,6 @@ export default function SociosPage() {
                 value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
               />
             ))}
-
-            {modal === 'crear' && (
-              <>
-                <Divider sx={{ my: 0.5 }}>
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Car size={13} /> VEHÍCULO (OPCIONAL)
-                  </Typography>
-                </Divider>
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                  {VEHICULO_CAMPOS.map(({ label, key, placeholder, width }) => (
-                    <TextField
-                      key={key} size="small" label={label} placeholder={placeholder}
-                      value={vehiculoForm[key]} onChange={e => setVehiculoForm(f => ({ ...f, [key]: e.target.value }))}
-                      sx={{ width }}
-                    />
-                  ))}
-                </Box>
-              </>
-            )}
 
             {formError && <Alert severity="error">{formError}</Alert>}
           </DialogContent>

@@ -45,7 +45,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     to: '/usuarios',
-    label: 'Usuarios',
+    label: 'Personas',
     icon: UserCog,
     roles: ['Administrador'],
   },

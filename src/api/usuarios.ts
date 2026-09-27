@@ -100,3 +100,18 @@ export const getMiPerfil = () =>
 
 export const actualizarMiPerfil = (data: { email?: string; telefono?: string | null; password_actual?: string }) =>
   apiClient.patch<PerfilUsuario>('/usuarios/mi_perfil/', data).then(r => r.data);
+
+// Alta completa de un conductor: socio + vehículo + cuenta, todo o nada. Las credenciales
+// salen por correo; `correo_enviado` false = quedó creado pero el correo no salió.
+export interface NuevoConductorPayload {
+  nombre: string;
+  apellido: string;
+  rut: string;
+  email: string;
+  telefono?: string;
+  username?: string;
+  vehiculo: { patente: string; marca: string; modelo: string; anio?: number; color?: string };
+}
+
+export const crearConductor = (data: NuevoConductorPayload) =>
+  apiClient.post<{ usuario: UsuarioCuenta; correo_enviado: boolean }>('/usuarios/crear_conductor/', data).then(r => r.data);
