@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
+import { MENSAJE_CONFIRMACION, obtenerPermiso, permisoVigente } from './confirmacion';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api',
@@ -11,10 +12,12 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const permiso = permisoVigente();
+  if (permiso) config.headers['X-Confirmacion'] = permiso;
   return config;
 });
 
-type ConfigConReintento = AxiosRequestConfig & { _reintentado?: boolean };
+type ConfigConReintento = AxiosRequestConfig & { _reintentado?: boolean; _confirmado?: boolean };
 
 // Varias requests pueden pisar un 401 al mismo tiempo (ej. el polling de
 // solicitudes + moviles + ubicaciones) -- se comparte una sola promesa de
@@ -26,6 +29,20 @@ apiClient.interceptors.response.use(
   async (error) => {
     const original = error.config as ConfigConReintento | undefined;
     const esRefresh = original?.url?.includes('/token/refresh/');
+
+    // Accion sensible sin permiso reciente: se pide la clave y se repite sola.
+    if (
+      error.response?.status === 403 &&
+      original && !original._confirmado &&
+      String(error.response?.data?.detail ?? '').startsWith(MENSAJE_CONFIRMACION)
+    ) {
+      original._confirmado = true;
+      const token = await obtenerPermiso();
+      if (token) {
+        original.headers = { ...original.headers, 'X-Confirmacion': token };
+        return apiClient(original);
+      }
+    }
 
     if (
       error.response?.status === 401 &&

@@ -13,6 +13,9 @@ import { getPerfilConductor } from '../api/conductor';
 import { getLinkDescargaApp } from '../api/app';
 import CambiarPasswordDialog from './CambiarPasswordDialog';
 import PerfilDialog from './PerfilDialog';
+import ConfirmarPasswordDialog from './ConfirmarPasswordDialog';
+import { useCierreInactividad } from '../hooks/useCierreInactividad';
+import { olvidarPermiso } from '../api/confirmacion';
 import logo from '../assets/logo.jpg';
 
 const ROL_LABEL: Record<Rol, string> = {
@@ -25,6 +28,8 @@ const ROL_LABEL: Record<Rol, string> = {
 
 const DRAWER_OPEN = 240;
 const DRAWER_CLOSED = 72;
+
+const MINUTOS_INACTIVIDAD = 15;
 
 export default function Layout() {
   const [open, setOpen] = useState(true);
@@ -57,9 +62,18 @@ export default function Layout() {
   }, []);
 
   const handleLogout = () => {
+    olvidarPermiso();
     logout();
     navigate('/login');
   };
+
+  // Un panel de administracion no se deja abierto sin vigilar. Central queda fuera a
+  // proposito: su pantalla de Solicitudes se mira durante horas sin tocarla.
+  useCierreInactividad(
+    rol === 'Administrador' || rol === 'Tesorero' || rol === 'Secretario',
+    MINUTOS_INACTIVIDAD,
+    handleLogout,
+  );
 
   const initials = usuario?.username
     ? usuario.username.slice(0, 2).toUpperCase()
@@ -243,6 +257,7 @@ export default function Layout() {
       </Drawer>
 
       <CambiarPasswordDialog open={cambiarPassOpen} onClose={() => setCambiarPassOpen(false)} />
+      <ConfirmarPasswordDialog />
       <PerfilDialog open={perfilOpen} onClose={() => setPerfilOpen(false)} onCambiarClave={() => setCambiarPassOpen(true)} />
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
