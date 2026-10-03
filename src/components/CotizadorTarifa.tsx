@@ -3,6 +3,7 @@ import { Box, Typography, Button, IconButton, TextField, CircularProgress } from
 import { X, Calculator, Route } from 'lucide-react';
 import { cotizarTarifa, type Cotizacion } from '../api/mapas';
 import { colors } from '../theme';
+import { formatoPeso, rangoDeRuta, textoRango } from '../utils/tarifa';
 
 export interface EstadoCotizacion {
   cotizacion: Cotizacion;
@@ -26,7 +27,6 @@ const campoSx = {
 
 const formatoMinutos = (s: number) => `${Math.max(1, Math.round(s / 60))} min`;
 const formatoKm = (m: number) => `${(m / 1000).toFixed(1)} km`;
-const formatoPeso = (n: number) => `$${n.toLocaleString('es-CL')}`;
 
 /**
  * Cotizador de tarifa aproximada: la salida es siempre el hospital (la app
@@ -57,6 +57,12 @@ export default function CotizadorTarifa({ onCambio, activa, onActiva, cotizacion
   };
 
   const limpiar = () => { onCambio(null); setError(null); };
+
+  // Si ninguna ruta tiene diferencia entre minimo y maximo, el pie habla de "valor aproximado".
+  const hayRango = !!cotizacion?.rutas.some(r => {
+    const { minima, maxima } = rangoDeRuta(r);
+    return maxima > minima;
+  });
 
   return (
     <Box sx={{
@@ -101,7 +107,9 @@ export default function CotizadorTarifa({ onCambio, activa, onActiva, cotizacion
           <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.55)' }}>
             Hacia: {cotizacion.destino.direccion}
           </Typography>
-          {cotizacion.rutas.map((r, i) => (
+          {cotizacion.rutas.map((r, i) => {
+            const { minima, maxima } = rangoDeRuta(r);
+            return (
             <Box
               key={i} onClick={() => { onActiva(i); onCambio({ cotizacion, activa: i }); }}
               sx={{
@@ -110,21 +118,28 @@ export default function CotizadorTarifa({ onCambio, activa, onActiva, cotizacion
                 bgcolor: i === activa ? 'rgba(255,222,0,.1)' : 'rgba(255,255,255,.04)',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                <Typography sx={{ fontSize: 22, fontWeight: 800, color: i === activa ? colors.accent500 : '#fff' }}>
-                  {formatoPeso(r.tarifa_estimada)}
-                </Typography>
-                <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>
-                  {i === 0 ? 'Recomendada' : `Alternativa ${i}`}
-                </Typography>
-              </Box>
+              {/* La etiqueta va arriba: el rango ("$26.100 – $28.700") necesita todo el ancho del panel. */}
+              <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>
+                {i === 0 ? 'Recomendada' : `Alternativa ${i}`}
+              </Typography>
+              <Typography sx={{ fontSize: 21, fontWeight: 800, color: i === activa ? colors.accent500 : '#fff', lineHeight: 1.25 }}>
+                {maxima > minima && (
+                  <Box component="span" sx={{ fontSize: 12.5, fontWeight: 600, color: 'rgba(255,255,255,.6)' }}>
+                    Entre{' '}
+                  </Box>
+                )}
+                {textoRango(minima, maxima)}
+              </Typography>
               <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.75)' }}>
                 {formatoKm(r.distancia_m)} · {formatoMinutos(r.duracion_s)} · vía {r.resumen}
               </Typography>
             </Box>
-          ))}
+            );
+          })}
           <Typography sx={{ fontSize: 10.5, color: 'rgba(255,255,255,.45)' }}>
-            Valor aproximado según taxímetro (bajada {formatoPeso(cotizacion.bajada_de_bandera)}). Puede variar con el tráfico y la ruta real.
+            {hayRango
+              ? `Rango según taxímetro (bajada ${formatoPeso(cotizacion.bajada_de_bandera)}): el valor menor es con el tránsito fluido y el mayor con tráfico pesado. Puede variar con la ruta real.`
+              : `Valor aproximado según taxímetro (bajada ${formatoPeso(cotizacion.bajada_de_bandera)}). Puede variar con el tráfico y la ruta real.`}
           </Typography>
         </Box>
       )}
