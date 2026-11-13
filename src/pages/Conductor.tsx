@@ -9,31 +9,31 @@ import { colors } from '../theme';
 
 import { formatoHora } from '../utils/formatoFecha';
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
-  PENDIENTE:  { bg: '#fdece2', fg: '#c2410c' },
-  ASIGNADO:   { bg: '#e8ecf9', fg: '#3355a8' },
-  EN_CURSO:   { bg: '#f3e8fd', fg: '#7e22ce' },
-  COMPLETADO: { bg: '#e4f3ec', fg: '#2f7d5b' },
-  CANCELADO:  { bg: '#f1efe9', fg: '#8a8071' },
+  PENDIENTE:  { bg: 'rgba(251,146,60,.14)', fg: '#fb923c' },
+  ASIGNADO:   { bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' },
+  EN_CURSO:   { bg: 'rgba(192,132,252,.14)', fg: '#c084fc' },
+  COMPLETADO: { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  CANCELADO:  { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.55)' },
 };
 
 const CUOTA_STYLE: Record<string, { bg: string; fg: string }> = {
-  PAGADO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
-  PENDIENTE: { bg: '#fdf1dc', fg: colors.accent700 },
-  VENCIDO:   { bg: '#fbe9e9', fg: '#c0392b' },
-  EXENTO:    { bg: '#f1efe9', fg: '#6b6152' },
+  PAGADO:    { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  PENDIENTE: { bg: 'rgba(255,222,0,.12)', fg: colors.accent700 },
+  VENCIDO:   { bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
+  EXENTO:    { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' },
 };
 
 const CUOTA_ICON: Record<string, React.ReactNode> = {
-  PAGADO:    <CheckCircle size={15} color="#2f7d5b" />,
+  PAGADO:    <CheckCircle size={15} color="#34d399" />,
   PENDIENTE: <Clock size={15} color={colors.accent700} />,
-  VENCIDO:   <XCircle size={15} color="#c0392b" />,
-  EXENTO:    <CheckCircle size={15} color="#a89f8f" />,
+  VENCIDO:   <XCircle size={15} color="#f87171" />,
+  EXENTO:    <CheckCircle size={15} color="rgba(255,255,255,.55)" />,
 };
 
 const MOVIL_ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
-  DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
-  EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
-  EN_VIAJE:    { bg: '#f1e7fb', fg: '#7128b8' },
+  DISPONIBLE:  { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  EN_SERVICIO: { bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' },
+  EN_VIAJE:    { bg: 'rgba(192,132,252,.14)', fg: '#c084fc' },
 };
 
 export default function ConductorPage() {
@@ -74,7 +74,7 @@ export default function ConductorPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
-          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Hola, {socio.nombre} 👋</Typography>
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Hola, {socio.nombre} 👋</Typography>
           <Typography sx={{ fontSize: 12.5, color: 'text.secondary', textTransform: 'capitalize' }}>
             {new Date(fecha).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </Typography>
@@ -103,7 +103,7 @@ export default function ConductorPage() {
             {movil ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                 <Box sx={{
-                  bgcolor: '#e9e6dc', border: '2.5px solid #2a2519', borderRadius: 2, px: 2, py: 1,
+                  bgcolor: 'rgba(255,255,255,.12)', border: '2.5px solid #ffffff', borderRadius: 2, px: 2, py: 1,
                   boxShadow: '0 2px 6px rgba(20,17,11,.15)', flexShrink: 0,
                 }}>
                   <Typography sx={{ fontSize: 24, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', letterSpacing: 1, color: '#14110b' }}>
@@ -112,13 +112,13 @@ export default function ConductorPage() {
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                   <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>{[movil.marca, movil.modelo].filter(Boolean).join(' ')} {movil.anio ?? ''}</Typography>
-                  <Typography sx={{ fontSize: 12, color: '#a89f8f' }}>{movil.color ?? ''}</Typography>
+                  <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.55)' }}>{movil.color ?? ''}</Typography>
                   <Chip
                     label={movil.estado_operativo.replace('_', ' ')} size="small"
                     sx={{
                       mt: 0.5, alignSelf: 'flex-start', fontWeight: 700, fontSize: 10.5,
-                      bgcolor: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.bg ?? '#fbe9e9',
-                      color: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.fg ?? '#c0392b',
+                      bgcolor: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.bg ?? 'rgba(248,113,113,.14)',
+                      color: MOVIL_ESTADO_STYLE[movil.estado_operativo]?.fg ?? '#f87171',
                     }}
                   />
                 </Box>
@@ -132,18 +132,18 @@ export default function ConductorPage() {
         <Card sx={{ borderRadius: 4 }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <Box sx={{ p: 1.25, borderRadius: 2.5, bgcolor: '#f3e8fd', color: '#7e22ce', display: 'flex' }}>
+              <Box sx={{ p: 1.25, borderRadius: 2.5, bgcolor: 'rgba(192,132,252,.14)', color: '#c084fc', display: 'flex' }}>
                 <PhoneCall size={18} />
               </Box>
               <Typography sx={{ fontWeight: 700 }}>Resumen de hoy</Typography>
-              <BarChart3 size={16} color="#c4bda9" style={{ marginLeft: 'auto' }} />
+              <BarChart3 size={16} color="rgba(255,255,255,.35)" style={{ marginLeft: 'auto' }} />
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {[
                 { label: 'Total carreras', value: solicitudes_hoy.length, color: 'text.primary' },
-                { label: 'Completadas', value: completadas, color: '#2f7d5b' },
-                { label: 'En curso', value: solicitudes_hoy.filter(s => s.estado === 'EN_CURSO').length, color: '#7e22ce' },
-                { label: 'Canceladas', value: solicitudes_hoy.filter(s => s.estado === 'CANCELADO').length, color: '#a89f8f' },
+                { label: 'Completadas', value: completadas, color: '#34d399' },
+                { label: 'En curso', value: solicitudes_hoy.filter(s => s.estado === 'EN_CURSO').length, color: '#c084fc' },
+                { label: 'Canceladas', value: solicitudes_hoy.filter(s => s.estado === 'CANCELADO').length, color: 'rgba(255,255,255,.55)' },
               ].map(row => (
                 <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5 }}>
                   <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>{row.label}</Typography>
@@ -158,7 +158,7 @@ export default function ConductorPage() {
       <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
         <Box sx={{ px: 2.5, py: 1.75, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography sx={{ fontSize: 13.5, fontWeight: 700 }}>
-            Mis carreras de hoy <Box component="span" sx={{ color: '#a89f8f', fontWeight: 400 }}>({solicitudes_hoy.length} carrera{solicitudes_hoy.length === 1 ? '' : 's'})</Box>
+            Mis carreras de hoy <Box component="span" sx={{ color: 'rgba(255,255,255,.55)', fontWeight: 400 }}>({solicitudes_hoy.length} carrera{solicitudes_hoy.length === 1 ? '' : 's'})</Box>
           </Typography>
         </Box>
         {solicitudes_hoy.length === 0 ? (
@@ -182,11 +182,11 @@ export default function ConductorPage() {
                 {solicitudes_hoy.map(s => (
                   <TableRow key={s.id_solicitud} hover>
                     <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 12, color: 'text.secondary' }}>{s.folio}</TableCell>
-                    <TableCell sx={{ fontSize: 13 }}>{s.origen} <Box component="span" sx={{ color: '#a89f8f', mx: 0.5 }}>→</Box> {s.destino}</TableCell>
+                    <TableCell sx={{ fontSize: 13 }}>{s.origen} <Box component="span" sx={{ color: 'rgba(255,255,255,.55)', mx: 0.5 }}>→</Box> {s.destino}</TableCell>
                     <TableCell>
                       <Chip label={s.estado} size="small" sx={{ bgcolor: ESTADO_STYLE[s.estado]?.bg, color: ESTADO_STYLE[s.estado]?.fg, fontWeight: 700, fontSize: 10.5 }} />
                     </TableCell>
-                    <TableCell sx={{ fontSize: 12, color: '#a89f8f' }}>
+                    <TableCell sx={{ fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
                       {formatoHora(s.fecha_hora)}
                     </TableCell>
                   </TableRow>

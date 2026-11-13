@@ -82,7 +82,7 @@ export default function Layout() {
   const drawerWidth = open ? DRAWER_OPEN : DRAWER_CLOSED;
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'transparent' }}>
       <Drawer
         variant="permanent"
         sx={{
@@ -94,15 +94,18 @@ export default function Layout() {
             width: drawerWidth,
             overflowX: 'hidden',
             transition: 'width .25s ease',
-            background: colors.sidebarGradient,
+            background: 'linear-gradient(180deg, rgba(17,28,48,.72), rgba(11,18,32,.80))',
+            WebkitBackdropFilter: 'blur(22px) saturate(140%)',
+            backdropFilter: 'blur(22px) saturate(140%)',
             color: '#fff',
-            border: 'none',
+            borderRight: `1px solid ${colors.bordeVidrio}`,
+            boxShadow: '8px 0 32px rgba(0,0,0,.35)',
           },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 2.5, borderBottom: '1px solid rgba(255,255,255,.14)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 2.5, borderBottom: `1px solid ${colors.bordeVidrio}` }}>
           {open ? (
-            <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 34, objectFit: 'contain', flex: 1, minWidth: 0 }} />
+            <Box component="img" src={logo} alt="TaxiAsiste" sx={{ height: 44, width: 'auto', maxWidth: 150, objectFit: 'contain', borderRadius: '12px', bgcolor: '#fff', p: '4px 10px', boxShadow: '0 4px 16px rgba(0,0,0,.3)' }} />
           ) : (
             <Box sx={{
               width: 34, height: 34, mx: 'auto', borderRadius: 2,
@@ -115,7 +118,7 @@ export default function Layout() {
           <IconButton
             onClick={() => setOpen(!open)}
             size="small"
-            sx={{ color: 'rgba(255,255,255,.6)', '&:hover': { bgcolor: 'rgba(255,255,255,.1)', color: '#fff' } }}
+            sx={{ ml: 'auto', color: 'rgba(255,255,255,.6)', '&:hover': { bgcolor: 'rgba(255,255,255,.1)', color: '#fff' } }}
           >
             {open ? <PanelLeftClose size={16} /> : <Menu size={16} />}
           </IconButton>
@@ -140,10 +143,13 @@ export default function Layout() {
                     borderRadius: 2.5,
                     mb: 0.5,
                     py: 1.1,
-                    color: isActive ? '#fff' : 'rgba(255,255,255,.78)',
-                    bgcolor: isActive ? 'rgba(255,255,255,.14)' : 'transparent',
+                    color: isActive ? colors.accent500 : 'rgba(255,255,255,.78)',
+                    bgcolor: isActive ? 'rgba(255,222,0,.12)' : 'transparent',
+                    border: `1px solid ${isActive ? 'rgba(255,222,0,.28)' : 'transparent'}`,
+                    boxShadow: isActive ? '0 6px 20px rgba(255,222,0,.10)' : 'none',
+                    transition: 'background-color .18s ease, border-color .18s ease',
                     position: 'relative',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,.08)' },
+                    '&:hover': { bgcolor: isActive ? 'rgba(255,222,0,.16)' : 'rgba(255,255,255,.07)' },
                     '&::before': isActive ? {
                       content: '""', position: 'absolute', left: -10, top: 8, bottom: 8, width: 3,
                       borderRadius: '0 4px 4px 0',
@@ -224,7 +230,7 @@ export default function Layout() {
           </Box>
         )}
 
-        <Divider sx={{ borderColor: 'rgba(255,255,255,.14)' }} />
+        <Divider sx={{ borderColor: colors.bordeVidrio }} />
         <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
           <Avatar
             onClick={() => setPerfilOpen(true)} title="Mi perfil"
@@ -265,15 +271,15 @@ export default function Layout() {
           position="static"
           elevation={0}
           sx={{
-            bgcolor: 'rgba(255,255,255,.85)',
-            backdropFilter: 'blur(8px)',
-            borderBottom: '1px solid',
-            borderColor: 'divider',
+            bgcolor: 'rgba(11,18,32,.55)',
+            backdropFilter: 'blur(18px) saturate(140%)',
+            WebkitBackdropFilter: 'blur(18px) saturate(140%)',
+            borderBottom: `1px solid ${colors.bordeVidrio}`,
             color: 'text.primary',
           }}
         >
           <Toolbar variant="dense" sx={{ minHeight: 56 }}>
-            <Breadcrumbs separator={<ChevronRight size={14} color="#c4bda9" />}>
+            <Breadcrumbs separator={<ChevronRight size={14} color="rgba(255,255,255,.35)" />}>
               <MLink underline="none" sx={{ fontSize: 14, color: 'text.secondary' }}>TaxiAsiste</MLink>
               <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{currentPage?.label ?? 'Inicio'}</Typography>
             </Breadcrumbs>
@@ -285,8 +291,8 @@ export default function Layout() {
                 title="Las actualizaciones automáticas (solicitudes, móviles, mapa) están fallando repetidamente."
                 sx={{
                   ml: 'auto', fontWeight: 700, fontSize: 11.5,
-                  bgcolor: '#fdece2', color: '#c2410c',
-                  '& .MuiChip-icon': { color: '#c2410c' },
+                  bgcolor: 'rgba(251,146,60,.14)', color: '#fb923c',
+                  '& .MuiChip-icon': { color: '#fb923c' },
                 }}
               />
             )}

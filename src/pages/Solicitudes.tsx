@@ -10,11 +10,11 @@ import {
 
 import { formatoFechaHora } from '../utils/formatoFecha';
 const ESTADO_COLOR: Record<string, string> = {
-  PENDIENTE:  'bg-orange-50 text-orange-700',
-  ASIGNADO:   'bg-blue-50 text-blue-700',
-  EN_CURSO:   'bg-violet-50 text-violet-700',
-  COMPLETADO: 'bg-emerald-50 text-emerald-700',
-  CANCELADO:  'bg-slate-100 text-slate-500',
+  PENDIENTE:  'bg-orange-500/15 text-orange-400',
+  ASIGNADO:   'bg-blue-500/15 text-blue-400',
+  EN_CURSO:   'bg-violet-500/15 text-violet-300',
+  COMPLETADO: 'bg-emerald-500/15 text-emerald-400',
+  CANCELADO:  'bg-white/[0.06]/10 text-white/60',
 };
 
 const TRANSICIONES: Record<string, EstadoSolicitud[]> = {
@@ -156,27 +156,27 @@ export default function SolicitudesPage() {
         >
           {filtered.map(s => (
             <TableRow key={s.id_solicitud}>
-              <TableCell className="font-mono text-xs text-slate-600">{s.folio}</TableCell>
+              <TableCell className="font-mono text-xs text-white/70">{s.folio}</TableCell>
               <TableCell>
-                <div className="flex items-center gap-1 text-slate-700">
+                <div className="flex items-center gap-1 text-white/80">
                   <span className="truncate max-w-[120px]">{s.origen}</span>
-                  <ChevronRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                  <ChevronRight className="w-3 h-3 text-white/45 flex-shrink-0" />
                   <span className="truncate max-w-[120px]">{s.destino}</span>
                 </div>
               </TableCell>
-              <TableCell className="text-slate-500">{s.movil_patente ?? '—'}</TableCell>
-              <TableCell className="text-slate-500">{s.canal_entrada}</TableCell>
+              <TableCell className="text-white/60">{s.movil_patente ?? '—'}</TableCell>
+              <TableCell className="text-white/60">{s.canal_entrada}</TableCell>
               <TableCell>
                 <Badge className={ESTADO_COLOR[s.estado]}>{s.estado}</Badge>
               </TableCell>
-              <TableCell className="text-slate-400 text-xs">
+              <TableCell className="text-white/45 text-xs">
                 {formatoFechaHora(s.fecha_hora)}
               </TableCell>
               <TableCell>
                 {TRANSICIONES[s.estado].length > 0 && (
                   <button
                     onClick={() => { setSelected(s); setNuevoEstado(''); setMovilId(''); }}
-                    className="text-xs text-brand-700 hover:underline font-semibold"
+                    className="text-xs text-brand-300 hover:underline font-semibold"
                   >
                     Cambiar estado
                   </button>
@@ -195,7 +195,7 @@ export default function SolicitudesPage() {
               { label: 'Destino *', key: 'destino', placeholder: 'Plaza Italia' },
             ].map(({ label, key, placeholder }) => (
               <div key={key}>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">{label}</label>
                 <input
                   type="text"
                   placeholder={placeholder}
@@ -207,7 +207,7 @@ export default function SolicitudesPage() {
             ))}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Canal de entrada</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Canal de entrada</label>
               <select
                 value={form.canal_entrada}
                 onChange={e => setForm(f => ({ ...f, canal_entrada: e.target.value }))}
@@ -218,7 +218,7 @@ export default function SolicitudesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Observaciones</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Observaciones</label>
               <textarea
                 placeholder="Opcional..."
                 value={form.observaciones}
@@ -229,7 +229,7 @@ export default function SolicitudesPage() {
             </div>
 
             {formError && (
-              <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+              <p className="text-sm text-red-400 bg-red-500/15 border border-red-400/30 rounded-xl px-3 py-2">{formError}</p>
             )}
 
             <div className="flex gap-3 pt-2">
@@ -246,16 +246,16 @@ export default function SolicitudesPage() {
 
       {selected && (
         <Modal title="Cambiar estado" onClose={() => setSelected(null)} maxWidth="max-w-sm">
-          <p className="text-sm text-slate-500 mb-1">
-            Folio: <span className="font-mono font-semibold text-slate-700">{selected.folio}</span>
+          <p className="text-sm text-white/60 mb-1">
+            Folio: <span className="font-mono font-semibold text-white/80">{selected.folio}</span>
           </p>
-          <p className="text-sm text-slate-500 mb-4 flex items-center gap-2">
+          <p className="text-sm text-white/60 mb-4 flex items-center gap-2">
             Estado actual: <Badge className={ESTADO_COLOR[selected.estado]}>{selected.estado}</Badge>
           </p>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Nuevo estado</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Nuevo estado</label>
               <select
                 value={nuevoEstado}
                 onChange={e => setNuevoEstado(e.target.value as EstadoSolicitud)}
@@ -270,7 +270,7 @@ export default function SolicitudesPage() {
 
             {nuevoEstado === 'ASIGNADO' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Móvil a asignar</label>
+                <label className="block text-sm font-medium text-white/80 mb-1.5">Móvil a asignar</label>
                 <select
                   value={movilId}
                   onChange={e => setMovilId(e.target.value)}

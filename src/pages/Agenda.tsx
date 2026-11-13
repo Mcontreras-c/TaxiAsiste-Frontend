@@ -159,9 +159,9 @@ export default function AgendaPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <CalendarClock size={22} color="#3a3327" />
-          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Agenda</Typography>
-          <Chip label={proximos.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+          <CalendarClock size={22} color="rgba(255,255,255,.92)" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Agenda</Typography>
+          <Chip label={proximos.length} size="small" sx={{ bgcolor: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.70)', fontWeight: 700 }} />
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button variant="contained" startIcon={<Plus size={16} />} onClick={abrirCrear}
@@ -191,13 +191,13 @@ export default function AgendaPage() {
             Próximas ({proximos.length})
           </Typography>
           {proximos.length === 0 ? (
-            <Typography sx={{ fontSize: 13, color: '#a89f8f' }}>Sin próximas reuniones.</Typography>
+            <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,.55)' }}>Sin próximas reuniones.</Typography>
           ) : proximos.map(e => (
             <Card key={e.id_evento_agenda} sx={{ borderRadius: 3 }}>
               <CardContent sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                 <Box sx={{
                   width: 44, height: 44, borderRadius: 2.5, flexShrink: 0, display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', bgcolor: '#fdf1dc', color: colors.accent700,
+                  alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,222,0,.12)', color: colors.accent700,
                 }}>
                   <Typography sx={{ fontSize: 15, fontWeight: 800, lineHeight: 1 }}>{new Date(e.fecha_hora).getDate()}</Typography>
                   <Typography sx={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
@@ -208,12 +208,12 @@ export default function AgendaPage() {
                   <Typography sx={{ fontWeight: 700, fontSize: 15 }}>{e.titulo}</Typography>
                   {e.descripcion && <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.25 }}>{e.descripcion}</Typography>}
                   <Box sx={{ display: 'flex', gap: 2, mt: 1, flexWrap: 'wrap' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: '#a89f8f' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
                       <Clock size={13} />
                       {formatoFechaHora(e.fecha_hora, 'medium')}
                     </Box>
                     {e.lugar && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: '#a89f8f' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
                         <MapPin size={13} /> {e.lugar}
                       </Box>
                     )}
@@ -225,7 +225,7 @@ export default function AgendaPage() {
                   </IconButton>
                   <IconButton
                     size="small" onClick={() => handleEliminar(e)} disabled={eliminando === e.id_evento_agenda}
-                    sx={{ border: '1px solid', borderColor: 'divider', color: '#c0392b' }}
+                    sx={{ border: '1px solid', borderColor: 'divider', color: '#f87171' }}
                   >
                     <Trash2 size={13} />
                   </IconButton>
@@ -243,10 +243,10 @@ export default function AgendaPage() {
                 <Card key={e.id_evento_agenda} sx={{ borderRadius: 3, opacity: 0.6 }}>
                   <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: '10px !important' }}>
                     <Typography sx={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{e.titulo}</Typography>
-                    <Typography sx={{ fontSize: 12, color: '#a89f8f' }}>
+                    <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
                       {new Date(e.fecha_hora).toLocaleDateString('es-CL', { dateStyle: 'medium' })}
                     </Typography>
-                    <IconButton size="small" onClick={() => handleEliminar(e)} sx={{ color: '#c0392b' }}>
+                    <IconButton size="small" onClick={() => handleEliminar(e)} sx={{ color: '#f87171' }}>
                       <Trash2 size={13} />
                     </IconButton>
                   </CardContent>
@@ -259,9 +259,9 @@ export default function AgendaPage() {
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <FileText size={20} color="#3a3327" />
-          <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#2a2519' }}>Documentos</Typography>
-          <Chip label={documentos.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+          <FileText size={20} color="rgba(255,255,255,.92)" />
+          <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#ffffff' }}>Documentos</Typography>
+          <Chip label={documentos.length} size="small" sx={{ bgcolor: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.70)', fontWeight: 700 }} />
         </Box>
         <Button variant="outlined" size="small" startIcon={<Upload size={14} />} onClick={abrirSubir}
           sx={{ color: 'text.secondary', borderColor: 'rgba(20,17,11,.18)' }}>
@@ -295,7 +295,7 @@ export default function AgendaPage() {
               >
                 <Box sx={{
                   width: 38, height: 38, borderRadius: 2.5, flexShrink: 0, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', bgcolor: '#e8ecf9', color: '#3355a8',
+                  justifyContent: 'center', bgcolor: 'rgba(96,165,250,.14)', color: '#60a5fa',
                 }}>
                   <File size={18} />
                 </Box>
@@ -304,8 +304,8 @@ export default function AgendaPage() {
                     {d.nombre}
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', flexWrap: 'wrap', mt: 0.25 }}>
-                    {d.categoria && <Chip label={d.categoria} size="small" sx={{ fontSize: 10, height: 18, bgcolor: '#f1efe9', color: '#6b6152' }} />}
-                    <Typography sx={{ fontSize: 11.5, color: '#a89f8f' }}>
+                    {d.categoria && <Chip label={d.categoria} size="small" sx={{ fontSize: 10, height: 18, bgcolor: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.70)' }} />}
+                    <Typography sx={{ fontSize: 11.5, color: 'rgba(255,255,255,.55)' }}>
                       {formatoTamano(d.tamano_bytes)} · Subido por {d.usuario_subio_nombre ?? '—'} ·{' '}
                       {new Date(d.fecha_subida).toLocaleDateString('es-CL', { dateStyle: 'medium' })}
                     </Typography>
@@ -318,7 +318,7 @@ export default function AgendaPage() {
                   </IconButton>
                   <IconButton
                     size="small" onClick={() => handleEliminarDoc(d)} disabled={eliminandoDoc === d.id_documento}
-                    sx={{ border: '1px solid', borderColor: 'divider', color: '#c0392b' }}
+                    sx={{ border: '1px solid', borderColor: 'divider', color: '#f87171' }}
                   >
                     <Trash2 size={13} />
                   </IconButton>

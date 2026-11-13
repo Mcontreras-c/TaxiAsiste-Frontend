@@ -86,10 +86,10 @@ export default function RegistroIncumplimientos({ open, onClose }: { open: boole
                     <TableCell sx={{ ...celda, fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>{c.patente}</TableCell>
                     <TableCell sx={celda}>{c.conductor}</TableCell>
                     <TableCell sx={celda} align="center">
-                      <Chip size="small" label={c.no_llego} sx={{ fontWeight: 700, bgcolor: c.no_llego ? '#fbe9e9' : '#f1efe9', color: c.no_llego ? '#c0392b' : '#8a8071' }} />
+                      <Chip size="small" label={c.no_llego} sx={{ fontWeight: 700, bgcolor: c.no_llego ? 'rgba(248,113,113,.14)' : 'rgba(255,255,255,.07)', color: c.no_llego ? '#f87171' : 'rgba(255,255,255,.55)' }} />
                     </TableCell>
                     <TableCell sx={celda} align="center">
-                      <Chip size="small" label={c.soltadas_tarde} sx={{ fontWeight: 700, bgcolor: c.soltadas_tarde ? '#fdece2' : '#f1efe9', color: c.soltadas_tarde ? '#c2410c' : '#8a8071' }} />
+                      <Chip size="small" label={c.soltadas_tarde} sx={{ fontWeight: 700, bgcolor: c.soltadas_tarde ? 'rgba(251,146,60,.14)' : 'rgba(255,255,255,.07)', color: c.soltadas_tarde ? '#fb923c' : 'rgba(255,255,255,.55)' }} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -119,8 +119,8 @@ export default function RegistroIncumplimientos({ open, onClose }: { open: boole
                     <TableCell sx={{ ...celda, fontWeight: 700 }} align="center">{p.incumplimientos}</TableCell>
                     <TableCell sx={celda}>
                       {p.bloqueado_domicilio === 1
-                        ? <Chip size="small" label="Bloqueado a domicilio" sx={{ fontWeight: 700, bgcolor: '#fbe9e9', color: '#c0392b' }} />
-                        : <Chip size="small" label="Con advertencias" sx={{ fontWeight: 700, bgcolor: '#fdece2', color: '#c2410c' }} />}
+                        ? <Chip size="small" label="Bloqueado a domicilio" sx={{ fontWeight: 700, bgcolor: 'rgba(248,113,113,.14)', color: '#f87171' }} />
+                        : <Chip size="small" label="Con advertencias" sx={{ fontWeight: 700, bgcolor: 'rgba(251,146,60,.14)', color: '#fb923c' }} />}
                     </TableCell>
                     {esAdmin && (
                       <TableCell sx={celda} align="right">

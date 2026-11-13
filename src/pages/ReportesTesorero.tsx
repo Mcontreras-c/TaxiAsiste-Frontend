@@ -15,11 +15,11 @@ import { colors } from '../theme';
 import { InitialsAvatar } from '../components/InitialsAvatar';
 
 const PAGO_STYLE: Record<string, { bg: string; fg: string }> = {
-  PAGADO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
-  PENDIENTE: { bg: '#fdece2', fg: '#c2410c' },
-  VENCIDO:   { bg: '#fbe9e9', fg: '#c0392b' },
-  EXENTO:    { bg: '#f1efe9', fg: '#6b6152' },
-  SIN_CUOTA: { bg: '#f1efe9', fg: '#a89f8f' },
+  PAGADO:    { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  PENDIENTE: { bg: 'rgba(251,146,60,.14)', fg: '#fb923c' },
+  VENCIDO:   { bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
+  EXENTO:    { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' },
+  SIN_CUOTA: { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.55)' },
 };
 const PAGO_LABEL: Record<string, string> = {
   PAGADO: 'Pagado', PENDIENTE: 'Pendiente', VENCIDO: 'Vencido', EXENTO: 'Exento', SIN_CUOTA: 'Sin cuota',
@@ -28,10 +28,10 @@ const PAGO_LABEL: Record<string, string> = {
 type Tone = { fg: string; bg: string; iconBg: string };
 
 const TONES: Record<string, Tone> = {
-  blue:    { fg: '#3355a8', bg: '#e1e6f8', iconBg: 'rgba(255,255,255,.65)' },
-  emerald: { fg: '#2f7d5b', bg: '#dcf1e6', iconBg: 'rgba(255,255,255,.65)' },
-  red:     { fg: '#c0392b', bg: '#fbe9e9', iconBg: 'rgba(255,255,255,.65)' },
-  teal:    { fg: '#127a6b', bg: '#d7f3ee', iconBg: 'rgba(255,255,255,.65)' },
+  blue:    { fg: '#60a5fa', bg: 'rgba(96,165,250,.14)', iconBg: 'rgba(255,255,255,.65)' },
+  emerald: { fg: '#34d399', bg: 'rgba(52,211,153,.14)', iconBg: 'rgba(255,255,255,.65)' },
+  red:     { fg: '#f87171', bg: 'rgba(248,113,113,.14)', iconBg: 'rgba(255,255,255,.65)' },
+  teal:    { fg: '#127a6b', bg: 'rgba(45,212,191,.14)', iconBg: 'rgba(255,255,255,.65)' },
 };
 
 function StatHero({
@@ -50,7 +50,7 @@ function StatHero({
           <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: tone.fg }}>
             {label}
           </Typography>
-          <Typography sx={{ fontSize: 22, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#241f16', lineHeight: 1.2 }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#ffffff', lineHeight: 1.2 }}>
             {value}
           </Typography>
           <Typography sx={{ fontSize: 11, color: tone.fg, opacity: 0.85 }}>{sub}</Typography>
@@ -115,24 +115,24 @@ function ModalAtrasos({
     <Dialog open onClose={onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <ShieldOff size={20} color="#c2410c" />
+          <ShieldOff size={20} color="#fb923c" />
           <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Saldar atrasos</Typography>
         </Box>
         <IconButton size="small" onClick={onClose}><X size={18} /></IconButton>
       </DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Box sx={{ bgcolor: '#fdece2', border: '1px solid #f5c69e', borderRadius: 3, p: 2 }}>
+        <Box sx={{ bgcolor: 'rgba(251,146,60,.14)', border: '1px solid rgba(251,146,60,.35)', borderRadius: 3, p: 2 }}>
           <Typography sx={{ fontWeight: 700 }}>{item.socio}</Typography>
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
             Patente: <Box component="span" sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700 }}>{item.patente}</Box>
           </Typography>
-          <Typography sx={{ fontSize: 13, color: '#c2410c', fontWeight: 600, mt: 1 }}>
+          <Typography sx={{ fontSize: 13, color: '#fb923c', fontWeight: 600, mt: 1 }}>
             {item.cuotas_vencidas} cuota{item.cuotas_vencidas !== 1 ? 's' : ''} vencida{item.cuotas_vencidas !== 1 ? 's' : ''}
           </Typography>
         </Box>
         <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>
           Se registrará el ingreso de <strong>cada cuota vencida</strong> en tesorería y el socio quedará{' '}
-          <Box component="span" sx={{ color: '#2f7d5b', fontWeight: 700 }}>ACTIVO</Box> automáticamente.
+          <Box component="span" sx={{ color: '#34d399', fontWeight: 700 }}>ACTIVO</Box> automáticamente.
         </Typography>
       </DialogContent>
       <DialogActions sx={{ p: 3, pt: 0, gap: 1 }}>
@@ -203,15 +203,15 @@ export default function ReportesTesorero() {
   }) ?? [];
 
   const barColor = !resumen ? colors.accent500
-    : resumen.porcentaje >= 80 ? '#2f7d5b' : resumen.porcentaje >= 50 ? colors.accent500 : '#c0392b';
+    : resumen.porcentaje >= 80 ? '#34d399' : resumen.porcentaje >= 50 ? colors.accent500 : '#f87171';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <DollarSign size={22} color="#3a3327" />
+          <DollarSign size={22} color="rgba(255,255,255,.92)" />
           <Box>
-            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Reportes — Tesorería</Typography>
+            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Reportes — Tesorería</Typography>
             <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>Control de recaudación semanal</Typography>
           </Box>
         </Box>
@@ -235,7 +235,7 @@ export default function ReportesTesorero() {
         </CardContent>
       </Card>
 
-      <Card sx={{ borderRadius: 3, bgcolor: '#fdf1dc', border: '1px solid', borderColor: '#f0d9a8', boxShadow: 'none' }}>
+      <Card sx={{ borderRadius: 3, bgcolor: 'rgba(255,222,0,.12)', border: '1px solid', borderColor: 'rgba(255,222,0,.28)', boxShadow: 'none' }}>
         <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: '12px !important' }}>
           <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: colors.accent700 }}>Tarifa semanal por móvil:</Typography>
           {editTarifa ? (
@@ -283,20 +283,20 @@ export default function ReportesTesorero() {
                 </Box>
                 <LinearProgress
                   variant="determinate" value={Math.min(resumen.porcentaje, 100)}
-                  sx={{ height: 10, borderRadius: 5, bgcolor: '#f1efe9', '& .MuiLinearProgress-bar': { borderRadius: 5, bgcolor: barColor } }}
+                  sx={{ height: 10, borderRadius: 5, bgcolor: 'rgba(255,255,255,.07)', '& .MuiLinearProgress-bar': { borderRadius: 5, bgcolor: barColor } }}
                 />
-                <Typography sx={{ textAlign: 'right', fontSize: 11, color: '#a89f8f', mt: 0.5 }}>{resumen.porcentaje}%</Typography>
+                <Typography sx={{ textAlign: 'right', fontSize: 11, color: 'rgba(255,255,255,.55)', mt: 0.5 }}>{resumen.porcentaje}%</Typography>
               </CardContent>
             </Card>
           )}
 
           <Box sx={{ bgcolor: 'background.paper', borderRadius: 4, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ px: 2.5, py: 1.75, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Car size={15} color="#6b6152" />
+              <Car size={15} color="rgba(255,255,255,.70)" />
               <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
                 Todos los móviles — <Box component="span" sx={{ textTransform: 'capitalize' }}>{periodoLabel(periodo)}</Box>
               </Typography>
-              <Typography sx={{ ml: 'auto', fontSize: 11, color: '#a89f8f' }}>{resumen.pagados} / {resumen.total_moviles} pagados</Typography>
+              <Typography sx={{ ml: 'auto', fontSize: 11, color: 'rgba(255,255,255,.55)' }}>{resumen.pagados} / {resumen.total_moviles} pagados</Typography>
             </Box>
 
             {detalle.length === 0 ? (
@@ -313,18 +313,18 @@ export default function ReportesTesorero() {
                         display: 'grid',
                         gridTemplateColumns: { xs: '1fr', md: '140px 1fr 130px 150px 130px auto' },
                         alignItems: 'center', gap: 1.5,
-                        bgcolor: bloqueado ? '#fdf6f5' : 'background.paper',
-                        border: '1px solid', borderColor: bloqueado ? '#f3c9c4' : 'divider',
+                        bgcolor: bloqueado ? 'rgba(248,113,113,.10)' : 'background.paper',
+                        border: '1px solid', borderColor: bloqueado ? 'rgba(248,113,113,.30)' : 'divider',
                         borderRadius: 3, px: 2, py: 1.5,
                       }}
                     >
                       <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                          <Car size={13} color="#a89f8f" />
+                          <Car size={13} color="rgba(255,255,255,.55)" />
                           <Typography sx={{ fontFamily: 'Roboto Mono, monospace', fontWeight: 700, fontSize: 13 }}>{d.patente}</Typography>
                         </Box>
                         {d.estado_movil === 'BLOQUEADO' && (
-                          <Chip label="MÓVIL BLOQ." size="small" sx={{ mt: 0.4, bgcolor: '#fbe9e9', color: '#c0392b', fontWeight: 700, fontSize: 9, height: 18 }} />
+                          <Chip label="MÓVIL BLOQ." size="small" sx={{ mt: 0.4, bgcolor: 'rgba(248,113,113,.14)', color: '#f87171', fontWeight: 700, fontSize: 9, height: 18 }} />
                         )}
                       </Box>
 
@@ -332,35 +332,35 @@ export default function ReportesTesorero() {
                         <InitialsAvatar nombre={d.socio} size={32} />
                         <Box sx={{ minWidth: 0 }}>
                           <Typography sx={{ fontWeight: 600, fontSize: 13.5 }}>{d.socio}</Typography>
-                          <Typography sx={{ fontSize: 11, color: '#a89f8f' }}>{d.rut}</Typography>
+                          <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)' }}>{d.rut}</Typography>
                         </Box>
                       </Box>
 
                       <Box>
                         {yaAtraso ? (
                           <>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#c0392b', fontWeight: 700, fontSize: 12 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#f87171', fontWeight: 700, fontSize: 12 }}>
                               <AlertTriangle size={13} /> {d.cuotas_vencidas} cuota{d.cuotas_vencidas !== 1 ? 's' : ''}
                             </Box>
-                            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#c0392b', fontFamily: 'Roboto Mono, monospace' }}>
+                            <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: '#f87171', fontFamily: 'Roboto Mono, monospace' }}>
                               ${d.monto_adeudado.toLocaleString('es-CL')}
                             </Typography>
                           </>
-                        ) : <Typography sx={{ fontSize: 12, color: '#c4bda9' }}>Sin atrasos</Typography>}
+                        ) : <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.35)' }}>Sin atrasos</Typography>}
                       </Box>
 
                       <Box>
                         <Chip label={PAGO_LABEL[d.estado_pago]} size="small" sx={{ bgcolor: PAGO_STYLE[d.estado_pago].bg, color: PAGO_STYLE[d.estado_pago].fg, fontWeight: 700, fontSize: 10.5 }} />
-                        {d.fecha_pago && <Typography sx={{ fontSize: 11, color: '#a89f8f', mt: 0.4 }}>{new Date(d.fecha_pago).toLocaleDateString('es-CL')}</Typography>}
+                        {d.fecha_pago && <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.55)', mt: 0.4 }}>{new Date(d.fecha_pago).toLocaleDateString('es-CL')}</Typography>}
                       </Box>
 
                       <Box>
                         {bloqueado ? (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#c0392b' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#f87171' }}>
                             <Lock size={13} /> Bloqueado
                           </Box>
                         ) : (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#2f7d5b' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, fontWeight: 700, color: '#34d399' }}>
                             <CheckCircle2 size={13} /> Activo
                           </Box>
                         )}
@@ -387,7 +387,7 @@ export default function ReportesTesorero() {
                           </Button>
                         )}
                         {d.estado_pago === 'PAGADO' && !yaAtraso && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#2f7d5b', fontSize: 12, fontWeight: 600 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#34d399', fontSize: 12, fontWeight: 600 }}>
                             <CheckCircle2 size={15} /> Al día
                           </Box>
                         )}
@@ -407,7 +407,7 @@ export default function ReportesTesorero() {
 
       <Dialog open={confirmCierre} onClose={() => setConfirmCierre(false)} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Lock size={20} color="#c0392b" />
+          <Lock size={20} color="#f87171" />
           <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Cerrar semana</Typography>
         </DialogTitle>
         <DialogContent>

@@ -97,7 +97,7 @@ export default function PerfilDialog({ open, onClose, onCambiarClave }: Props) {
                   <Typography sx={{ fontSize: 18, fontWeight: 700 }}>{perfil.nombre_completo}</Typography>
                   <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>@{perfil.username}</Typography>
                 </Box>
-                <Chip label={perfil.rol} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+                <Chip label={perfil.rol} size="small" sx={{ bgcolor: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.70)', fontWeight: 700 }} />
               </Box>
 
               {perfil.rut && soloLectura('RUT', perfil.rut)}
@@ -110,7 +110,7 @@ export default function PerfilDialog({ open, onClose, onCambiarClave }: Props) {
                 size="small" fullWidth label="Correo" type="email" value={email}
                 onChange={e => { setEmail(e.target.value); setOk(false); }}
                 helperText="Es el correo donde llegan las claves temporales."
-                slotProps={{ input: { startAdornment: <Mail size={15} color="#a89f8f" style={{ marginRight: 8 }} /> } }}
+                slotProps={{ input: { startAdornment: <Mail size={15} color="rgba(255,255,255,.55)" style={{ marginRight: 8 }} /> } }}
               />
 
               {cambiaCorreo && (
@@ -123,7 +123,7 @@ export default function PerfilDialog({ open, onClose, onCambiarClave }: Props) {
               <TextField
                 size="small" fullWidth label="Teléfono" placeholder="+56 9 1234 5678" value={telefono}
                 onChange={e => { setTelefono(e.target.value); setOk(false); }}
-                slotProps={{ input: { startAdornment: <Phone size={15} color="#a89f8f" style={{ marginRight: 8 }} /> } }}
+                slotProps={{ input: { startAdornment: <Phone size={15} color="rgba(255,255,255,.55)" style={{ marginRight: 8 }} /> } }}
               />
 
               <Button

@@ -41,8 +41,8 @@ export default function FilaVirtualConductor() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <ListOrdered size={22} color="#3a3327" />
-          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Fila Virtual</Typography>
+          <ListOrdered size={22} color="rgba(255,255,255,.92)" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Fila Virtual</Typography>
         </Box>
         <IconButton onClick={load} sx={{ color: 'text.secondary' }}><RefreshCw size={16} /></IconButton>
       </Box>
@@ -63,7 +63,7 @@ export default function FilaVirtualConductor() {
                   sx={{
                     display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.25,
                     borderRadius: 3, border: '1px solid', borderColor: esMio ? colors.accent500 : 'divider',
-                    bgcolor: esMio ? '#fdf6e3' : 'background.paper',
+                    bgcolor: esMio ? 'rgba(255,222,0,.10)' : 'background.paper',
                   }}
                 >
                   <Avatar sx={{

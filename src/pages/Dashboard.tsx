@@ -200,7 +200,7 @@ export default function DashboardPage() {
   const hayChart = porEstado.some(e => e.total > 0);
 
   return (
-    <Box className="vidrio-escena" sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: { xs: 2, md: 3 }, borderRadius: '28px', color: '#fff' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, color: '#fff' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <LayoutDashboard size={22} color={colors.accent500} />

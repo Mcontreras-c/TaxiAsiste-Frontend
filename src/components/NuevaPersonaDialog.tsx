@@ -34,7 +34,7 @@ function Tarjeta({ onClick, icono, bg, titulo, texto }: {
   return (
     <Box onClick={onClick} sx={{
       flex: 1, cursor: 'pointer', borderRadius: 4, p: 3, textAlign: 'center', border: '2px solid', borderColor: 'divider',
-      '&:hover': { borderColor: colors.ink, bgcolor: '#eaf3fb' }, transition: 'border-color .15s, background-color .15s',
+      '&:hover': { borderColor: colors.ink, bgcolor: 'rgba(96,165,250,.12)' }, transition: 'border-color .15s, background-color .15s',
     }}>
       <Box sx={{ width: 60, height: 60, borderRadius: '50%', mx: 'auto', mb: 1.5, bgcolor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {icono}
@@ -162,9 +162,9 @@ export default function NuevaPersonaDialog({ roles, onClose, onCreado }: {
         <DialogContent sx={{ pt: 1 }}>
           <Typography sx={{ fontSize: 13, color: 'text.secondary', textAlign: 'center', mb: 2.5 }}>¿A quién vas a dar de alta?</Typography>
           <Box sx={{ display: 'flex', gap: 2.5, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <Tarjeta onClick={() => setTipo('conductor')} bg="#fdf1dc" icono={<Car size={28} color={colors.ink} />}
+            <Tarjeta onClick={() => setTipo('conductor')} bg="rgba(255,222,0,.12)" icono={<Car size={28} color={colors.ink} />}
               titulo="Conductor (socio)" texto="Datos personales, vehículo y acceso a la app, en un solo paso" />
-            <Tarjeta onClick={() => setTipo('personal')} bg="#e8ecf9" icono={<Briefcase size={26} color={colors.ink} />}
+            <Tarjeta onClick={() => setTipo('personal')} bg="rgba(96,165,250,.14)" icono={<Briefcase size={26} color={colors.ink} />}
               titulo="Personal del sindicato" texto="Administrador, Central, Tesorero, Secretario o Paletero" />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, mt: 3, color: 'text.secondary' }}>

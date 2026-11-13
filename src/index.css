@@ -5,66 +5,91 @@
 @layer base {
   html {
     @apply antialiased;
+    color-scheme: dark;
   }
 
   body {
-    @apply bg-surface-muted text-slate-800 font-sans;
+    @apply text-white font-sans;
+    background-color: #0b1220;
+    background-image:
+      radial-gradient(900px 420px at 6% -8%, rgba(255, 222, 0, 0.10), transparent 62%),
+      radial-gradient(1000px 560px at 104% 2%, rgba(0, 114, 188, 0.30), transparent 62%),
+      radial-gradient(800px 500px at 50% 110%, rgba(30, 134, 209, 0.12), transparent 60%),
+      linear-gradient(160deg, #0b1220 0%, #0f1a2e 55%, #0a1424 100%);
+    background-attachment: fixed;
   }
 
   ::selection {
-    @apply bg-brand-200 text-brand-900;
+    background: rgba(255, 222, 0, 0.35);
+    color: #fff;
   }
+
+  /* Barras de desplazamiento discretas sobre el fondo oscuro */
+  * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 8px; }
+  *::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); }
 }
 
 @layer components {
   .input-field {
-    @apply w-full border border-surface-border rounded-xl px-4 py-2.5 text-sm
-           bg-white text-slate-800 placeholder:text-slate-400
+    @apply w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/40
            transition-shadow duration-150
            focus:outline-none focus:ring-2 focus:ring-brand-400/60 focus:border-brand-400;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
   }
+
+  .input-field:hover { border-color: rgba(255, 255, 255, 0.28); }
+  .input-field option { background: #111c30; color: #fff; }
 
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
-           bg-brand-400 hover:bg-brand-500 active:bg-brand-600
            text-slate-900 font-semibold rounded-xl
            transition-all duration-150
-           disabled:opacity-50 disabled:cursor-not-allowed
-           shadow-sm hover:shadow;
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #fff176, #ffde00);
+    box-shadow: 0 6px 20px rgba(255, 222, 0, 0.22);
   }
+
+  .btn-primary:hover { background: linear-gradient(135deg, #fff176, #f2c400); transform: translateY(-1px); }
 
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2
-           border border-surface-border bg-white hover:bg-slate-50
-           text-slate-600 font-medium rounded-xl
+           text-white/85 font-medium rounded-xl
            transition-all duration-150
            disabled:opacity-50 disabled:cursor-not-allowed;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.16);
   }
+
+  .btn-secondary:hover { background: rgba(255, 255, 255, 0.13); color: #fff; }
 
   .btn-dark {
     @apply inline-flex items-center justify-center gap-2
-           bg-surface-sidebar hover:bg-slate-800
            text-white font-semibold rounded-xl
            transition-all duration-150
            disabled:opacity-50 disabled:cursor-not-allowed;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
+  .btn-dark:hover { background: rgba(255, 255, 255, 0.2); }
+
   .card {
-    @apply bg-white rounded-2xl shadow-card border border-slate-100;
+    @apply rounded-2xl;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
   }
 
   .badge {
     @apply inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full;
   }
 
-  /* Dashboard con efecto de vidrio esmerilado (glassmorphism): escena oscura + tarjetas translucidas */
-  .vidrio-escena {
-    background:
-      radial-gradient(800px 380px at 6% -8%, rgba(255, 222, 0, 0.14), transparent 62%),
-      radial-gradient(900px 500px at 104% 4%, rgba(0, 114, 188, 0.32), transparent 62%),
-      linear-gradient(160deg, #0b1220 0%, #0f1a2e 55%, #0a1424 100%);
-  }
-
+  /* Efecto de vidrio esmerilado (glassmorphism): tarjetas translucidas sobre el fondo oscuro */
   .vidrio-tarjeta {
     background: linear-gradient(150deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.03));
     border: 1px solid rgba(255, 255, 255, 0.12);

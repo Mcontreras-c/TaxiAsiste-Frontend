@@ -22,7 +22,7 @@ export default function ConfirmarBajaDialog({ open, titulo, detalles, loading, e
     <Dialog open={open} onClose={loading ? undefined : onClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4 } } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <UserX size={20} color="#c0392b" />
+          <UserX size={20} color="#f87171" />
           <Typography sx={{ fontWeight: 700, fontSize: 17 }}>{titulo}</Typography>
         </Box>
         <IconButton size="small" onClick={onClose} disabled={loading}><X size={18} /></IconButton>

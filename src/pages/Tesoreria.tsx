@@ -12,8 +12,8 @@ import {
 import { exportarAExcel } from '../utils/exportarExcel';
 
 const TIPO_COLOR: Record<string, string> = {
-  INGRESO: 'bg-emerald-50 text-emerald-700',
-  EGRESO:  'bg-red-50 text-red-600',
+  INGRESO: 'bg-emerald-500/15 text-emerald-400',
+  EGRESO:  'bg-red-500/15 text-red-400',
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -181,34 +181,34 @@ export default function TesoreriaPage() {
           <StatCard
             title="Ingresos"
             value={`$${balance.ingresos.toLocaleString('es-CL')}`}
-            icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
-            accent="text-emerald-600"
-            iconBg="bg-emerald-50"
+            icon={<TrendingUp className="w-5 h-5 text-emerald-400" />}
+            accent="text-emerald-400"
+            iconBg="bg-emerald-500/15"
           />
           <StatCard
             title="Egresos"
             value={`$${balance.egresos.toLocaleString('es-CL')}`}
-            icon={<TrendingDown className="w-5 h-5 text-red-500" />}
-            accent="text-red-500"
-            iconBg="bg-red-50"
+            icon={<TrendingDown className="w-5 h-5 text-red-400" />}
+            accent="text-red-400"
+            iconBg="bg-red-500/15"
           />
           <StatCard
             title="Balance"
             value={`$${balance.balance.toLocaleString('es-CL')}`}
-            icon={<Wallet className={`w-5 h-5 ${balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}`} />}
-            accent={balance.balance >= 0 ? 'text-blue-600' : 'text-orange-500'}
-            iconBg={balance.balance >= 0 ? 'bg-blue-50' : 'bg-orange-50'}
+            icon={<Wallet className={`w-5 h-5 ${balance.balance >= 0 ? 'text-blue-400' : 'text-orange-400'}`} />}
+            accent={balance.balance >= 0 ? 'text-blue-400' : 'text-orange-400'}
+            iconBg={balance.balance >= 0 ? 'bg-blue-500/15' : 'bg-orange-500/15'}
           />
         </div>
       )}
 
       <div className="card p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <button onClick={() => setMes(prevMes(mes))} className="p-1.5 rounded-lg hover:bg-slate-100">
+          <button onClick={() => setMes(prevMes(mes))} className="p-1.5 rounded-lg hover:bg-white/[0.06]/10">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <h2 className="text-sm font-semibold text-slate-700 capitalize">Resumen de caja — {mesLabel(mes)}</h2>
-          <button onClick={() => setMes(nextMes(mes))} className="p-1.5 rounded-lg hover:bg-slate-100">
+          <h2 className="text-sm font-semibold text-white/80 capitalize">Resumen de caja — {mesLabel(mes)}</h2>
+          <button onClick={() => setMes(nextMes(mes))} className="p-1.5 rounded-lg hover:bg-white/[0.06]/10">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -217,30 +217,30 @@ export default function TesoreriaPage() {
             <StatCard
               title="Caja mes anterior"
               value={`$${resumenMes.caja_anterior.toLocaleString('es-CL')}`}
-              icon={<Landmark className="w-5 h-5 text-slate-500" />}
-              accent="text-slate-700"
-              iconBg="bg-slate-100"
+              icon={<Landmark className="w-5 h-5 text-white/60" />}
+              accent="text-white/80"
+              iconBg="bg-white/[0.06]/10"
             />
             <StatCard
               title="Ganancias del mes"
               value={`$${resumenMes.ingresos_mes.toLocaleString('es-CL')}`}
-              icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
-              accent="text-emerald-600"
-              iconBg="bg-emerald-50"
+              icon={<TrendingUp className="w-5 h-5 text-emerald-400" />}
+              accent="text-emerald-400"
+              iconBg="bg-emerald-500/15"
             />
             <StatCard
               title="Gastos del mes"
               value={`$${resumenMes.egresos_mes.toLocaleString('es-CL')}`}
-              icon={<TrendingDown className="w-5 h-5 text-red-500" />}
-              accent="text-red-500"
-              iconBg="bg-red-50"
+              icon={<TrendingDown className="w-5 h-5 text-red-400" />}
+              accent="text-red-400"
+              iconBg="bg-red-500/15"
             />
             <StatCard
               title="Total caja actual"
               value={`$${resumenMes.total_caja.toLocaleString('es-CL')}`}
-              icon={<Wallet className={`w-5 h-5 ${resumenMes.total_caja >= 0 ? 'text-blue-600' : 'text-orange-500'}`} />}
-              accent={resumenMes.total_caja >= 0 ? 'text-blue-600' : 'text-orange-500'}
-              iconBg={resumenMes.total_caja >= 0 ? 'bg-blue-50' : 'bg-orange-50'}
+              icon={<Wallet className={`w-5 h-5 ${resumenMes.total_caja >= 0 ? 'text-blue-400' : 'text-orange-400'}`} />}
+              accent={resumenMes.total_caja >= 0 ? 'text-blue-400' : 'text-orange-400'}
+              iconBg={resumenMes.total_caja >= 0 ? 'bg-blue-500/15' : 'bg-orange-500/15'}
             />
           </div>
         )}
@@ -250,7 +250,7 @@ export default function TesoreriaPage() {
         <LoadingState />
       ) : (
         <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Historial de movimientos</h2>
+          <h2 className="text-xs font-semibold text-white/45 uppercase tracking-widest">Historial de movimientos</h2>
           <DataTable
             headers={['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Registrado por', 'Monto']}
             isEmpty={movimientos.length === 0}
@@ -258,16 +258,16 @@ export default function TesoreriaPage() {
           >
             {movimientos.map(m => (
               <TableRow key={m.id_movimiento}>
-                <TableCell className="text-slate-500 text-xs">
+                <TableCell className="text-white/60 text-xs">
                   {new Date(m.fecha).toLocaleDateString('es-CL')}
                 </TableCell>
                 <TableCell>
                   <Badge className={TIPO_COLOR[m.tipo]}>{m.tipo}</Badge>
                 </TableCell>
-                <TableCell className="text-slate-500">{CATEGORIA_LABEL[m.categoria]}</TableCell>
-                <TableCell className="text-slate-700">{m.descripcion}</TableCell>
-                <TableCell className="text-slate-500">{m.usuario_nombre ?? '—'}</TableCell>
-                <TableCell className={`font-semibold ${m.tipo === 'INGRESO' ? 'text-emerald-600' : 'text-red-500'}`}>
+                <TableCell className="text-white/60">{CATEGORIA_LABEL[m.categoria]}</TableCell>
+                <TableCell className="text-white/80">{m.descripcion}</TableCell>
+                <TableCell className="text-white/60">{m.usuario_nombre ?? '—'}</TableCell>
+                <TableCell className={`font-semibold ${m.tipo === 'INGRESO' ? 'text-emerald-400' : 'text-red-400'}`}>
                   {m.tipo === 'EGRESO' ? '-' : '+'}${Number(m.monto).toLocaleString('es-CL')}
                 </TableCell>
               </TableRow>
@@ -280,7 +280,7 @@ export default function TesoreriaPage() {
         <Modal title="Registrar pago de cuota" onClose={() => setModal(null)}>
           <form onSubmit={handlePagoCuota} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Cuota pendiente *</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Cuota pendiente *</label>
               <select
                 value={cuotaSeleccionada}
                 onChange={e => setCuotaSeleccionada(e.target.value)}
@@ -295,7 +295,7 @@ export default function TesoreriaPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Observación</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Observación</label>
               <input
                 type="text"
                 placeholder="Opcional..."
@@ -305,7 +305,7 @@ export default function TesoreriaPage() {
               />
             </div>
             {formError && (
-              <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+              <p className="text-sm text-red-400 bg-red-500/15 border border-red-400/30 rounded-xl px-3 py-2">{formError}</p>
             )}
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="secondary" className="flex-1" onClick={() => setModal(null)}>
@@ -323,7 +323,7 @@ export default function TesoreriaPage() {
         <Modal title="Registrar movimiento" onClose={() => setModal(null)}>
           <form onSubmit={handleMovimiento} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Tipo *</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Tipo *</label>
               <select
                 value={movForm.tipo}
                 onChange={e => setMovForm(f => ({ ...f, tipo: e.target.value as any }))}
@@ -334,7 +334,7 @@ export default function TesoreriaPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoría *</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Categoría *</label>
               <select
                 value={movForm.categoria}
                 onChange={e => setMovForm(f => ({ ...f, categoria: e.target.value }))}
@@ -346,7 +346,7 @@ export default function TesoreriaPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción *</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Descripción *</label>
               <input
                 type="text"
                 placeholder="Ej: Pago arriendo local"
@@ -356,7 +356,7 @@ export default function TesoreriaPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto ($) *</label>
+              <label className="block text-sm font-medium text-white/80 mb-1.5">Monto ($) *</label>
               <input
                 type="number"
                 min="1"
@@ -367,7 +367,7 @@ export default function TesoreriaPage() {
               />
             </div>
             {formError && (
-              <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{formError}</p>
+              <p className="text-sm text-red-400 bg-red-500/15 border border-red-400/30 rounded-xl px-3 py-2">{formError}</p>
             )}
             <div className="flex gap-3 pt-2">
               <Button type="button" variant="secondary" className="flex-1" onClick={() => setModal(null)}>

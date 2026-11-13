@@ -7,10 +7,10 @@ import { exportarAExcel } from '../utils/exportarExcel';
 
 import { formatoHora, formatoFechaHora } from '../utils/formatoFecha';
 const ESTADO_COLOR: Record<string, string> = {
-  PENDIENTE:  '#c2410c',
-  ASIGNADO:   '#3355a8',
-  EN_CURSO:   '#7e22ce',
-  COMPLETADO: '#2f7d5b',
+  PENDIENTE:  '#fb923c',
+  ASIGNADO:   '#60a5fa',
+  EN_CURSO:   '#c084fc',
+  COMPLETADO: '#34d399',
   CANCELADO:  '#33415c',
 };
 
@@ -24,9 +24,9 @@ const ORDEN_ESTADOS = ['CANCELADO', 'COMPLETADO', 'PENDIENTE', 'ASIGNADO', 'EN_C
 type Tone = { fg: string; bg: string; iconBg: string };
 
 const TONES: Record<string, Tone> = {
-  blue:    { fg: '#3355a8', bg: '#e1e6f8', iconBg: 'rgba(255,255,255,.65)' },
-  emerald: { fg: '#2f7d5b', bg: '#dcf1e6', iconBg: 'rgba(255,255,255,.65)' },
-  red:     { fg: '#c0392b', bg: '#fbe9e9', iconBg: 'rgba(255,255,255,.65)' },
+  blue:    { fg: '#60a5fa', bg: 'rgba(96,165,250,.14)', iconBg: 'rgba(255,255,255,.65)' },
+  emerald: { fg: '#34d399', bg: 'rgba(52,211,153,.14)', iconBg: 'rgba(255,255,255,.65)' },
+  red:     { fg: '#f87171', bg: 'rgba(248,113,113,.14)', iconBg: 'rgba(255,255,255,.65)' },
 };
 
 function StatHero({
@@ -42,7 +42,7 @@ function StatHero({
           {icon}
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontSize: 26, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#241f16', lineHeight: 1.2 }}>
+          <Typography sx={{ fontSize: 26, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#ffffff', lineHeight: 1.2 }}>
             {value}
           </Typography>
           <Typography sx={{ fontSize: 12, color: tone.fg, fontWeight: 600 }}>{label}</Typography>
@@ -71,7 +71,7 @@ function DonutEstados({ segmentos, total }: { segmentos: { estado: string; total
     <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f1efe9" strokeWidth={strokeWidth} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.07)" strokeWidth={strokeWidth} />
           {arcos.map(a => (
             <circle
               key={a.estado}
@@ -88,7 +88,7 @@ function DonutEstados({ segmentos, total }: { segmentos: { estado: string; total
         alignItems: 'center', justifyContent: 'center',
       }}>
         <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', letterSpacing: '.04em' }}>TOTAL</Typography>
-        <Typography sx={{ fontSize: 32, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#241f16', lineHeight: 1 }}>{total}</Typography>
+        <Typography sx={{ fontSize: 32, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', color: '#ffffff', lineHeight: 1 }}>{total}</Typography>
       </Box>
     </Box>
   );
@@ -157,9 +157,9 @@ export default function ReportesCentralPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <BarChart2 size={22} color="#3a3327" />
+          <BarChart2 size={22} color="rgba(255,255,255,.92)" />
           <Box>
-            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Reportes</Typography>
+            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Reportes</Typography>
             <Typography sx={{ fontSize: 12.5, color: 'text.secondary', textTransform: 'capitalize' }}>
               {new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </Typography>
@@ -183,7 +183,7 @@ export default function ReportesCentralPage() {
       <Card sx={{ borderRadius: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-            <PhoneCall size={17} color="#6b6152" />
+            <PhoneCall size={17} color="rgba(255,255,255,.70)" />
             <Typography sx={{ fontSize: 15, fontWeight: 700 }}>Análisis de Solicitudes por Estado (Hoy)</Typography>
             <Typography sx={{ ml: 'auto', fontSize: 13, color: 'text.secondary' }}>
               Total: <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{totalHoy}</Box>
@@ -237,7 +237,7 @@ export default function ReportesCentralPage() {
                     <TableRow key={s.id_solicitud} hover>
                       <TableCell sx={{ fontFamily: 'Roboto Mono, monospace', fontSize: 12, color: 'text.secondary' }}>{s.folio}</TableCell>
                       <TableCell sx={{ fontSize: 13 }}>{s.origen} → {s.destino}</TableCell>
-                      <TableCell sx={{ fontSize: 12, color: '#a89f8f' }}>
+                      <TableCell sx={{ fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
                         {formatoFechaHora(s.fecha_hora)}
                       </TableCell>
                     </TableRow>

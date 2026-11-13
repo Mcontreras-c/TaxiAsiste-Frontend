@@ -25,20 +25,20 @@ const POR_PAGINA = 6;
 const PASSWORD_MIN_LEN = 6;
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
-  ACTIVO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
-  INACTIVO:  { bg: '#f1efe9', fg: '#6b6152' },
-  BLOQUEADO: { bg: '#fbe9e9', fg: '#c0392b' },
+  ACTIVO:    { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  INACTIVO:  { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' },
+  BLOQUEADO: { bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
 };
 
 // Un tinte por rol (no por persona, a diferencia de InitialsAvatar) -- asi
 // la grilla se puede escanear de un vistazo por tipo de usuario.
 const ROL_TINT: Record<string, { bg: string; fg: string }> = {
-  Administrador: { bg: '#e8ecf9', fg: '#3355a8' },
-  Central:       { bg: '#e4f3ec', fg: '#2f7d5b' },
-  Tesorero:      { bg: '#fdf1dc', fg: colors.accent700 },
-  Secretario:    { bg: '#f3e8fd', fg: '#7e22ce' },
-  Conductor:     { bg: '#fdece2', fg: '#c2410c' },
-  Paletero:      { bg: '#fce7f3', fg: '#be185d' },
+  Administrador: { bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' },
+  Central:       { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  Tesorero:      { bg: 'rgba(255,222,0,.12)', fg: colors.accent700 },
+  Secretario:    { bg: 'rgba(192,132,252,.14)', fg: '#c084fc' },
+  Conductor:     { bg: 'rgba(251,146,60,.14)', fg: '#fb923c' },
+  Paletero:      { bg: 'rgba(244,114,182,.14)', fg: '#f472b6' },
 };
 
 const ROL_ICON: Record<string, React.ReactNode> = {
@@ -365,12 +365,12 @@ export default function UsuariosPage() {
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-            <UserCog size={22} color="#3a3327" />
-            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Personas</Typography>
-            <Chip label={usuarios.filter(u => u.estado !== 'INACTIVO').length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+            <UserCog size={22} color="rgba(255,255,255,.92)" />
+            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Personas</Typography>
+            <Chip label={usuarios.filter(u => u.estado !== 'INACTIVO').length} size="small" sx={{ bgcolor: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.70)', fontWeight: 700 }} />
             <Chip
               icon={<Lock size={12} />} label="Solo Administrador" size="small"
-              sx={{ bgcolor: '#fdf1dc', color: colors.accent700, fontWeight: 700, fontSize: 11 }}
+              sx={{ bgcolor: 'rgba(255,222,0,.12)', color: colors.accent700, fontWeight: 700, fontSize: 11 }}
             />
           </Box>
           <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
@@ -419,13 +419,13 @@ export default function UsuariosPage() {
           onChange={e => setBusqueda(e.target.value)}
           sx={{ minWidth: 260, flex: 1, maxWidth: 360 }}
           slotProps={{ input: { startAdornment: (
-            <InputAdornment position="start"><Search size={15} color="#a89f8f" /></InputAdornment>
+            <InputAdornment position="start"><Search size={15} color="rgba(255,255,255,.55)" /></InputAdornment>
           ) } }}
         />
         <Chip
           label={`Todos ${listados.length}`} onClick={() => setFiltroRol('Todos')}
           sx={{
-            fontWeight: 700, bgcolor: filtroRol === 'Todos' ? colors.ink : '#f1efe9',
+            fontWeight: 700, bgcolor: filtroRol === 'Todos' ? colors.ink : 'rgba(255,255,255,.07)',
             color: filtroRol === 'Todos' ? '#fff' : 'text.secondary',
           }}
         />
@@ -433,7 +433,7 @@ export default function UsuariosPage() {
           <Chip
             key={rol} label={rol} onClick={() => setFiltroRol(rol)}
             sx={{
-              fontWeight: 600, bgcolor: filtroRol === rol ? colors.ink : '#f1efe9',
+              fontWeight: 600, bgcolor: filtroRol === rol ? colors.ink : 'rgba(255,255,255,.07)',
               color: filtroRol === rol ? '#fff' : 'text.secondary',
             }}
           />
@@ -445,9 +445,9 @@ export default function UsuariosPage() {
             onClick={() => { setVerInactivos(v => !v); setFiltroRol('Todos'); }}
             sx={{
               ml: 'auto', fontWeight: 600,
-              bgcolor: verInactivos ? colors.ink : '#f1efe9',
+              bgcolor: verInactivos ? colors.ink : 'rgba(255,255,255,.07)',
               color: verInactivos ? '#fff' : 'text.secondary',
-              '& .MuiChip-icon': { color: verInactivos ? '#fff' : '#6b6152' },
+              '& .MuiChip-icon': { color: verInactivos ? '#fff' : 'rgba(255,255,255,.70)' },
             }}
           />
         )}
@@ -463,7 +463,7 @@ export default function UsuariosPage() {
         <>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)', md: 'repeat(3,1fr)' }, gap: 2 }}>
             {visibles.map(u => {
-              const tint = ROL_TINT[u.rol.nombre_rol] ?? { bg: '#f1efe9', fg: '#6b6152' };
+              const tint = ROL_TINT[u.rol.nombre_rol] ?? { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' };
               return (
                 <Card key={u.id_usuario} sx={{ borderRadius: 4, opacity: u.estado === 'INACTIVO' ? 0.72 : 1 }}>
                   <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -494,10 +494,10 @@ export default function UsuariosPage() {
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 12.5, color: 'text.secondary' }}>
-                        <Mail size={13} color="#a89f8f" />
+                        <Mail size={13} color="rgba(255,255,255,.55)" />
                         <Typography sx={{ fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email || '—'}</Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 12.5, color: '#a89f8f' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 12.5, color: 'rgba(255,255,255,.55)' }}>
                         <Clock size={13} />
                         <Typography sx={{ fontSize: 12.5 }}>{formatoUltimoAcceso(u.ultimo_acceso)}</Typography>
                       </Box>
@@ -508,7 +508,7 @@ export default function UsuariosPage() {
                         <Button
                           size="small" onClick={() => reactivar(u)} disabled={reactivando === u.id_usuario}
                           startIcon={<UserCheck size={13} />}
-                          sx={{ fontSize: 12, fontWeight: 700, color: '#2f7d5b', px: 0 }}
+                          sx={{ fontSize: 12, fontWeight: 700, color: '#34d399', px: 0 }}
                         >
                           Reactivar
                         </Button>
@@ -529,7 +529,7 @@ export default function UsuariosPage() {
                           <Button
                             size="small" onClick={() => setModalReenviar(u)} startIcon={<Send size={12} />}
                             disabled={!u.email} title={u.email ? 'Generar clave nueva y enviarla por correo' : 'Este usuario no tiene correo'}
-                            sx={{ fontSize: 12, fontWeight: 700, color: '#2f7d5b', px: 0 }}
+                            sx={{ fontSize: 12, fontWeight: 700, color: '#34d399', px: 0 }}
                           >
                             Reenviar credenciales
                           </Button>
@@ -543,7 +543,7 @@ export default function UsuariosPage() {
                           {u.id_usuario !== yo?.id_usuario && (
                             <Button
                               size="small" onClick={() => { setErrorBaja(null); setModalBaja(u); }} startIcon={<UserX size={13} />}
-                              sx={{ fontSize: 12, fontWeight: 700, color: '#c0392b', px: 0 }}
+                              sx={{ fontSize: 12, fontWeight: 700, color: '#f87171', px: 0 }}
                             >
                               Dar de baja
                             </Button>

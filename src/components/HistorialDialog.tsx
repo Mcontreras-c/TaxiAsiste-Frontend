@@ -11,18 +11,18 @@ const celda = { fontSize: 12.5, py: 1, verticalAlign: 'top' } as const;
 const cabecera = { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary', py: 1 } as const;
 
 const EVENTOS: Record<string, { texto: string; bg: string; fg: string }> = {
-  CREADO:                  { texto: 'Cuenta creada', bg: '#e4f3ec', fg: '#2f7d5b' },
-  CONDUCTOR_CREADO:        { texto: 'Conductor creado', bg: '#e4f3ec', fg: '#2f7d5b' },
-  EDITADO:                 { texto: 'Editado', bg: '#e8ecf9', fg: '#3355a8' },
-  BAJA:                    { texto: 'Dado de baja', bg: '#fbe9e9', fg: '#c0392b' },
-  REACTIVADO:              { texto: 'Reactivado', bg: '#e4f3ec', fg: '#2f7d5b' },
-  BLOQUEADO:               { texto: 'Bloqueado', bg: '#fbe9e9', fg: '#c0392b' },
-  DESBLOQUEADO:            { texto: 'Desbloqueado', bg: '#e4f3ec', fg: '#2f7d5b' },
-  CLAVE_RESETEADA:         { texto: 'Clave reseteada', bg: '#fdece2', fg: '#c2410c' },
-  CREDENCIALES_REENVIADAS: { texto: 'Credenciales reenviadas', bg: '#fdf1dc', fg: '#a56a00' },
-  CONFIRMACION_FALLIDA:    { texto: 'Clave incorrecta al confirmar', bg: '#fbe9e9', fg: '#c0392b' },
-  CONFIRMACION_BLOQUEADA:  { texto: 'Confirmación bloqueada', bg: '#fbe9e9', fg: '#c0392b' },
-  BLOQUEO_LEVANTADO:       { texto: 'Bloqueo de pasajero levantado', bg: '#e4f3ec', fg: '#2f7d5b' },
+  CREADO:                  { texto: 'Cuenta creada', bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  CONDUCTOR_CREADO:        { texto: 'Conductor creado', bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  EDITADO:                 { texto: 'Editado', bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' },
+  BAJA:                    { texto: 'Dado de baja', bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
+  REACTIVADO:              { texto: 'Reactivado', bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  BLOQUEADO:               { texto: 'Bloqueado', bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
+  DESBLOQUEADO:            { texto: 'Desbloqueado', bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  CLAVE_RESETEADA:         { texto: 'Clave reseteada', bg: 'rgba(251,146,60,.14)', fg: '#fb923c' },
+  CREDENCIALES_REENVIADAS: { texto: 'Credenciales reenviadas', bg: 'rgba(255,222,0,.12)', fg: '#fcd34d' },
+  CONFIRMACION_FALLIDA:    { texto: 'Clave incorrecta al confirmar', bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
+  CONFIRMACION_BLOQUEADA:  { texto: 'Confirmación bloqueada', bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
+  BLOQUEO_LEVANTADO:       { texto: 'Bloqueo de pasajero levantado', bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
 };
 
 const ENTIDAD: Record<string, string> = { USUARIO: 'Cuenta', SOCIO: 'Socio', MOVIL: 'Vehículo', PASAJERO: 'Pasajero' };
@@ -78,7 +78,7 @@ export default function HistorialDialog({ open, onClose, usuarioId, titulo }: {
             </TableHead>
             <TableBody>
               {eventos.map(e => {
-                const est = EVENTOS[e.evento] ?? { texto: e.evento, bg: '#f1efe9', fg: '#6b6152' };
+                const est = EVENTOS[e.evento] ?? { texto: e.evento, bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' };
                 return (
                   <TableRow key={e.id_evento}>
                     <TableCell sx={{ ...celda, whiteSpace: 'nowrap' }}>{formatoFechaHora(e.fecha_hora)}</TableCell>

@@ -8,8 +8,8 @@ import { getMovimientos, getBalance, getResumenMensual, type TesoreriaMovimiento
 import { exportarAExcel } from '../utils/exportarExcel';
 
 const TIPO_STYLE = {
-  INGRESO: { bg: '#e4f3ec', fg: '#2f7d5b' },
-  EGRESO:  { bg: '#fbe9e9', fg: '#c0392b' },
+  INGRESO: { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  EGRESO:  { bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
 };
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -105,9 +105,9 @@ export default function TesoreriaAdmin() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <DollarSign size={22} color="#3a3327" />
-          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Tesorería</Typography>
-          <Chip label="Solo consulta" size="small" sx={{ bgcolor: '#e8ecf9', color: '#3355a8', fontWeight: 700 }} />
+          <DollarSign size={22} color="rgba(255,255,255,.92)" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Tesorería</Typography>
+          <Chip label="Solo consulta" size="small" sx={{ bgcolor: 'rgba(96,165,250,.14)', color: '#60a5fa', fontWeight: 700 }} />
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button variant="outlined" size="small" startIcon={<Download size={14} />} onClick={exportar}
@@ -127,11 +127,11 @@ export default function TesoreriaAdmin() {
 
       {balance && (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 2 }}>
-          <ResumenCard icon={<TrendingUp size={19} />} tone={{ bg: '#e4f3ec', fg: '#2f7d5b' }} label="Ingresos" value={`$${balance.ingresos.toLocaleString('es-CL')}`} />
-          <ResumenCard icon={<TrendingDown size={19} />} tone={{ bg: '#fbe9e9', fg: '#c0392b' }} label="Egresos" value={`$${balance.egresos.toLocaleString('es-CL')}`} />
+          <ResumenCard icon={<TrendingUp size={19} />} tone={{ bg: 'rgba(52,211,153,.14)', fg: '#34d399' }} label="Ingresos" value={`$${balance.ingresos.toLocaleString('es-CL')}`} />
+          <ResumenCard icon={<TrendingDown size={19} />} tone={{ bg: 'rgba(248,113,113,.14)', fg: '#f87171' }} label="Egresos" value={`$${balance.egresos.toLocaleString('es-CL')}`} />
           <ResumenCard
             icon={<Wallet size={19} />}
-            tone={balance.balance >= 0 ? { bg: '#e8ecf9', fg: '#3355a8' } : { bg: '#fdece2', fg: '#c2410c' }}
+            tone={balance.balance >= 0 ? { bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' } : { bg: 'rgba(251,146,60,.14)', fg: '#fb923c' }}
             label="Balance" value={`$${balance.balance.toLocaleString('es-CL')}`}
           />
         </Box>
@@ -148,12 +148,12 @@ export default function TesoreriaAdmin() {
           </Card>
           {resumenMes && (
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2,1fr)', md: 'repeat(4,1fr)' }, gap: 2 }}>
-              <ResumenCard icon={<Landmark size={19} />} tone={{ bg: '#f1efe9', fg: '#6b6152' }} label="Caja mes anterior" value={`$${resumenMes.caja_anterior.toLocaleString('es-CL')}`} />
-              <ResumenCard icon={<TrendingUp size={19} />} tone={{ bg: '#e4f3ec', fg: '#2f7d5b' }} label="Ganancias del mes" value={`$${resumenMes.ingresos_mes.toLocaleString('es-CL')}`} />
-              <ResumenCard icon={<TrendingDown size={19} />} tone={{ bg: '#fbe9e9', fg: '#c0392b' }} label="Gastos del mes" value={`$${resumenMes.egresos_mes.toLocaleString('es-CL')}`} />
+              <ResumenCard icon={<Landmark size={19} />} tone={{ bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' }} label="Caja mes anterior" value={`$${resumenMes.caja_anterior.toLocaleString('es-CL')}`} />
+              <ResumenCard icon={<TrendingUp size={19} />} tone={{ bg: 'rgba(52,211,153,.14)', fg: '#34d399' }} label="Ganancias del mes" value={`$${resumenMes.ingresos_mes.toLocaleString('es-CL')}`} />
+              <ResumenCard icon={<TrendingDown size={19} />} tone={{ bg: 'rgba(248,113,113,.14)', fg: '#f87171' }} label="Gastos del mes" value={`$${resumenMes.egresos_mes.toLocaleString('es-CL')}`} />
               <ResumenCard
                 icon={<Wallet size={19} />}
-                tone={resumenMes.total_caja >= 0 ? { bg: '#e8ecf9', fg: '#3355a8' } : { bg: '#fdece2', fg: '#c2410c' }}
+                tone={resumenMes.total_caja >= 0 ? { bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' } : { bg: 'rgba(251,146,60,.14)', fg: '#fb923c' }}
                 label="Total caja actual" value={`$${resumenMes.total_caja.toLocaleString('es-CL')}`}
               />
             </Box>
@@ -184,9 +184,9 @@ export default function TesoreriaAdmin() {
                   <TableRow>
                     <TableCell colSpan={6} sx={{ textAlign: 'center', py: 6, border: 'none' }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                        <BookOpen size={32} color="#c4bda9" strokeWidth={1.5} />
+                        <BookOpen size={32} color="rgba(255,255,255,.35)" strokeWidth={1.5} />
                         <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Aún no hay movimientos registrados.</Typography>
-                        <Typography sx={{ fontSize: 12, color: '#a89f8f' }}>Los nuevos ingresos y egresos aparecerán aquí.</Typography>
+                        <Typography sx={{ fontSize: 12, color: 'rgba(255,255,255,.55)' }}>Los nuevos ingresos y egresos aparecerán aquí.</Typography>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -199,7 +199,7 @@ export default function TesoreriaAdmin() {
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{CATEGORIA_LABEL[m.categoria]}</TableCell>
                     <TableCell sx={{ fontSize: 13 }}>{m.descripcion}</TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{m.usuario_nombre ?? '—'}</TableCell>
-                    <TableCell sx={{ fontSize: 13, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: m.tipo === 'INGRESO' ? '#2f7d5b' : '#c0392b' }}>
+                    <TableCell sx={{ fontSize: 13, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: m.tipo === 'INGRESO' ? '#34d399' : '#f87171' }}>
                       {m.tipo === 'EGRESO' ? '-' : '+'}${Number(m.monto).toLocaleString('es-CL')}
                     </TableCell>
                   </TableRow>

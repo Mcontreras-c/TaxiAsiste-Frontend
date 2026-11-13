@@ -147,7 +147,7 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
 
   if (loadError) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+      <div className="rounded-xl border border-red-400/30 bg-red-500/15 p-4 text-sm text-red-400">
         No se pudo cargar Google Maps. Revisa que la clave de API (VITE_GOOGLE_MAPS_API_KEY) esté configurada.
       </div>
     );
@@ -155,7 +155,7 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
 
   if (!isLoaded) {
     return (
-      <div className="rounded-xl border border-gray-200 flex items-center justify-center text-sm text-gray-400" style={{ height: altura }}>
+      <div className="rounded-xl border border-white/10 flex items-center justify-center text-sm text-white/45" style={{ height: altura }}>
         Cargando mapa...
       </div>
     );
@@ -163,7 +163,7 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
 
   return (
     <div
-      className={oscuro ? 'relative isolate overflow-hidden' : 'relative isolate rounded-xl overflow-hidden border border-gray-200 shadow-sm'}
+      className={oscuro ? 'relative isolate overflow-hidden' : 'relative isolate rounded-xl overflow-hidden border border-white/10 shadow-sm'}
       style={{ height: '100%' }}
     >
       <GoogleMap
@@ -259,7 +259,7 @@ export default function MapaDespacho({ moviles, altura = '500px', origenDestino,
       {/* Leyenda -- en modo oscuro la pagina renderiza su propia leyenda flotante
           (esta se superpondria con la fila de solicitudes que tambien va abajo). */}
       {!oscuro && (
-        <div className="absolute bottom-3 left-3 z-[500] bg-white/95 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-1">
+        <div className="absolute bottom-3 left-3 z-[500] bg-[#111c30]/95 text-white/80 backdrop-blur rounded-lg shadow-md px-3 py-2 text-xs space-y-1">
           {Object.entries(ETIQUETA_ESTADO).map(([estado, etiqueta]) => (
             <div key={estado} className="flex items-center gap-1.5">
               <span

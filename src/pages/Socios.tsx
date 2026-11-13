@@ -21,17 +21,17 @@ import ConfirmarBajaDialog from '../components/ConfirmarBajaDialog';
 import { useAuthStore } from '../store/authStore';
 
 const ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
-  ACTIVO:    { bg: '#e4f3ec', fg: '#2f7d5b' },
-  INACTIVO:  { bg: '#f1efe9', fg: '#6b6152' },
-  BLOQUEADO: { bg: '#fbe9e9', fg: '#c0392b' },
+  ACTIVO:    { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  INACTIVO:  { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' },
+  BLOQUEADO: { bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
 };
 
 const MOVIL_ESTADO_STYLE: Record<string, { bg: string; fg: string }> = {
-  DISPONIBLE:  { bg: '#e4f3ec', fg: '#2f7d5b' },
-  EN_SERVICIO: { bg: '#e8ecf9', fg: '#3355a8' },
-  EN_VIAJE:    { bg: '#f1e7fb', fg: '#7128b8' },
-  BLOQUEADO:   { bg: '#fbe9e9', fg: '#c0392b' },
-  INACTIVO:    { bg: '#f1efe9', fg: '#6b6152' },
+  DISPONIBLE:  { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  EN_SERVICIO: { bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' },
+  EN_VIAJE:    { bg: 'rgba(192,132,252,.14)', fg: '#c084fc' },
+  BLOQUEADO:   { bg: 'rgba(248,113,113,.14)', fg: '#f87171' },
+  INACTIVO:    { bg: 'rgba(255,255,255,.07)', fg: 'rgba(255,255,255,.70)' },
 };
 
 const gradientBtnSx = {
@@ -144,7 +144,7 @@ function TarjetaVehiculo({
 
   if (editando) {
     return (
-      <Box sx={{ p: 3, bgcolor: '#faf8f2' }}>
+      <Box sx={{ p: 3, bgcolor: 'rgba(255,255,255,.05)' }}>
         <Box component="form" onSubmit={guardar} sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {VEHICULO_CAMPOS.map(({ label, key, placeholder, width }) => (
             <TextField
@@ -168,14 +168,14 @@ function TarjetaVehiculo({
   if (!movil) {
     return (
       <Box sx={{
-        p: 3, bgcolor: '#faf8f2', display: 'flex', alignItems: 'center', gap: 2,
+        p: 3, bgcolor: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', gap: 2,
         border: '1.5px dashed', borderColor: 'rgba(20,17,11,.15)', borderRadius: 3, m: 2,
       }}>
         <Box sx={{
           width: 42, height: 42, borderRadius: 2.5, flexShrink: 0,
-          bgcolor: '#f1efe9', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          bgcolor: 'rgba(255,255,255,.07)', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <Car size={20} color="#a89f8f" />
+          <Car size={20} color="rgba(255,255,255,.55)" />
         </Box>
         <Box sx={{ flex: 1 }}>
           <Typography sx={{ fontSize: 13.5, fontWeight: 600 }}>Sin vehículo registrado</Typography>
@@ -245,8 +245,8 @@ function TarjetaVehiculo({
             size="small" variant="outlined" disabled={cambiandoEstado} onClick={toggleBloqueo}
             startIcon={movil.estado_operativo === 'BLOQUEADO' ? <Unlock size={14} /> : <Lock size={14} />}
             sx={{
-              color: movil.estado_operativo === 'BLOQUEADO' ? '#2f7d5b' : '#c0392b',
-              borderColor: movil.estado_operativo === 'BLOQUEADO' ? '#2f7d5b' : '#c0392b',
+              color: movil.estado_operativo === 'BLOQUEADO' ? '#34d399' : '#f87171',
+              borderColor: movil.estado_operativo === 'BLOQUEADO' ? '#34d399' : '#f87171',
             }}
           >
             {movil.estado_operativo === 'BLOQUEADO' ? 'Desbloquear móvil' : 'Bloquear móvil'}
@@ -436,9 +436,9 @@ export default function SociosPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Users size={22} color="#3a3327" />
-          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Socios</Typography>
-          <Chip label={activos.length} size="small" sx={{ bgcolor: '#f1efe9', color: '#6b6152', fontWeight: 700 }} />
+          <Users size={22} color="rgba(255,255,255,.92)" />
+          <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#ffffff' }}>Socios</Typography>
+          <Chip label={activos.length} size="small" sx={{ bgcolor: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.70)', fontWeight: 700 }} />
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button variant="outlined" startIcon={<Download size={15} />} onClick={exportar}
@@ -461,11 +461,11 @@ export default function SociosPage() {
           <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5 }}>Total socios</Typography>
         </CardContent></Card>
         <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#c2410c' }}>{morosos}</Typography>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#fb923c' }}>{morosos}</Typography>
           <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5 }}>Con cuotas vencidas</Typography>
         </CardContent></Card>
         <Card sx={{ borderRadius: 3 }}><CardContent sx={{ textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#c0392b' }}>{totalVencidas}</Typography>
+          <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: '#f87171' }}>{totalVencidas}</Typography>
           <Typography sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.5 }}>Cuotas vencidas totales</Typography>
         </CardContent></Card>
       </Box>
@@ -475,7 +475,7 @@ export default function SociosPage() {
           size="small" placeholder="Buscar por nombre o RUT..." value={search}
           onChange={e => setSearch(e.target.value)}
           sx={{ flex: 1, minWidth: 220, maxWidth: 360, bgcolor: 'background.paper', borderRadius: 2 }}
-          slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={16} color="#a89f8f" /></InputAdornment> } }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={16} color="rgba(255,255,255,.55)" /></InputAdornment> } }}
         />
         {(totalInactivos > 0 || verInactivos) && (
           <Chip
@@ -484,9 +484,9 @@ export default function SociosPage() {
             onClick={() => setVerInactivos(v => !v)}
             sx={{
               fontWeight: 600,
-              bgcolor: verInactivos ? colors.ink : '#f1efe9',
+              bgcolor: verInactivos ? colors.ink : 'rgba(255,255,255,.07)',
               color: verInactivos ? '#fff' : 'text.secondary',
-              '& .MuiChip-icon': { color: verInactivos ? '#fff' : '#6b6152' },
+              '& .MuiChip-icon': { color: verInactivos ? '#fff' : 'rgba(255,255,255,.70)' },
             }}
           />
         )}
@@ -542,7 +542,7 @@ export default function SociosPage() {
                     >
                       <Box sx={{
                         width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        bgcolor: abierto ? colors.accent500 : '#f1efe9', color: abierto ? colors.ink : '#a89f8f',
+                        bgcolor: abierto ? colors.accent500 : 'rgba(255,255,255,.07)', color: abierto ? colors.ink : 'rgba(255,255,255,.55)',
                         transition: 'background-color .15s ease',
                       }}>
                         {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -557,13 +557,13 @@ export default function SociosPage() {
                       </Box>
 
                       <Typography sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5, fontSize: 13, color: 'text.secondary' }}>
-                        {s.telefono ? (<><Phone size={12} color="#a89f8f" /> {s.telefono}</>) : '—'}
+                        {s.telefono ? (<><Phone size={12} color="rgba(255,255,255,.55)" /> {s.telefono}</>) : '—'}
                       </Typography>
 
                       <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5, overflow: 'hidden' }}>
                         {s.direccion ? (
                           <>
-                            <MapPin size={12} color="#a89f8f" style={{ flexShrink: 0 }} />
+                            <MapPin size={12} color="rgba(255,255,255,.55)" style={{ flexShrink: 0 }} />
                             <Typography sx={{ fontSize: 13, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {s.direccion}
                             </Typography>
@@ -578,7 +578,7 @@ export default function SociosPage() {
                         />
                       </Box>
 
-                      <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 12, color: '#a89f8f' }}>
+                      <Typography sx={{ display: { xs: 'none', md: 'block' }, fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
                         {new Date(s.fecha_ingreso).toLocaleDateString('es-CL')}
                       </Typography>
 
@@ -589,12 +589,12 @@ export default function SociosPage() {
                             label={`${s.cuotas_vencidas} Cuota${s.cuotas_vencidas === 1 ? '' : 's'} Pendiente${s.cuotas_vencidas === 1 ? '' : 's'}`}
                             size="small"
                             sx={{
-                              bgcolor: '#fdece2', color: '#c2410c', fontWeight: 700, fontSize: 10.5,
-                              '& .MuiChip-icon': { color: '#c2410c' },
+                              bgcolor: 'rgba(251,146,60,.14)', color: '#fb923c', fontWeight: 700, fontSize: 10.5,
+                              '& .MuiChip-icon': { color: '#fb923c' },
                             }}
                           />
                         ) : (
-                          <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#2f7d5b' }}>Al día</Typography>
+                          <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#34d399' }}>Al día</Typography>
                         )}
                       </Box>
 
@@ -644,7 +644,7 @@ export default function SociosPage() {
                           <IconButton
                             size="small" title="Dar de baja"
                             onClick={e => { e.stopPropagation(); setErrorBaja(null); setSocioBaja(s); }}
-                            sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', color: '#c0392b' }}
+                            sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', color: '#f87171' }}
                           >
                             <UserX size={13} />
                           </IconButton>

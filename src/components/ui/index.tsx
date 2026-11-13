@@ -9,7 +9,7 @@ interface AlertProps {
 
 export function Alert({ message, onRetry, retryLabel = 'Reintentar' }: AlertProps) {
   return (
-    <div className="card p-4 flex items-center gap-3 text-sm text-red-600 bg-red-50/80 border-red-100">
+    <div className="card p-4 flex items-center gap-3 text-sm text-red-400 bg-red-500/15 border-red-400/30">
       <AlertCircle className="w-5 h-5 flex-shrink-0" />
       <span className="flex-1">{message}</span>
       {onRetry && (
@@ -26,7 +26,7 @@ interface BadgeProps {
   className?: string;
 }
 
-export function Badge({ children, className = 'bg-slate-100 text-slate-600' }: BadgeProps) {
+export function Badge({ children, className = 'bg-white/[0.06]/10 text-white/70' }: BadgeProps) {
   return <span className={`badge ${className}`}>{children}</span>;
 }
 
@@ -39,7 +39,7 @@ const VARIANT: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:   'btn-primary',
   secondary: 'btn-secondary',
   dark:      'btn-dark',
-  ghost:     'inline-flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition',
+  ghost:     'inline-flex items-center justify-center gap-2 text-white/60 hover:text-white/80 hover:bg-white/[0.06]/10 rounded-xl transition',
 };
 
 const SIZE: Record<NonNullable<ButtonProps['size']>, string> = {
@@ -65,7 +65,7 @@ interface SearchInputProps {
 export function SearchInput({ value, onChange, placeholder = 'Buscar...' }: SearchInputProps) {
   return (
     <div className="relative">
-      <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/45 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
       </svg>
       <input
@@ -86,7 +86,7 @@ interface LoadingStateProps {
 
 export function LoadingState({ label = 'Cargando...', className = 'py-16' }: LoadingStateProps) {
   return (
-    <div className={`flex items-center justify-center text-slate-400 ${className}`}>
+    <div className={`flex items-center justify-center text-white/45 ${className}`}>
       <svg className="w-5 h-5 animate-spin mr-2.5" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -108,10 +108,10 @@ export function Modal({ title, onClose, children, maxWidth = 'max-w-md' }: Modal
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className={`card shadow-elevated w-full ${maxWidth} p-6 animate-in fade-in`}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+          <h2 className="text-lg font-bold text-white/90">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+            className="p-1.5 rounded-lg hover:bg-white/[0.06]/10 text-white/45 hover:text-white/70 transition"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -136,17 +136,17 @@ export function PageHeader({ icon: Icon, title, subtitle, count, actions }: Page
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-brand-100 rounded-xl">
-          <Icon className="w-5 h-5 text-brand-700" />
+        <div className="p-2.5 bg-brand-400/15 rounded-xl">
+          <Icon className="w-5 h-5 text-brand-300" />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{title}</h1>
+            <h1 className="text-2xl font-bold text-white/90 tracking-tight">{title}</h1>
             {count !== undefined && (
-              <span className="badge bg-slate-100 text-slate-500">{count}</span>
+              <span className="badge bg-white/[0.06]/10 text-white/60">{count}</span>
             )}
           </div>
-          {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-white/45 mt-0.5">{subtitle}</p>}
         </div>
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -171,19 +171,19 @@ export function StatCard({ title, value, sub, icon, accent, iconBg, percent, bar
       <div className="flex items-center gap-3">
         <div className={`p-2.5 rounded-xl flex-shrink-0 ${iconBg}`}>{icon}</div>
         <div className="min-w-0">
-          <p className="text-xs text-slate-500 font-medium truncate">{title}</p>
+          <p className="text-xs text-white/60 font-medium truncate">{title}</p>
           <p className={`text-xl font-bold tracking-tight ${accent}`}>{value}</p>
         </div>
       </div>
       {percent !== undefined && (
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-2 bg-white/[0.06]/10 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full ${barColor ?? 'bg-slate-400'}`}
+            className={`h-full rounded-full ${barColor ?? 'bg-white/[0.06]/40'}`}
             style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
           />
         </div>
       )}
-      {sub && <p className="text-xs text-slate-400">{sub}</p>}
+      {sub && <p className="text-xs text-white/45">{sub}</p>}
     </div>
   );
 }
@@ -202,18 +202,18 @@ export function DataTable({ headers, children, emptyMessage, isEmpty, colSpan }:
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50/80 border-b border-surface-border">
+            <tr className="bg-white/[0.06]/5 border-b border-white/10">
               {headers.map(h => (
-                <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-white/60 uppercase tracking-wider whitespace-nowrap">
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-white/5">
             {isEmpty ? (
               <tr>
-                <td colSpan={colSpan ?? headers.length} className="text-center py-14 text-slate-400">
+                <td colSpan={colSpan ?? headers.length} className="text-center py-14 text-white/45">
                   {emptyMessage ?? 'Sin registros.'}
                 </td>
               </tr>
@@ -226,7 +226,7 @@ export function DataTable({ headers, children, emptyMessage, isEmpty, colSpan }:
 }
 
 export function TableRow({ children }: { children: React.ReactNode }) {
-  return <tr className="hover:bg-slate-50/70 transition-colors">{children}</tr>;
+  return <tr className="hover:bg-white/[0.06]/5 transition-colors">{children}</tr>;
 }
 
 export function TableCell({ children, className = '' }: { children: React.ReactNode; className?: string }) {

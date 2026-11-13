@@ -4,11 +4,11 @@ import { colors } from '../theme';
 // Paleta fija de tintes para variar el avatar segun la persona (no es color semantico,
 // solo identidad visual) - se elige de forma deterministica por el nombre.
 const TINTS = [
-  { bg: '#fdf1dc', fg: colors.accent700 },
-  { bg: '#e8ecf9', fg: '#3355a8' },
-  { bg: '#e4f3ec', fg: '#2f7d5b' },
-  { bg: '#f3e8fd', fg: '#7e22ce' },
-  { bg: '#fdece2', fg: '#c2410c' },
+  { bg: 'rgba(255,222,0,.12)', fg: colors.accent700 },
+  { bg: 'rgba(96,165,250,.14)', fg: '#60a5fa' },
+  { bg: 'rgba(52,211,153,.14)', fg: '#34d399' },
+  { bg: 'rgba(192,132,252,.14)', fg: '#c084fc' },
+  { bg: 'rgba(251,146,60,.14)', fg: '#fb923c' },
 ];
 
 // Algunos nombres vienen con "(RUT)" al final (ej: "Juan Perez (12345678-9)") - se descarta,
