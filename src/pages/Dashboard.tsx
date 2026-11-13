@@ -1,141 +1,155 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, IconButton, Card, CardContent, Alert as MAlert, CircularProgress as MuiCircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Alert as MAlert, CircularProgress as MuiCircularProgress } from '@mui/material';
 import {
   Car, PhoneCall, RefreshCw, LayoutDashboard, UserCheck, UserX, CarFront,
-  Timer, Route, CheckCircle2, Wallet, CalendarClock, BarChart3, TrendingUp,
+  Timer, Route, CheckCircle2, Wallet, CalendarClock, BarChart3,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { getDashboard, getSolicitudesPorEstado } from '../api/reportes';
 import type { Dashboard, SolicitudPorEstado } from '../types';
 import { colors } from '../theme';
 
+// Colores de las barras sobre fondo oscuro
 const ESTADO_CHART_COLOR: Record<string, string> = {
-  PENDIENTE:  '#c2410c',
-  ASIGNADO:   '#3355a8',
-  EN_CURSO:   '#7e22ce',
-  COMPLETADO: '#2f7d5b',
-  CANCELADO:  '#a89f8f',
+  PENDIENTE:  '#fb923c',
+  ASIGNADO:   '#60a5fa',
+  EN_CURSO:   '#c084fc',
+  COMPLETADO: '#34d399',
+  CANCELADO:  '#94a3b8',
 };
 
 const ESTADO_CHART_LABEL: Record<string, string> = {
   PENDIENTE: 'Pendiente', ASIGNADO: 'Asignado', EN_CURSO: 'En curso', COMPLETADO: 'Completado', CANCELADO: 'Cancelado',
 };
 
+const TEXTO_SUAVE = 'rgba(255,255,255,.62)';
+
 function EstadoTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <Box sx={{ bgcolor: colors.ink, color: '#fff', px: 1.5, py: 1, borderRadius: 2, fontSize: 12 }}>
-      <Typography sx={{ fontSize: 11, color: 'rgba(255,255,255,.7)' }}>{p.label}</Typography>
+    <Box sx={{
+      bgcolor: 'rgba(15,26,46,.94)', border: '1px solid rgba(255,255,255,.16)', color: '#fff',
+      px: 1.5, py: 1, borderRadius: 2, fontSize: 12,
+    }}>
+      <Typography sx={{ fontSize: 11, color: TEXTO_SUAVE }}>{p.label}</Typography>
       <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: 'Roboto Mono, monospace' }}>{p.total}</Typography>
     </Box>
   );
 }
 
-type Tone = { fg: string; bg: string; grad: string; iconBg: string };
+type Tono = { color: string; brillo: string; degradado: string };
 
-const TONES: Record<string, Tone> = {
-  emerald: { fg: '#2f7d5b', bg: '#dcf1e6', grad: 'linear-gradient(135deg,#5fbf8f,#2f7d5b)', iconBg: 'rgba(255,255,255,.65)' },
-  red:     { fg: '#c0392b', bg: '#fbe9e9', grad: 'linear-gradient(135deg,#f08a7d,#c0392b)', iconBg: 'rgba(255,255,255,.65)' },
-  blue:    { fg: '#3355a8', bg: '#e1e6f8', grad: 'linear-gradient(135deg,#7d95d8,#3355a8)', iconBg: 'rgba(255,255,255,.65)' },
-  amber:   { fg: colors.accent700, bg: '#fdf1dc', grad: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`, iconBg: 'rgba(255,255,255,.65)' },
-  violet:  { fg: '#7e22ce', bg: '#efe0fc', grad: 'linear-gradient(135deg,#c084f5,#7e22ce)', iconBg: 'rgba(255,255,255,.65)' },
-  orange:  { fg: '#c2410c', bg: '#fdece2', grad: 'linear-gradient(135deg,#f5a06b,#c2410c)', iconBg: 'rgba(255,255,255,.65)' },
+const TONOS: Record<string, Tono> = {
+  verde:    { color: '#34d399', brillo: 'rgba(52,211,153,.30)', degradado: 'linear-gradient(135deg,#6ee7b7,#059669)' },
+  rojo:     { color: '#f87171', brillo: 'rgba(248,113,113,.30)', degradado: 'linear-gradient(135deg,#fca5a5,#dc2626)' },
+  azul:     { color: '#60a5fa', brillo: 'rgba(96,165,250,.32)', degradado: 'linear-gradient(135deg,#93c5fd,#2563eb)' },
+  amarillo: { color: colors.accent500, brillo: 'rgba(255,222,0,.26)', degradado: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+  violeta:  { color: '#c084fc', brillo: 'rgba(192,132,252,.30)', degradado: 'linear-gradient(135deg,#d8b4fe,#7e22ce)' },
+  naranja:  { color: '#fb923c', brillo: 'rgba(251,146,60,.30)', degradado: 'linear-gradient(135deg,#fdba74,#ea580c)' },
 };
 
-function Ring({ pct, tone, trend }: { pct: number; tone: Tone; trend?: boolean }) {
+function Tarjeta({
+  children, elevable = true, retraso = 0,
+}: { children: React.ReactNode; elevable?: boolean; retraso?: number }) {
   return (
-    <Box sx={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-      <MuiCircularProgress
-        variant="determinate" value={100} size={56} thickness={4}
-        sx={{ position: 'absolute', color: 'rgba(255,255,255,.55)' }}
-      />
-      <MuiCircularProgress
-        variant="determinate" value={pct} size={56} thickness={4}
-        sx={{ position: 'absolute', color: tone.fg, '& .MuiCircularProgress-circle': { strokeLinecap: 'round' } }}
-      />
-      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography sx={{ fontSize: 12, fontWeight: 800, color: tone.fg }}>{pct}%</Typography>
-      </Box>
-      {trend && (
-        <Box sx={{
-          position: 'absolute', bottom: -3, right: -3, width: 18, height: 18, borderRadius: '50%',
-          bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 4px rgba(0,0,0,.2)',
-        }}>
-          <TrendingUp size={11} color={tone.fg} />
-        </Box>
-      )}
+    <Box
+      className={`vidrio-tarjeta${elevable ? ' vidrio-tarjeta--elevable' : ''}`}
+      style={{ ['--retraso' as string]: `${retraso}ms` }}
+      sx={{ borderRadius: '22px', height: '100%', p: 2.5, display: 'flex', flexDirection: 'column' }}
+    >
+      {children}
     </Box>
   );
 }
 
-function Sparkline({ tone, data }: { tone: Tone; data: number[] }) {
-  const points = data.map((v, i) => ({ i, v }));
+function Anillo({ pct, tono }: { pct: number; tono: Tono }) {
   return (
-    <Box sx={{ width: 64, height: 40, flexShrink: 0 }}>
+    <Box sx={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+      <MuiCircularProgress variant="determinate" value={100} size={56} thickness={4}
+        sx={{ position: 'absolute', color: 'rgba(255,255,255,.12)' }} />
+      <MuiCircularProgress variant="determinate" value={pct} size={56} thickness={4}
+        sx={{
+          position: 'absolute', color: tono.color, filter: `drop-shadow(0 0 6px ${tono.brillo})`,
+          '& .MuiCircularProgress-circle': { strokeLinecap: 'round' },
+        }} />
+      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{pct}%</Typography>
+      </Box>
+    </Box>
+  );
+}
+
+function MiniCurva({ tono, datos }: { tono: Tono; datos: number[] }) {
+  const puntos = datos.map((v, i) => ({ i, v }));
+  return (
+    <Box sx={{ width: 72, height: 44, flexShrink: 0 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={points} margin={{ top: 4, right: 2, left: 2, bottom: 4 }}>
-          <Line type="monotone" dataKey="v" stroke={tone.fg} strokeWidth={2} dot={false} isAnimationActive={false} />
+        <LineChart data={puntos} margin={{ top: 4, right: 2, left: 2, bottom: 4 }}>
+          <Line type="monotone" dataKey="v" stroke={tono.color} strokeWidth={2.5} dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </Box>
   );
 }
 
-function HeroStat({
-  title, value, total, icon, tone, unidad, sparkline,
-}: { title: string; value: number; total: number; icon: React.ReactNode; tone: Tone; unidad: string; sparkline?: number[] }) {
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+function Indicador({
+  titulo, valor, total, icono, tono, detalle, curva, retraso,
+}: {
+  titulo: string; valor: number; total: number; icono: React.ReactNode; tono: Tono;
+  detalle: string; curva?: number[]; retraso: number;
+}) {
+  const pct = total > 0 ? Math.round((valor / total) * 100) : 0;
   return (
-    <Card sx={{ borderRadius: 4, bgcolor: tone.bg, boxShadow: 'none' }}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+    <Tarjeta retraso={retraso}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
         <Box sx={{
-          width: 42, height: 42, borderRadius: 3, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: tone.iconBg, color: tone.fg,
+          width: 44, height: 44, borderRadius: 3, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: tono.degradado, color: '#0b1220', boxShadow: `0 6px 20px ${tono.brillo}`,
         }}>
-          {icon}
+          {icono}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: tone.fg }}>
-            {title}
+          <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: TEXTO_SUAVE }}>
+            {titulo}
           </Typography>
-          <Typography sx={{ fontSize: 30, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', lineHeight: 1.15, color: '#241f16' }}>
-            {value}
+          <Typography sx={{ fontSize: 32, fontWeight: 800, fontFamily: 'Roboto Mono, monospace', lineHeight: 1.15, color: '#fff' }}>
+            {valor}
           </Typography>
-          <Typography sx={{ fontSize: 11.5, color: tone.fg, opacity: 0.85, mt: 0.25 }}>{unidad}</Typography>
+          <Typography sx={{ fontSize: 12, color: tono.color, mt: 0.25 }}>{detalle}</Typography>
         </Box>
-        {sparkline
-          ? <Sparkline tone={tone} data={sparkline} />
-          : <Ring pct={pct} tone={tone} trend={pct >= 50} />
-        }
-      </CardContent>
-    </Card>
+        {curva ? <MiniCurva tono={tono} datos={curva} /> : <Anillo pct={pct} tono={tono} />}
+      </Box>
+    </Tarjeta>
   );
 }
 
-function MiniRow({
-  icon, label, value, tone, alerta,
-}: { icon: React.ReactNode; label: string; value: number; tone: Tone; alerta?: boolean }) {
+function FilaResumen({
+  icono, etiqueta, valor, tono, alerta,
+}: { icono: React.ReactNode; etiqueta: string; valor: number; tono: Tono; alerta?: boolean }) {
   return (
     <Box sx={{
-      display: 'flex', alignItems: 'center', gap: 1.5, py: 1.1, px: alerta ? 1.25 : 0,
-      mx: alerta ? -1.25 : 0, borderRadius: alerta ? 3 : 0, bgcolor: alerta ? tone.bg : 'transparent',
+      display: 'flex', alignItems: 'center', gap: 1.5, py: 1.1, px: 1.25, mx: -1.25, borderRadius: '14px',
+      bgcolor: alerta ? 'rgba(255,255,255,.07)' : 'transparent',
+      border: `1px solid ${alerta ? tono.brillo : 'transparent'}`,
+      transition: 'background-color 160ms ease',
+      '&:hover': { bgcolor: 'rgba(255,255,255,.06)' },
     }}>
       <Box sx={{
         width: 30, height: 30, borderRadius: 2.25, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        bgcolor: alerta ? 'rgba(255,255,255,.65)' : tone.bg, color: tone.fg,
+        bgcolor: 'rgba(255,255,255,.08)', color: tono.color,
       }}>
-        {icon}
+        {icono}
       </Box>
-      <Typography sx={{ fontSize: 13, color: alerta ? tone.fg : 'text.secondary', fontWeight: alerta ? 600 : 400, flex: 1 }}>{label}</Typography>
-      <Typography sx={{ fontSize: 15, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: alerta ? tone.fg : 'text.primary' }}>{value}</Typography>
+      <Typography sx={{ fontSize: 13, color: alerta ? '#fff' : TEXTO_SUAVE, fontWeight: alerta ? 600 : 400, flex: 1 }}>{etiqueta}</Typography>
+      <Typography sx={{ fontSize: 15, fontWeight: 700, fontFamily: 'Roboto Mono, monospace', color: alerta ? tono.color : '#fff' }}>{valor}</Typography>
     </Box>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#a89f8f', mb: 1.5 }}>
+    <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: TEXTO_SUAVE, mb: 1.5 }}>
       {children}
     </Typography>
   );
@@ -186,96 +200,91 @@ export default function DashboardPage() {
   const hayChart = porEstado.some(e => e.total > 0);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box className="vidrio-escena" sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: { xs: 2, md: 3 }, borderRadius: '28px', color: '#fff' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <LayoutDashboard size={22} color="#3a3327" />
+          <LayoutDashboard size={22} color={colors.accent500} />
           <Box>
-            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#2a2519' }}>Dashboard</Typography>
-            {fecha && <Typography sx={{ fontSize: 12.5, color: 'text.secondary', textTransform: 'capitalize' }}>{fecha}</Typography>}
+            <Typography variant="h1" sx={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Dashboard</Typography>
+            {fecha && <Typography sx={{ fontSize: 12.5, color: TEXTO_SUAVE, textTransform: 'capitalize' }}>{fecha}</Typography>}
           </Box>
         </Box>
-        <IconButton onClick={load} sx={{
-          color: colors.ink, background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
-          '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})` },
+        <IconButton onClick={load} aria-label="Actualizar" sx={{
+          color: '#0b1220', background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent500})`,
+          boxShadow: '0 6px 20px rgba(255,222,0,.25)', transition: 'transform 200ms ease',
+          '&:hover': { background: `linear-gradient(135deg, ${colors.accent300}, ${colors.accent600})`, transform: 'rotate(40deg)' },
         }}>
           <RefreshCw size={17} />
         </IconButton>
       </Box>
 
-      {/* Fila hero: 3 métricas principales */}
+      {/* Indicadores principales */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3,1fr)' }, gap: 2 }}>
-        <HeroStat
-          title="Socios disponibles" value={data.socios.activos} total={totalSocios}
-          unidad={`Total ${totalSocios}: ${data.socios.bloqueados} bloqueado${data.socios.bloqueados === 1 ? '' : 's'}`}
-          icon={<UserCheck size={19} />} tone={TONES.emerald}
+        <Indicador
+          titulo="Socios disponibles" valor={data.socios.activos} total={totalSocios} retraso={0}
+          detalle={`Total ${totalSocios}: ${data.socios.bloqueados} bloqueado${data.socios.bloqueados === 1 ? '' : 's'}`}
+          icono={<UserCheck size={19} />} tono={TONOS.verde}
         />
-        <HeroStat
-          title="Móviles disponibles" value={data.moviles.disponibles} total={totalMoviles}
-          unidad={`Total ${totalMoviles}: ${data.moviles.en_servicio} en servicio`}
-          icon={<Car size={19} />} tone={TONES.blue}
+        <Indicador
+          titulo="Móviles disponibles" valor={data.moviles.disponibles} total={totalMoviles} retraso={80}
+          detalle={`Total ${totalMoviles}: ${data.moviles.en_servicio} en servicio`}
+          icono={<Car size={19} />} tono={TONOS.azul}
         />
-        <HeroStat
-          title="Solicitudes en curso" value={data.solicitudes.en_curso} total={0} unidad={`${data.solicitudes.pendientes} pendientes`}
-          sparkline={[data.solicitudes.hoy, data.solicitudes.pendientes, data.solicitudes.en_curso, data.solicitudes.completadas_hoy, data.solicitudes.hoy]}
-          icon={<Route size={19} />} tone={TONES.violet}
+        <Indicador
+          titulo="Solicitudes en curso" valor={data.solicitudes.en_curso} total={0} retraso={160}
+          detalle={`${data.solicitudes.pendientes} pendientes`}
+          curva={[data.solicitudes.hoy, data.solicitudes.pendientes, data.solicitudes.en_curso, data.solicitudes.completadas_hoy, data.solicitudes.hoy]}
+          icono={<Route size={19} />} tono={TONOS.violeta}
         />
       </Box>
 
-      {/* Fila principal: gráfico + panel resumen */}
+      {/* Gráfico y resumen */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 2, alignItems: 'stretch' }}>
-        <Card sx={{ borderRadius: 4 }}>
-          <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <BarChart3 size={16} color="#6b6152" />
-              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.secondary' }}>
-                Solicitudes por estado — Total: {porEstado.reduce((acc, e) => acc + e.total, 0)}
-              </Typography>
+        <Tarjeta elevable={false} retraso={240}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+            <BarChart3 size={16} color={colors.accent500} />
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: TEXTO_SUAVE }}>
+              Solicitudes por estado — Total: {porEstado.reduce((acc, e) => acc + e.total, 0)}
+            </Typography>
+          </Box>
+          {hayChart ? (
+            <Box sx={{ flex: 1, minHeight: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={porEstado.map(e => ({ estado: e.estado, label: ESTADO_CHART_LABEL[e.estado], total: e.total }))}
+                  margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
+                  barCategoryGap="28%"
+                >
+                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,.08)" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: TEXTO_SUAVE }} />
+                  <Tooltip cursor={{ fill: 'rgba(255,255,255,.06)' }} content={<EstadoTooltip />} />
+                  <Bar dataKey="total" radius={[8, 8, 0, 0]} maxBarSize={56}>
+                    {porEstado.map(e => (
+                      <Cell key={e.estado} fill={ESTADO_CHART_COLOR[e.estado] ?? colors.accent500} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </Box>
-            {hayChart ? (
-              <Box sx={{ flex: 1, minHeight: 260 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={porEstado.map(e => ({ estado: e.estado, label: ESTADO_CHART_LABEL[e.estado], total: e.total }))}
-                    margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
-                    barCategoryGap="28%"
-                  >
-                    <CartesianGrid vertical={false} stroke="#ece7db" />
-                    <XAxis
-                      dataKey="label" axisLine={false} tickLine={false}
-                      tick={{ fontSize: 11, fill: '#6b6152' }}
-                    />
-                    <Tooltip cursor={{ fill: '#f1efe9' }} content={<EstadoTooltip />} />
-                    <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={56}>
-                      {porEstado.map(e => (
-                        <Cell key={e.estado} fill={ESTADO_CHART_COLOR[e.estado] ?? colors.accent500} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
-            ) : (
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary', fontSize: 13, minHeight: 260 }}>
-                Todavía no hay solicitudes registradas.
-              </Box>
-            )}
-          </CardContent>
-        </Card>
+          ) : (
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: TEXTO_SUAVE, fontSize: 13, minHeight: 260 }}>
+              Todavía no hay solicitudes registradas.
+            </Box>
+          )}
+        </Tarjeta>
 
-        <Card sx={{ borderRadius: 4 }}>
-          <CardContent>
-            <SectionLabel>Resumen</SectionLabel>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-              <MiniRow icon={<PhoneCall size={14} />} label="Solicitudes hoy" value={data.solicitudes.hoy} tone={TONES.violet} />
-              <MiniRow icon={<CheckCircle2 size={14} />} label="Completadas hoy" value={data.solicitudes.completadas_hoy} tone={TONES.emerald} />
-              <MiniRow icon={<Timer size={14} />} label="Solicitudes pendientes" value={data.solicitudes.pendientes} tone={TONES.orange} />
-              <MiniRow icon={<CarFront size={14} />} label="Móviles en servicio" value={data.moviles.en_servicio} tone={TONES.amber} />
-              <MiniRow icon={<UserX size={14} />} label="Socios bloqueados" value={data.socios.bloqueados} tone={TONES.red} alerta={data.socios.bloqueados > 0} />
-              <MiniRow icon={<Wallet size={14} />} label="Cuotas pendientes" value={data.cuotas.pendientes} tone={TONES.amber} alerta={data.cuotas.pendientes > 0} />
-              <MiniRow icon={<CalendarClock size={14} />} label="Cuotas vencidas" value={data.cuotas.vencidas} tone={TONES.red} alerta={data.cuotas.vencidas > 0} />
-            </Box>
-          </CardContent>
-        </Card>
+        <Tarjeta elevable={false} retraso={320}>
+          <Rotulo>Resumen</Rotulo>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+            <FilaResumen icono={<PhoneCall size={14} />} etiqueta="Solicitudes hoy" valor={data.solicitudes.hoy} tono={TONOS.violeta} />
+            <FilaResumen icono={<CheckCircle2 size={14} />} etiqueta="Completadas hoy" valor={data.solicitudes.completadas_hoy} tono={TONOS.verde} />
+            <FilaResumen icono={<Timer size={14} />} etiqueta="Solicitudes pendientes" valor={data.solicitudes.pendientes} tono={TONOS.naranja} />
+            <FilaResumen icono={<CarFront size={14} />} etiqueta="Móviles en servicio" valor={data.moviles.en_servicio} tono={TONOS.amarillo} />
+            <FilaResumen icono={<UserX size={14} />} etiqueta="Socios bloqueados" valor={data.socios.bloqueados} tono={TONOS.rojo} alerta={data.socios.bloqueados > 0} />
+            <FilaResumen icono={<Wallet size={14} />} etiqueta="Cuotas pendientes" valor={data.cuotas.pendientes} tono={TONOS.amarillo} alerta={data.cuotas.pendientes > 0} />
+            <FilaResumen icono={<CalendarClock size={14} />} etiqueta="Cuotas vencidas" valor={data.cuotas.vencidas} tono={TONOS.rojo} alerta={data.cuotas.vencidas > 0} />
+          </Box>
+        </Tarjeta>
       </Box>
     </Box>
   );
